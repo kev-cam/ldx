@@ -21,6 +21,8 @@ if [[ ! -f "$LDX_LIB" ]]; then
     exit 1
 fi
 
+LDX_CONTAINER="${SCRIPT_DIR}/ldx-container"
+
 usage() {
     cat <<'EOF'
 Usage: ldx [options] -- command [args...]
@@ -32,6 +34,9 @@ Options:
   -c, --config FILE     JSON config file with profile/replace lists
   -q, --quiet           Suppress ldx diagnostic messages
   --list-got            List patchable GOT symbols in the binary (then exit)
+  --container           Run command in a minimal container with piped OS
+  --pipe-os             Pipe syscalls back to host (implies --container)
+  --net                 Isolate network namespace (with --container)
   -h, --help            Show this help
 
 Environment:
@@ -42,6 +47,7 @@ Examples:
   ldx -p strlen -q -- ./mybinary arg1 arg2
   ldx -c profile.json -- ./mybinary
   ldx --list-got ./mybinary
+  ldx --container --pipe-os -- ./mybinary
 
 Config file format (JSON):
   { "profile": ["sin", "cos", "libm.so:exp"] }
@@ -53,6 +59,9 @@ PROFILE_SYMS=""
 CONFIG_FILE=""
 QUIET=""
 LIST_GOT=""
+CONTAINER=""
+PIPE_OS=""
+ISOLATE_NET=""
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -70,6 +79,19 @@ while [[ $# -gt 0 ]]; do
             ;;
         --list-got)
             LIST_GOT=1
+            shift
+            ;;
+        --container)
+            CONTAINER=1
+            shift
+            ;;
+        --pipe-os)
+            PIPE_OS=1
+            CONTAINER=1
+            shift
+            ;;
+        --net)
+            ISOLATE_NET=1
             shift
             ;;
         -h|--help)
@@ -93,6 +115,21 @@ done
 if [[ $# -eq 0 ]]; then
     echo "Error: no command specified" >&2
     usage 1
+fi
+
+# --container: run in a minimal container.
+if [[ -n "$CONTAINER" ]]; then
+    if [[ ! -x "$LDX_CONTAINER" ]]; then
+        echo "Error: ldx-container not found at $LDX_CONTAINER" >&2
+        echo "Build it with: make -C $SCRIPT_DIR" >&2
+        exit 1
+    fi
+
+    CONTAINER_ARGS=()
+    [[ -n "$PIPE_OS" ]] && CONTAINER_ARGS+=(--pipe-os)
+    [[ -n "$ISOLATE_NET" ]] && CONTAINER_ARGS+=(--net)
+
+    exec "$LDX_CONTAINER" "${CONTAINER_ARGS[@]}" -- "$@"
 fi
 
 # --list-got: show patchable symbols and exit.
@@ -146,7 +183,7 @@ print(','.join(cfg.get('profile', [])))
 fi
 
 if [[ -z "$SYMS" ]]; then
-    echo "Error: no symbols to profile. Use -p or -c." >&2
+    echo "Error: no symbols to profile. Use -p, -c, or --container." >&2
     usage 1
 fi
 

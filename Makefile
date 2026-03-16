@@ -12,7 +12,10 @@ LDX_CXX_HDR = src/ldx_pipe.h
 LDX_C_OBJ = src/ldx.o src/ldx_pbv.o
 LDX_CXX_OBJ = src/ldx_pipe.o
 
-all: libldx.so test/test_basic test/test_hooks test/test_pbv test/test_pipe test/test_preload test/preload_hook.so
+LDX_SOCK_SRC = src/ldx_socket_pipe.cpp
+LDX_SOCK_HDR = src/ldx_socket_pipe.h
+
+all: libldx.so ldx-container test/test_basic test/test_hooks test/test_pbv test/test_pipe test/test_preload test/preload_hook.so
 
 src/ldx.o: src/ldx.c $(LDX_HDR)
 	$(CC) $(CFLAGS) -c -o $@ $<
@@ -23,8 +26,17 @@ src/ldx_pbv.o: src/ldx_pbv.c $(LDX_HDR) src/ldx_pbv.h
 src/ldx_pipe.o: src/ldx_pipe.cpp src/ldx_pipe.h
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
 
-libldx.so: $(LDX_C_OBJ) $(LDX_CXX_OBJ)
+src/ldx_socket_pipe.o: src/ldx_socket_pipe.cpp $(LDX_SOCK_HDR) src/ldx_pipe.h
+	$(CXX) $(CXXFLAGS) -c -o $@ $<
+
+src/ldx_container.o: src/ldx_container.c
+	$(CC) $(CFLAGS) -c -o $@ $<
+
+libldx.so: $(LDX_C_OBJ) $(LDX_CXX_OBJ) src/ldx_socket_pipe.o
 	$(CXX) $(CXXFLAGS) -shared -o $@ $^ $(LDFLAGS)
+
+ldx-container: src/ldx_container_main.c src/ldx_container.o
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
 test/test_basic: test/test_basic.c $(LDX_SRC) $(LDX_HDR)
 	$(CC) $(CFLAGS) -fno-builtin-strlen -fno-builtin-sin -o $@ test/test_basic.c $(LDX_SRC) $(LDFLAGS)
@@ -76,6 +88,6 @@ test/test_syscall_pbv: test/test_syscall_pbv.cpp gen/ldx_syscall_pbv.h $(LDX_C_O
 	$(CXX) $(CXXFLAGS) -I src -I gen -o $@ test/test_syscall_pbv.cpp gen/ldx_syscall_pbv.cpp $(LDX_C_OBJ) $(LDX_CXX_OBJ) $(LDFLAGS)
 
 clean:
-	rm -f libldx.so src/*.o gen/*.so test/test_basic test/test_hooks test/test_pbv test/test_pipe test/test_preload test/preload_hook.so test/test_syscall_pbv
+	rm -f libldx.so ldx-container src/*.o gen/*.so test/test_basic test/test_hooks test/test_pbv test/test_pipe test/test_preload test/preload_hook.so test/test_syscall_pbv
 
 .PHONY: all test gen clean
