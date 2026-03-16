@@ -52,4 +52,31 @@ int ldx_walk_got(ldx_walk_cb cb, void *user);
  * or manually if linked directly). */
 void ldx_init(void);
 
+/* ---------- Profiler (Phase 1.4) ---------- */
+
+/* Per-function profiling stats. */
+typedef struct {
+    const char    *sym;
+    const char    *lib;
+    unsigned long  call_count;
+    double         total_time;    /* cumulative wall-clock seconds */
+    double         min_time;
+    double         max_time;
+} ldx_prof_entry_t;
+
+/* Start profiling the given target (same format as dlreplace).
+ * Installs an entry/exit trampoline that collects timing.
+ * Returns 0 on success, -1 on failure. */
+int ldx_prof_add(const char *target);
+
+/* Print profiling report to stderr. */
+void ldx_prof_report(void);
+
+/* Get profiling data.  Returns number of entries.
+ * If entries is non-NULL, fills up to max_entries. */
+int ldx_prof_get(ldx_prof_entry_t *entries, int max_entries);
+
+/* Reset all profiling counters. */
+void ldx_prof_reset(void);
+
 #endif /* LDX_H */

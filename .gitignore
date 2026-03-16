@@ -1,0 +1,4 @@
+*.so
+test/test_basic
+test/test_hooks
+test/test_preload
