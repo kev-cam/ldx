@@ -37,6 +37,7 @@ typedef struct {
 /* ---------- globals ---------- */
 
 static int ldx_initialized = 0;
+static int ldx_quiet = 0;
 static long page_size;
 
 /* ---------- helpers ---------- */
@@ -310,10 +311,12 @@ void *dlreplace(const char *target, void *replacement)
 
     ldx_walk_got(replace_cb, &ctx);
 
-    if (ctx.count > 0)
-        fprintf(stderr, "ldx: replaced %s in %d GOT slot(s)\n", target, ctx.count);
-    else
-        fprintf(stderr, "ldx: warning: no GOT entries found for '%s'\n", target);
+    if (!ldx_quiet) {
+        if (ctx.count > 0)
+            fprintf(stderr, "ldx: replaced %s in %d GOT slot(s)\n", target, ctx.count);
+        else
+            fprintf(stderr, "ldx: warning: no GOT entries found for '%s'\n", target);
+    }
 
     free_target(&pt);
     return ctx.original;
@@ -696,7 +699,8 @@ static int hook_add_cb(const char *sym, const char *lib,
         return 0;
     }
 
-    fprintf(stderr, "ldx: hooked %s (trampoline at %p)\n", sym, e->trampoline);
+    if (!ldx_quiet)
+        fprintf(stderr, "ldx: hooked %s (trampoline at %p)\n", sym, e->trampoline);
     ctx->found = 1;
     return 0;
 }
@@ -815,7 +819,35 @@ void ldx_init(void)
     if (ldx_initialized) return;
     ldx_initialized = 1;
     page_size = sysconf(_SC_PAGESIZE);
-    fprintf(stderr, "ldx: initialized (page_size=%ld)\n", page_size);
+
+    if (getenv("LDX_QUIET"))
+        ldx_quiet = 1;
+
+    if (!ldx_quiet)
+        fprintf(stderr, "ldx: initialized (page_size=%ld)\n", page_size);
+}
+
+/* Process LDX_PROFILE env var: comma-separated list of symbols to profile.
+ * Also registers atexit handler to print report. */
+static void ldx_atexit_report(void) { ldx_prof_report(); }
+
+static void ldx_process_env(void)
+{
+    const char *prof = getenv("LDX_PROFILE");
+    if (!prof) return;
+
+    char *buf = strdup(prof);
+    char *tok = strtok(buf, ",");
+    while (tok) {
+        /* Skip leading whitespace. */
+        while (*tok == ' ') tok++;
+        if (*tok)
+            ldx_prof_add(tok);
+        tok = strtok(NULL, ",");
+    }
+    free(buf);
+
+    atexit(ldx_atexit_report);
 }
 
 /* Auto-init when loaded via LD_PRELOAD. */
@@ -823,4 +855,5 @@ __attribute__((constructor))
 static void ldx_auto_init(void)
 {
     ldx_init();
+    ldx_process_env();
 }
