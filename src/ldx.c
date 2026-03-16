@@ -64,18 +64,19 @@ static void free_target(parsed_target_t *t)
     free(t->sym);
 }
 
-/* Make a GOT slot writable, patch it, restore protection. */
+/* Make a GOT slot writable and patch it.
+ * We leave the page writable rather than restoring PROT_READ, because
+ * the GOT page may share a page with .data or other writable sections.
+ * Restoring read-only can corrupt unrelated writable data. */
 static int patch_got_slot(void **slot, void *new_val)
 {
     uintptr_t page = (uintptr_t)slot & ~(uintptr_t)(page_size - 1);
 
-    /* Try writing directly first (works if partial RELRO or no RELRO). */
     if (mprotect((void *)page, page_size, PROT_READ | PROT_WRITE) != 0) {
         perror("ldx: mprotect");
         return -1;
     }
     *slot = new_val;
-    mprotect((void *)page, page_size, PROT_READ);
     return 0;
 }
 
