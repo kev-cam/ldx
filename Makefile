@@ -44,7 +44,7 @@ test/test_preload: test/test_preload.c
 test/preload_hook.so: test/preload_hook.c $(LDX_SRC) $(LDX_HDR)
 	$(CC) $(CFLAGS) -shared -o $@ test/preload_hook.c $(LDX_SRC) $(LDFLAGS)
 
-test: test/test_basic test/test_hooks test/test_pbv test/test_pipe test/test_preload test/preload_hook.so
+test: test/test_basic test/test_hooks test/test_pbv test/test_pipe test/test_syscall_pbv test/test_preload test/preload_hook.so
 	@echo "=== Direct-link tests ==="
 	./test/test_basic
 	@echo ""
@@ -57,10 +57,25 @@ test: test/test_basic test/test_hooks test/test_pbv test/test_pipe test/test_pre
 	@echo "=== Pipe tests ==="
 	./test/test_pipe
 	@echo ""
+	@echo "=== Syscall PbV tests ==="
+	./test/test_syscall_pbv
+	@echo ""
 	@echo "=== LD_PRELOAD test ==="
 	LD_PRELOAD=./test/preload_hook.so ./test/test_preload
 
-clean:
-	rm -f libldx.so src/*.o test/test_basic test/test_hooks test/test_pbv test/test_pipe test/test_preload test/preload_hook.so
+# --- Generated syscall PbV wrappers ---
+gen: gen/libldx_syscall.so
 
-.PHONY: all test clean
+gen/ldx_syscall_pbv.h gen/ldx_syscall_pbv.cpp: tools/gen_syscall_pbv.py
+	python3 tools/gen_syscall_pbv.py
+
+gen/libldx_syscall.so: gen/ldx_syscall_pbv.cpp gen/ldx_syscall_pbv.h $(LDX_C_OBJ) $(LDX_CXX_OBJ)
+	$(CXX) $(CXXFLAGS) -shared -I src -o $@ gen/ldx_syscall_pbv.cpp $(LDX_C_OBJ) $(LDX_CXX_OBJ) $(LDFLAGS)
+
+test/test_syscall_pbv: test/test_syscall_pbv.cpp gen/ldx_syscall_pbv.h $(LDX_C_OBJ) $(LDX_CXX_OBJ)
+	$(CXX) $(CXXFLAGS) -I src -I gen -o $@ test/test_syscall_pbv.cpp gen/ldx_syscall_pbv.cpp $(LDX_C_OBJ) $(LDX_CXX_OBJ) $(LDFLAGS)
+
+clean:
+	rm -f libldx.so src/*.o gen/*.so test/test_basic test/test_hooks test/test_pbv test/test_pipe test/test_preload test/preload_hook.so test/test_syscall_pbv
+
+.PHONY: all test gen clean

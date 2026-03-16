@@ -4,4 +4,5 @@ test/test_basic
 test/test_hooks
 test/test_pbv
 test/test_pipe
+test/test_syscall_pbv
 test/test_preload
