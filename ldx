@@ -1,0 +1,164 @@
+#!/bin/bash
+#
+# ldx — profile or instrument unmodified binaries via LD_PRELOAD
+#
+# Usage:
+#   ldx -p sin,cos,strlen -- ./mybinary [args...]
+#   ldx -c profile.json -- ./mybinary [args...]
+#   ldx --list-got ./mybinary
+#   ldx -r oldlib.so:oldfn=newlib.so:newfn -- ./mybinary
+#
+
+set -euo pipefail
+
+# Find libldx.so relative to this script.
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+LDX_LIB="${LDX_LIB:-${SCRIPT_DIR}/libldx.so}"
+
+if [[ ! -f "$LDX_LIB" ]]; then
+    echo "Error: cannot find libldx.so (looked at $LDX_LIB)" >&2
+    echo "Build it with: make -C $SCRIPT_DIR" >&2
+    exit 1
+fi
+
+usage() {
+    cat <<'EOF'
+Usage: ldx [options] -- command [args...]
+
+Profile and instrument unmodified binaries via LD_PRELOAD.
+
+Options:
+  -p, --profile SYMS    Comma-separated symbols to profile (e.g. sin,cos,strlen)
+  -c, --config FILE     JSON config file with profile/replace lists
+  -q, --quiet           Suppress ldx diagnostic messages
+  --list-got            List patchable GOT symbols in the binary (then exit)
+  -h, --help            Show this help
+
+Environment:
+  LDX_LIB               Path to libldx.so (default: alongside this script)
+
+Examples:
+  ldx -p sin,cos -- ./mybinary
+  ldx -p strlen -q -- ./mybinary arg1 arg2
+  ldx -c profile.json -- ./mybinary
+  ldx --list-got ./mybinary
+
+Config file format (JSON):
+  { "profile": ["sin", "cos", "libm.so:exp"] }
+EOF
+    exit "${1:-0}"
+}
+
+PROFILE_SYMS=""
+CONFIG_FILE=""
+QUIET=""
+LIST_GOT=""
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        -p|--profile)
+            PROFILE_SYMS="$2"
+            shift 2
+            ;;
+        -c|--config)
+            CONFIG_FILE="$2"
+            shift 2
+            ;;
+        -q|--quiet)
+            QUIET=1
+            shift
+            ;;
+        --list-got)
+            LIST_GOT=1
+            shift
+            ;;
+        -h|--help)
+            usage 0
+            ;;
+        --)
+            shift
+            break
+            ;;
+        -*)
+            echo "Unknown option: $1" >&2
+            usage 1
+            ;;
+        *)
+            # No -- separator; treat rest as command.
+            break
+            ;;
+    esac
+done
+
+if [[ $# -eq 0 ]]; then
+    echo "Error: no command specified" >&2
+    usage 1
+fi
+
+# --list-got: show patchable symbols and exit.
+if [[ -n "$LIST_GOT" ]]; then
+    BINARY="$1"
+    if [[ ! -f "$BINARY" ]]; then
+        echo "Error: $BINARY not found" >&2
+        exit 1
+    fi
+    echo "Patchable GOT symbols in $BINARY:"
+    echo ""
+    printf "%-40s %-6s %s\n" "Symbol" "Type" "Offset"
+    printf "%-40s %-6s %s\n" "------" "----" "------"
+    readelf -r "$BINARY" 2>/dev/null | awk '
+        /R_X86_64_JUMP_SLO/ { split($5, a, "@"); printf "%-40s %-6s 0x%s\n", a[1], "PLT", $1 }
+        /R_X86_64_GLOB_DAT/  { split($5, a, "@"); printf "%-40s %-6s 0x%s\n", a[1], "GOT", $1 }
+    ' | sort
+    echo ""
+    readelf -r "$BINARY" 2>/dev/null | grep -cE 'JUMP_SLO|GLOB_DAT' | xargs -I{} echo "{} patchable symbols found."
+    exit 0
+fi
+
+# Collect symbols to profile.
+SYMS="$PROFILE_SYMS"
+
+if [[ -n "$CONFIG_FILE" ]]; then
+    if [[ ! -f "$CONFIG_FILE" ]]; then
+        echo "Error: config file not found: $CONFIG_FILE" >&2
+        exit 1
+    fi
+    # Extract "profile" array from JSON — works with python3 or jq.
+    if command -v python3 &>/dev/null; then
+        CONFIG_SYMS=$(python3 -c "
+import json, sys
+with open('$CONFIG_FILE') as f:
+    cfg = json.load(f)
+print(','.join(cfg.get('profile', [])))
+")
+    elif command -v jq &>/dev/null; then
+        CONFIG_SYMS=$(jq -r '.profile // [] | join(",")' "$CONFIG_FILE")
+    else
+        echo "Error: need python3 or jq to parse config file" >&2
+        exit 1
+    fi
+
+    if [[ -n "$SYMS" && -n "$CONFIG_SYMS" ]]; then
+        SYMS="${SYMS},${CONFIG_SYMS}"
+    elif [[ -n "$CONFIG_SYMS" ]]; then
+        SYMS="$CONFIG_SYMS"
+    fi
+fi
+
+if [[ -z "$SYMS" ]]; then
+    echo "Error: no symbols to profile. Use -p or -c." >&2
+    usage 1
+fi
+
+# Build LD_PRELOAD — prepend libldx.so to any existing value.
+if [[ -n "${LD_PRELOAD:-}" ]]; then
+    export LD_PRELOAD="${LDX_LIB}:${LD_PRELOAD}"
+else
+    export LD_PRELOAD="$LDX_LIB"
+fi
+
+export LDX_PROFILE="$SYMS"
+
+[[ -n "$QUIET" ]] && export LDX_QUIET=1
+
+exec "$@"
