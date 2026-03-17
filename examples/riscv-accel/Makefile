@@ -4,7 +4,7 @@ OBJDUMP = $(CROSS)objdump
 CFLAGS  = -O2 -fno-builtin
 REWRITER = ../../python/riscv_rewrite.py
 
-all: accel_demo accel_demo.hw
+all: accel_demo accel_demo.hw sim4state_demo sim4state_demo.hw
 
 # Step 1: Compile with standard GCC
 accel_demo: accel_demo.c
@@ -13,6 +13,13 @@ accel_demo: accel_demo.c
 # Step 2: Rewrite for hardware accelerator
 accel_demo.hw: accel_demo math_accel.json
 	python3 $(REWRITER) -i $< -o $@ -m math_accel.json
+
+# 4-state logic simulator example
+sim4state_demo: sim4state_demo.c
+	$(CC) $(CFLAGS) -o $@ $<
+
+sim4state_demo.hw: sim4state_demo sim4state_accel.json
+	python3 $(REWRITER) -i $< -o $@ -m sim4state_accel.json
 
 # Show what changed
 diff: accel_demo accel_demo.hw
@@ -33,6 +40,6 @@ scan: accel_demo
 	python3 $(REWRITER) -i $< --scan
 
 clean:
-	rm -f accel_demo accel_demo.hw
+	rm -f accel_demo accel_demo.hw sim4state_demo sim4state_demo.hw
 
 .PHONY: all diff scan clean

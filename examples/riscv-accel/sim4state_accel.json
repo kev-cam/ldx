@@ -1,0 +1,38 @@
+{
+    "gate_and": {
+        "opcode": "custom_0",
+        "funct3": 1,
+        "funct7": 0,
+        "rd": "a0",
+        "rs1": "a0",
+        "rs2": "a1",
+        "comment": "4-state AND: a0 = gate_and(a0, a1), 32 signals in parallel"
+    },
+    "gate_or": {
+        "opcode": "custom_0",
+        "funct3": 1,
+        "funct7": 1,
+        "rd": "a0",
+        "rs1": "a0",
+        "rs2": "a1",
+        "comment": "4-state OR: a0 = gate_or(a0, a1), 32 signals in parallel"
+    },
+    "gate_xor": {
+        "opcode": "custom_0",
+        "funct3": 1,
+        "funct7": 2,
+        "rd": "a0",
+        "rs1": "a0",
+        "rs2": "a1",
+        "comment": "4-state XOR: a0 = gate_xor(a0, a1), 32 signals in parallel"
+    },
+    "gate_not": {
+        "opcode": "custom_0",
+        "funct3": 1,
+        "funct7": 3,
+        "rd": "a0",
+        "rs1": "a0",
+        "rs2": "x0",
+        "comment": "4-state NOT: a0 = gate_not(a0), 32 signals in parallel"
+    }
+}

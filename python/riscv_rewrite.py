@@ -431,10 +431,42 @@ def find_call_sites(elf: RiscVElf, target_funcs: set) -> List[CallSite]:
         # Fallback: try to compute PLT addresses from relocations
         pass
 
-    if not plt_map:
-        # Fallback: use the GOT-based plt_targets mapping
-        # Each PLT entry is typically at a fixed stride from the PLT base
-        print("Note: using relocation-based PLT mapping", file=sys.stderr)
+    # Also build a map from local function symbols (.symtab + .dynsym).
+    # This handles calls to functions within the same binary (not via PLT).
+    local_map = {}  # addr → name
+    for sec in elf.sections:
+        if sec.sh_type not in (2, 11):  # SHT_SYMTAB=2, SHT_DYNSYM=11
+            continue
+        strtab_sec = elf.sections[sec.sh_link] if sec.sh_link < len(elf.sections) else None
+        if not strtab_sec:
+            continue
+        if elf.bits == 64:
+            sym_fmt = "<IBBHQQ"; sym_size = 24
+        else:
+            sym_fmt = "<IIIBBH"; sym_size = 16
+        n_syms = sec.sh_size // sym_size
+        for i in range(n_syms):
+            off = sec.sh_offset + i * sym_size
+            if off + sym_size > len(elf.data):
+                break
+            s = struct.unpack_from(sym_fmt, elf.data, off)
+            if elf.bits == 64:
+                name_off, info, other, shndx, value, size = s
+            else:
+                name_off, value, size, info, other, shndx = s
+            # STT_FUNC = (info & 0xf) == 2
+            if (info & 0xf) != 2 or value == 0:
+                continue
+            name_end = elf.data.index(b'\0', strtab_sec.sh_offset + name_off)
+            name = elf.data[strtab_sec.sh_offset + name_off:name_end].decode()
+            if name in target_funcs:
+                local_map[value] = name
+
+    # Merge: PLT map takes priority, local map fills in the rest
+    func_map = {**local_map, **plt_map}
+
+    if not func_map:
+        print("Note: no matching functions found in PLT or symbol table", file=sys.stderr)
 
     call_sites = []
     off = text.sh_offset
@@ -457,7 +489,7 @@ def find_call_sites(elf: RiscVElf, target_funcs: set) -> List[CallSite]:
         # Case 1: JAL rd, offset (single 32-bit instruction call)
         if is_jal(insn1) and jal_rd(insn1) == RA:
             target = (pc + jal_imm(insn1)) & 0xFFFFFFFFFFFFFFFF
-            func_name = plt_map.get(target)
+            func_name = func_map.get(target)
             if func_name:
                 call_sites.append(CallSite(
                     address=pc,
@@ -474,7 +506,7 @@ def find_call_sites(elf: RiscVElf, target_funcs: set) -> List[CallSite]:
                 rs1 = jalr_rs1(insn2)
                 if rd == rs1:
                     target = (pc + auipc_imm(insn1) + jalr_imm(insn2)) & 0xFFFFFFFFFFFFFFFF
-                    func_name = plt_map.get(target)
+                    func_name = func_map.get(target)
                     if func_name:
                         call_sites.append(CallSite(
                             address=pc,
