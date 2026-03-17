@@ -1,0 +1,20 @@
+{
+    "sin": {
+        "opcode": "custom_0",
+        "funct3": 0,
+        "funct7": 1,
+        "rd": "fa0",
+        "rs1": "fa0",
+        "rs2": "x0",
+        "comment": "hardware sin accelerator"
+    },
+    "cos": {
+        "opcode": "custom_0",
+        "funct3": 0,
+        "funct7": 2,
+        "rd": "fa0",
+        "rs1": "fa0",
+        "rs2": "x0",
+        "comment": "hardware cos accelerator"
+    }
+}

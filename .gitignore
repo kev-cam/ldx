@@ -7,3 +7,7 @@ test/test_pbv
 test/test_pipe
 test/test_syscall_pbv
 test/test_preload
+test/test_remote
+test/test_registry
+test/riscv_test.elf
+test/riscv_test.patched
