@@ -1,0 +1,12 @@
+{
+    "sin": {
+        "approach": "udf",
+        "imm16": "0x0000",
+        "comment": "UDF #0 → trap handler calls FPGA sin"
+    },
+    "cos": {
+        "approach": "udf",
+        "imm16": "0x0001",
+        "comment": "UDF #1 → trap handler calls FPGA cos"
+    }
+}

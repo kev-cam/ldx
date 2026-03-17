@@ -1,0 +1,14 @@
+{
+    "sin": {
+        "class": "0x00",
+        "opcode": "0x00",
+        "reg_hint": "xmm0",
+        "comment": "sin(xmm0) → xmm0, trap to FPGA/software"
+    },
+    "cos": {
+        "class": "0x00",
+        "opcode": "0x01",
+        "reg_hint": "xmm0",
+        "comment": "cos(xmm0) → xmm0, trap to FPGA/software"
+    }
+}
