@@ -11,6 +11,13 @@ extern "C" {
 #include <cerrno>
 #include <dlfcn.h>
 
+extern "C" {
+#include "ldx_control.h"
+}
+
+/* Forward declaration for rewire callback. */
+static void ldx_syscall_sock_rewire(int new_fd);
+
 /* ====== Local Pipe (passthrough) ====== */
 
 static ldx::PipeBase *sc_pipes[256];
@@ -1418,7 +1425,71 @@ extern "C" int ldx_syscall_sock_init(int sockfd)
         count++;
     }
     fprintf(stderr, "ldx: installed %d socket pipe wrappers\n", count);
+
+    /* Register rewire callback for disconnect/reconnect. */
+    ldx_control_set_rewire_callback(ldx_syscall_sock_rewire);
+    ldx_control_set_pipe_fd(sockfd);
+
     return count;
+}
+
+/* Rewire all SocketPipes to a new fd (called on reconnect/disconnect). */
+static void ldx_syscall_sock_rewire(int new_fd)
+{
+    if (sc_sockpipe_read) sc_sockpipe_read->set_sockfd(new_fd);
+    if (sc_sockpipe_write) sc_sockpipe_write->set_sockfd(new_fd);
+    if (sc_sockpipe_pread) sc_sockpipe_pread->set_sockfd(new_fd);
+    if (sc_sockpipe_pwrite) sc_sockpipe_pwrite->set_sockfd(new_fd);
+    if (sc_sockpipe_close) sc_sockpipe_close->set_sockfd(new_fd);
+    if (sc_sockpipe_lseek) sc_sockpipe_lseek->set_sockfd(new_fd);
+    if (sc_sockpipe_dup) sc_sockpipe_dup->set_sockfd(new_fd);
+    if (sc_sockpipe_dup2) sc_sockpipe_dup2->set_sockfd(new_fd);
+    if (sc_sockpipe_pipe) sc_sockpipe_pipe->set_sockfd(new_fd);
+    if (sc_sockpipe_stat) sc_sockpipe_stat->set_sockfd(new_fd);
+    if (sc_sockpipe_fstat) sc_sockpipe_fstat->set_sockfd(new_fd);
+    if (sc_sockpipe_lstat) sc_sockpipe_lstat->set_sockfd(new_fd);
+    if (sc_sockpipe_access) sc_sockpipe_access->set_sockfd(new_fd);
+    if (sc_sockpipe_unlink) sc_sockpipe_unlink->set_sockfd(new_fd);
+    if (sc_sockpipe_rmdir) sc_sockpipe_rmdir->set_sockfd(new_fd);
+    if (sc_sockpipe_mkdir) sc_sockpipe_mkdir->set_sockfd(new_fd);
+    if (sc_sockpipe_chmod) sc_sockpipe_chmod->set_sockfd(new_fd);
+    if (sc_sockpipe_fchmod) sc_sockpipe_fchmod->set_sockfd(new_fd);
+    if (sc_sockpipe_chown) sc_sockpipe_chown->set_sockfd(new_fd);
+    if (sc_sockpipe_fchown) sc_sockpipe_fchown->set_sockfd(new_fd);
+    if (sc_sockpipe_link) sc_sockpipe_link->set_sockfd(new_fd);
+    if (sc_sockpipe_symlink) sc_sockpipe_symlink->set_sockfd(new_fd);
+    if (sc_sockpipe_readlink) sc_sockpipe_readlink->set_sockfd(new_fd);
+    if (sc_sockpipe_chdir) sc_sockpipe_chdir->set_sockfd(new_fd);
+    if (sc_sockpipe_fchdir) sc_sockpipe_fchdir->set_sockfd(new_fd);
+    if (sc_sockpipe_umask) sc_sockpipe_umask->set_sockfd(new_fd);
+    if (sc_sockpipe_rename) sc_sockpipe_rename->set_sockfd(new_fd);
+    if (sc_sockpipe_truncate) sc_sockpipe_truncate->set_sockfd(new_fd);
+    if (sc_sockpipe_ftruncate) sc_sockpipe_ftruncate->set_sockfd(new_fd);
+    if (sc_sockpipe_socket) sc_sockpipe_socket->set_sockfd(new_fd);
+    if (sc_sockpipe_bind) sc_sockpipe_bind->set_sockfd(new_fd);
+    if (sc_sockpipe_connect) sc_sockpipe_connect->set_sockfd(new_fd);
+    if (sc_sockpipe_listen) sc_sockpipe_listen->set_sockfd(new_fd);
+    if (sc_sockpipe_shutdown) sc_sockpipe_shutdown->set_sockfd(new_fd);
+    if (sc_sockpipe_send) sc_sockpipe_send->set_sockfd(new_fd);
+    if (sc_sockpipe_recv) sc_sockpipe_recv->set_sockfd(new_fd);
+    if (sc_sockpipe_setsockopt) sc_sockpipe_setsockopt->set_sockfd(new_fd);
+    if (sc_sockpipe_mmap) sc_sockpipe_mmap->set_sockfd(new_fd);
+    if (sc_sockpipe_munmap) sc_sockpipe_munmap->set_sockfd(new_fd);
+    if (sc_sockpipe_mprotect) sc_sockpipe_mprotect->set_sockfd(new_fd);
+    if (sc_sockpipe_getpid) sc_sockpipe_getpid->set_sockfd(new_fd);
+    if (sc_sockpipe_getppid) sc_sockpipe_getppid->set_sockfd(new_fd);
+    if (sc_sockpipe_getuid) sc_sockpipe_getuid->set_sockfd(new_fd);
+    if (sc_sockpipe_geteuid) sc_sockpipe_geteuid->set_sockfd(new_fd);
+    if (sc_sockpipe_getgid) sc_sockpipe_getgid->set_sockfd(new_fd);
+    if (sc_sockpipe_getegid) sc_sockpipe_getegid->set_sockfd(new_fd);
+    if (sc_sockpipe_setuid) sc_sockpipe_setuid->set_sockfd(new_fd);
+    if (sc_sockpipe_setgid) sc_sockpipe_setgid->set_sockfd(new_fd);
+    if (sc_sockpipe_kill) sc_sockpipe_kill->set_sockfd(new_fd);
+    if (sc_sockpipe_epoll_create1) sc_sockpipe_epoll_create1->set_sockfd(new_fd);
+    if (sc_sockpipe_epoll_ctl) sc_sockpipe_epoll_ctl->set_sockfd(new_fd);
+    if (sc_sockpipe_gethostname) sc_sockpipe_gethostname->set_sockfd(new_fd);
+    if (sc_sockpipe_sethostname) sc_sockpipe_sethostname->set_sockfd(new_fd);
+    fprintf(stderr, "ldx: rewired socket pipes to fd=%d\n", new_fd);
 }
 
 /* ====== Server handlers (host side) ====== */

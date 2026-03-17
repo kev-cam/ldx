@@ -29,16 +29,19 @@ src/ldx_pipe.o: src/ldx_pipe.cpp src/ldx_pipe.h
 src/ldx_socket_pipe.o: src/ldx_socket_pipe.cpp $(LDX_SOCK_HDR) src/ldx_pipe.h
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
 
+src/ldx_control.o: src/ldx_control.c src/ldx_control.h
+	$(CC) $(CFLAGS) -c -o $@ $<
+
 src/ldx_container.o: src/ldx_container.c
 	$(CC) $(CFLAGS) -c -o $@ $<
 
-libldx.so: $(LDX_C_OBJ) $(LDX_CXX_OBJ) src/ldx_socket_pipe.o
+libldx.so: $(LDX_C_OBJ) $(LDX_CXX_OBJ) src/ldx_socket_pipe.o src/ldx_control.o
 	$(CXX) $(CXXFLAGS) -shared -o $@ $^ $(LDFLAGS)
 
-gen/ldx_syscall_pbv.o: gen/ldx_syscall_pbv.cpp gen/ldx_syscall_pbv.h $(LDX_CXX_HDR) $(LDX_SOCK_HDR)
+gen/ldx_syscall_pbv.o: gen/ldx_syscall_pbv.cpp gen/ldx_syscall_pbv.h $(LDX_CXX_HDR) $(LDX_SOCK_HDR) src/ldx_control.h
 	$(CXX) $(CXXFLAGS) -I src -c -o $@ $<
 
-ldx-container: src/ldx_container_main.cpp src/ldx_container.o gen/ldx_syscall_pbv.o $(LDX_C_OBJ) $(LDX_CXX_OBJ) src/ldx_socket_pipe.o
+ldx-container: src/ldx_container_main.cpp src/ldx_container.o src/ldx_control.o gen/ldx_syscall_pbv.o $(LDX_C_OBJ) $(LDX_CXX_OBJ) src/ldx_socket_pipe.o
 	$(CXX) $(CXXFLAGS) -I gen -o $@ $^ $(LDFLAGS) -lpthread
 
 test/test_basic: test/test_basic.c $(LDX_SRC) $(LDX_HDR)
@@ -87,8 +90,8 @@ gen/ldx_syscall_pbv.h gen/ldx_syscall_pbv.cpp: tools/gen_syscall_pbv.py
 gen/libldx_syscall.so: gen/ldx_syscall_pbv.cpp gen/ldx_syscall_pbv.h $(LDX_C_OBJ) $(LDX_CXX_OBJ)
 	$(CXX) $(CXXFLAGS) -shared -I src -o $@ gen/ldx_syscall_pbv.cpp $(LDX_C_OBJ) $(LDX_CXX_OBJ) $(LDFLAGS)
 
-test/test_syscall_pbv: test/test_syscall_pbv.cpp gen/ldx_syscall_pbv.o $(LDX_C_OBJ) $(LDX_CXX_OBJ) src/ldx_socket_pipe.o
-	$(CXX) $(CXXFLAGS) -I src -I gen -o $@ test/test_syscall_pbv.cpp gen/ldx_syscall_pbv.o $(LDX_C_OBJ) $(LDX_CXX_OBJ) src/ldx_socket_pipe.o $(LDFLAGS)
+test/test_syscall_pbv: test/test_syscall_pbv.cpp gen/ldx_syscall_pbv.o $(LDX_C_OBJ) $(LDX_CXX_OBJ) src/ldx_socket_pipe.o src/ldx_control.o
+	$(CXX) $(CXXFLAGS) -I src -I gen -o $@ test/test_syscall_pbv.cpp gen/ldx_syscall_pbv.o $(LDX_C_OBJ) $(LDX_CXX_OBJ) src/ldx_socket_pipe.o src/ldx_control.o $(LDFLAGS)
 
 clean:
 	rm -f libldx.so ldx-container src/*.o gen/*.so test/test_basic test/test_hooks test/test_pbv test/test_pipe test/test_preload test/preload_hook.so test/test_syscall_pbv

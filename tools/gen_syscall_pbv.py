@@ -479,6 +479,13 @@ def gen_cpp(syscalls: List[Syscall]) -> str:
     lines.append("#include <cerrno>")
     lines.append("#include <dlfcn.h>")
     lines.append("")
+    lines.append("extern \"C\" {")
+    lines.append('#include "ldx_control.h"')
+    lines.append("}")
+    lines.append("")
+    lines.append("/* Forward declaration for rewire callback. */")
+    lines.append("static void ldx_syscall_sock_rewire(int new_fd);")
+    lines.append("")
 
     # ===== Local Pipe instances and wrappers (same as before) =====
 
@@ -579,7 +586,22 @@ def gen_cpp(syscalls: List[Syscall]) -> str:
         lines.append(f"        count++;")
         lines.append(f"    }}")
     lines.append(f"    fprintf(stderr, \"ldx: installed %d socket pipe wrappers\\n\", count);")
+    lines.append("")
+    lines.append("    /* Register rewire callback for disconnect/reconnect. */")
+    lines.append("    ldx_control_set_rewire_callback(ldx_syscall_sock_rewire);")
+    lines.append("    ldx_control_set_pipe_fd(sockfd);")
+    lines.append("")
     lines.append("    return count;")
+    lines.append("}")
+    lines.append("")
+
+    # Rewire function — updates all SocketPipe fd's
+    lines.append("/* Rewire all SocketPipes to a new fd (called on reconnect/disconnect). */")
+    lines.append("static void ldx_syscall_sock_rewire(int new_fd)")
+    lines.append("{")
+    for sc in syscalls:
+        lines.append(f"    if (sc_sockpipe_{sc.name}) sc_sockpipe_{sc.name}->set_sockfd(new_fd);")
+    lines.append(f"    fprintf(stderr, \"ldx: rewired socket pipes to fd=%d\\n\", new_fd);")
     lines.append("}")
     lines.append("")
 
