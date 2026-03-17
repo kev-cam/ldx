@@ -440,12 +440,21 @@ def find_call_sites(elf: RiscVElf, target_funcs: set) -> List[CallSite]:
     off = text.sh_offset
     end = text.sh_offset + text.sh_size - 4
 
+    # Step by 2 to handle RVC (compressed) instruction alignment.
+    # 32-bit instructions can start at 2-byte boundaries when mixed with RVC.
     while off < end:
         insn1 = elf.read_insn(off)
 
         pc = text.sh_addr + (off - text.sh_offset)
 
-        # Case 1: JAL rd, offset (single instruction call)
+        # Check if this is a compressed (16-bit) instruction.
+        # RVC instructions have bits [1:0] != 11.
+        low2 = insn1 & 0x3
+        if low2 != 0x3:
+            off += 2  # skip 16-bit compressed instruction
+            continue
+
+        # Case 1: JAL rd, offset (single 32-bit instruction call)
         if is_jal(insn1) and jal_rd(insn1) == RA:
             target = (pc + jal_imm(insn1)) & 0xFFFFFFFFFFFFFFFF
             func_name = plt_map.get(target)
@@ -474,7 +483,7 @@ def find_call_sites(elf: RiscVElf, target_funcs: set) -> List[CallSite]:
                             insn_bytes=bytes(elf.data[off:off + 8]),
                         ))
 
-        off += 4
+        off += 4  # advance past 32-bit instruction
 
     return call_sites
 

@@ -1,0 +1,29 @@
+{
+    "sin": {
+        "opcode": "custom_0",
+        "funct3": 0,
+        "funct7": 1,
+        "rd": "fa0",
+        "rs1": "fa0",
+        "rs2": "x0",
+        "comment": "Hardware sin: fa0 = sin(fa0), single-cycle trig unit"
+    },
+    "cos": {
+        "opcode": "custom_0",
+        "funct3": 0,
+        "funct7": 2,
+        "rd": "fa0",
+        "rs1": "fa0",
+        "rs2": "x0",
+        "comment": "Hardware cos: fa0 = cos(fa0), single-cycle trig unit"
+    },
+    "sqrt": {
+        "opcode": "custom_0",
+        "funct3": 0,
+        "funct7": 3,
+        "rd": "fa0",
+        "rs1": "fa0",
+        "rs2": "x0",
+        "comment": "Hardware sqrt: fa0 = sqrt(fa0), pipelined FSQRT replacement"
+    }
+}
