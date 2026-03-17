@@ -15,7 +15,7 @@ LDX_CXX_OBJ = src/ldx_pipe.o
 LDX_SOCK_SRC = src/ldx_socket_pipe.cpp
 LDX_SOCK_HDR = src/ldx_socket_pipe.h
 
-all: libldx.so ldx-container test/test_basic test/test_hooks test/test_pbv test/test_pipe test/test_preload test/preload_hook.so
+all: libldx.so ldx-container ldx-server libldx_sock.so test/test_basic test/test_hooks test/test_pbv test/test_pipe test/test_preload test/preload_hook.so test/test_remote
 
 src/ldx.o: src/ldx.c $(LDX_HDR)
 	$(CC) $(CFLAGS) -c -o $@ $<
@@ -40,6 +40,15 @@ libldx.so: $(LDX_C_OBJ) $(LDX_CXX_OBJ) src/ldx_socket_pipe.o src/ldx_control.o
 
 gen/ldx_syscall_pbv.o: gen/ldx_syscall_pbv.cpp gen/ldx_syscall_pbv.h $(LDX_CXX_HDR) $(LDX_SOCK_HDR) src/ldx_control.h
 	$(CXX) $(CXXFLAGS) -I src -c -o $@ $<
+
+ldx-server: src/ldx_server_main.cpp gen/ldx_syscall_pbv.o $(LDX_C_OBJ) $(LDX_CXX_OBJ) src/ldx_socket_pipe.o src/ldx_control.o
+	$(CXX) $(CXXFLAGS) -I gen -I src -o $@ $^ $(LDFLAGS)
+
+libldx_sock.so: src/ldx_sock_preload.cpp gen/ldx_syscall_pbv.o $(LDX_C_OBJ) $(LDX_CXX_OBJ) src/ldx_socket_pipe.o src/ldx_control.o
+	$(CXX) $(CXXFLAGS) -shared -I gen -I src -o $@ $^ $(LDFLAGS)
+
+test/test_remote: test/test_remote.c
+	$(CC) $(CFLAGS) -static -o $@ $<
 
 ldx-container: src/ldx_container_main.cpp src/ldx_container.o src/ldx_control.o gen/ldx_syscall_pbv.o $(LDX_C_OBJ) $(LDX_CXX_OBJ) src/ldx_socket_pipe.o
 	$(CXX) $(CXXFLAGS) -I gen -o $@ $^ $(LDFLAGS) -lpthread
@@ -94,6 +103,6 @@ test/test_syscall_pbv: test/test_syscall_pbv.cpp gen/ldx_syscall_pbv.o $(LDX_C_O
 	$(CXX) $(CXXFLAGS) -I src -I gen -o $@ test/test_syscall_pbv.cpp gen/ldx_syscall_pbv.o $(LDX_C_OBJ) $(LDX_CXX_OBJ) src/ldx_socket_pipe.o src/ldx_control.o $(LDFLAGS)
 
 clean:
-	rm -f libldx.so ldx-container src/*.o gen/*.so test/test_basic test/test_hooks test/test_pbv test/test_pipe test/test_preload test/preload_hook.so test/test_syscall_pbv
+	rm -f libldx.so libldx_sock.so ldx-container ldx-server src/*.o gen/*.o gen/*.so test/test_basic test/test_hooks test/test_pbv test/test_pipe test/test_preload test/preload_hook.so test/test_syscall_pbv test/test_remote
 
 .PHONY: all test gen clean
