@@ -35,8 +35,11 @@ src/ldx_container.o: src/ldx_container.c
 libldx.so: $(LDX_C_OBJ) $(LDX_CXX_OBJ) src/ldx_socket_pipe.o
 	$(CXX) $(CXXFLAGS) -shared -o $@ $^ $(LDFLAGS)
 
-ldx-container: src/ldx_container_main.c src/ldx_container.o
-	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
+gen/ldx_syscall_pbv.o: gen/ldx_syscall_pbv.cpp gen/ldx_syscall_pbv.h $(LDX_CXX_HDR) $(LDX_SOCK_HDR)
+	$(CXX) $(CXXFLAGS) -I src -c -o $@ $<
+
+ldx-container: src/ldx_container_main.cpp src/ldx_container.o gen/ldx_syscall_pbv.o $(LDX_C_OBJ) $(LDX_CXX_OBJ) src/ldx_socket_pipe.o
+	$(CXX) $(CXXFLAGS) -I gen -o $@ $^ $(LDFLAGS) -lpthread
 
 test/test_basic: test/test_basic.c $(LDX_SRC) $(LDX_HDR)
 	$(CC) $(CFLAGS) -fno-builtin-strlen -fno-builtin-sin -o $@ test/test_basic.c $(LDX_SRC) $(LDFLAGS)
@@ -84,8 +87,8 @@ gen/ldx_syscall_pbv.h gen/ldx_syscall_pbv.cpp: tools/gen_syscall_pbv.py
 gen/libldx_syscall.so: gen/ldx_syscall_pbv.cpp gen/ldx_syscall_pbv.h $(LDX_C_OBJ) $(LDX_CXX_OBJ)
 	$(CXX) $(CXXFLAGS) -shared -I src -o $@ gen/ldx_syscall_pbv.cpp $(LDX_C_OBJ) $(LDX_CXX_OBJ) $(LDFLAGS)
 
-test/test_syscall_pbv: test/test_syscall_pbv.cpp gen/ldx_syscall_pbv.h $(LDX_C_OBJ) $(LDX_CXX_OBJ)
-	$(CXX) $(CXXFLAGS) -I src -I gen -o $@ test/test_syscall_pbv.cpp gen/ldx_syscall_pbv.cpp $(LDX_C_OBJ) $(LDX_CXX_OBJ) $(LDFLAGS)
+test/test_syscall_pbv: test/test_syscall_pbv.cpp gen/ldx_syscall_pbv.o $(LDX_C_OBJ) $(LDX_CXX_OBJ) src/ldx_socket_pipe.o
+	$(CXX) $(CXXFLAGS) -I src -I gen -o $@ test/test_syscall_pbv.cpp gen/ldx_syscall_pbv.o $(LDX_C_OBJ) $(LDX_CXX_OBJ) src/ldx_socket_pipe.o $(LDFLAGS)
 
 clean:
 	rm -f libldx.so ldx-container src/*.o gen/*.so test/test_basic test/test_hooks test/test_pbv test/test_pipe test/test_preload test/preload_hook.so test/test_syscall_pbv

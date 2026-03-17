@@ -7,7 +7,7 @@
 #include <stdio.h>
 #include <string.h>
 
-extern int ldx_container_run(int argc, char **argv, int pipe_os, int isolate_net);
+extern "C" int ldx_container_run(int argc, char **argv, int pipe_os, int isolate_net);
 
 int main(int argc, char **argv)
 {

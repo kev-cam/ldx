@@ -7,9 +7,14 @@ extern "C" {
 
 #include <cstdio>
 #include <cstring>
+#include <cstdlib>
+#include <cerrno>
 #include <dlfcn.h>
 
-/* --- Pipe instances --- */
+/* ====== Local Pipe (passthrough) ====== */
+
+static ldx::PipeBase *sc_pipes[256];
+static int sc_pipe_count = 0;
 
 static ldx_sc_read_pipe_t *sc_pipe_read = nullptr;
 static ldx_sc_write_pipe_t *sc_pipe_write = nullptr;
@@ -64,8 +69,6 @@ static ldx_sc_epoll_create1_pipe_t *sc_pipe_epoll_create1 = nullptr;
 static ldx_sc_epoll_ctl_pipe_t *sc_pipe_epoll_ctl = nullptr;
 static ldx_sc_gethostname_pipe_t *sc_pipe_gethostname = nullptr;
 static ldx_sc_sethostname_pipe_t *sc_pipe_sethostname = nullptr;
-
-/* --- Wrapper functions --- */
 
 static ssize_t wrap_read(int fd, void * buf, size_t n)
 {
@@ -385,8 +388,6 @@ static int wrap_sethostname(const char * name, size_t len)
     return sc_pipe_sethostname->call(args);
 }
 
-/* --- Init: save originals, create pipes, patch GOT --- */
-
 static int installed_count = 0;
 
 extern "C" int ldx_syscall_pbv_init(void)
@@ -394,436 +395,2534 @@ extern "C" int ldx_syscall_pbv_init(void)
     ldx_init();
     void *orig;
 
-    /* read */
     orig = dlsym(RTLD_NEXT, "read");
     if (orig) {
         sc_pipe_read = new ldx_sc_read_pipe_t(orig);
         dlreplace("read", (void *)wrap_read);
         installed_count++;
     }
-
-    /* write */
     orig = dlsym(RTLD_NEXT, "write");
     if (orig) {
         sc_pipe_write = new ldx_sc_write_pipe_t(orig);
         dlreplace("write", (void *)wrap_write);
         installed_count++;
     }
-
-    /* pread */
     orig = dlsym(RTLD_NEXT, "pread");
     if (orig) {
         sc_pipe_pread = new ldx_sc_pread_pipe_t(orig);
         dlreplace("pread", (void *)wrap_pread);
         installed_count++;
     }
-
-    /* pwrite */
     orig = dlsym(RTLD_NEXT, "pwrite");
     if (orig) {
         sc_pipe_pwrite = new ldx_sc_pwrite_pipe_t(orig);
         dlreplace("pwrite", (void *)wrap_pwrite);
         installed_count++;
     }
-
-    /* close */
     orig = dlsym(RTLD_NEXT, "close");
     if (orig) {
         sc_pipe_close = new ldx_sc_close_pipe_t(orig);
         dlreplace("close", (void *)wrap_close);
         installed_count++;
     }
-
-    /* lseek */
     orig = dlsym(RTLD_NEXT, "lseek");
     if (orig) {
         sc_pipe_lseek = new ldx_sc_lseek_pipe_t(orig);
         dlreplace("lseek", (void *)wrap_lseek);
         installed_count++;
     }
-
-    /* dup */
     orig = dlsym(RTLD_NEXT, "dup");
     if (orig) {
         sc_pipe_dup = new ldx_sc_dup_pipe_t(orig);
         dlreplace("dup", (void *)wrap_dup);
         installed_count++;
     }
-
-    /* dup2 */
     orig = dlsym(RTLD_NEXT, "dup2");
     if (orig) {
         sc_pipe_dup2 = new ldx_sc_dup2_pipe_t(orig);
         dlreplace("dup2", (void *)wrap_dup2);
         installed_count++;
     }
-
-    /* pipe */
     orig = dlsym(RTLD_NEXT, "pipe");
     if (orig) {
         sc_pipe_pipe = new ldx_sc_pipe_pipe_t(orig);
         dlreplace("pipe", (void *)wrap_pipe);
         installed_count++;
     }
-
-    /* stat */
     orig = dlsym(RTLD_NEXT, "stat");
     if (orig) {
         sc_pipe_stat = new ldx_sc_stat_pipe_t(orig);
         dlreplace("stat", (void *)wrap_stat);
         installed_count++;
     }
-
-    /* fstat */
     orig = dlsym(RTLD_NEXT, "fstat");
     if (orig) {
         sc_pipe_fstat = new ldx_sc_fstat_pipe_t(orig);
         dlreplace("fstat", (void *)wrap_fstat);
         installed_count++;
     }
-
-    /* lstat */
     orig = dlsym(RTLD_NEXT, "lstat");
     if (orig) {
         sc_pipe_lstat = new ldx_sc_lstat_pipe_t(orig);
         dlreplace("lstat", (void *)wrap_lstat);
         installed_count++;
     }
-
-    /* access */
     orig = dlsym(RTLD_NEXT, "access");
     if (orig) {
         sc_pipe_access = new ldx_sc_access_pipe_t(orig);
         dlreplace("access", (void *)wrap_access);
         installed_count++;
     }
-
-    /* unlink */
     orig = dlsym(RTLD_NEXT, "unlink");
     if (orig) {
         sc_pipe_unlink = new ldx_sc_unlink_pipe_t(orig);
         dlreplace("unlink", (void *)wrap_unlink);
         installed_count++;
     }
-
-    /* rmdir */
     orig = dlsym(RTLD_NEXT, "rmdir");
     if (orig) {
         sc_pipe_rmdir = new ldx_sc_rmdir_pipe_t(orig);
         dlreplace("rmdir", (void *)wrap_rmdir);
         installed_count++;
     }
-
-    /* mkdir */
     orig = dlsym(RTLD_NEXT, "mkdir");
     if (orig) {
         sc_pipe_mkdir = new ldx_sc_mkdir_pipe_t(orig);
         dlreplace("mkdir", (void *)wrap_mkdir);
         installed_count++;
     }
-
-    /* chmod */
     orig = dlsym(RTLD_NEXT, "chmod");
     if (orig) {
         sc_pipe_chmod = new ldx_sc_chmod_pipe_t(orig);
         dlreplace("chmod", (void *)wrap_chmod);
         installed_count++;
     }
-
-    /* fchmod */
     orig = dlsym(RTLD_NEXT, "fchmod");
     if (orig) {
         sc_pipe_fchmod = new ldx_sc_fchmod_pipe_t(orig);
         dlreplace("fchmod", (void *)wrap_fchmod);
         installed_count++;
     }
-
-    /* chown */
     orig = dlsym(RTLD_NEXT, "chown");
     if (orig) {
         sc_pipe_chown = new ldx_sc_chown_pipe_t(orig);
         dlreplace("chown", (void *)wrap_chown);
         installed_count++;
     }
-
-    /* fchown */
     orig = dlsym(RTLD_NEXT, "fchown");
     if (orig) {
         sc_pipe_fchown = new ldx_sc_fchown_pipe_t(orig);
         dlreplace("fchown", (void *)wrap_fchown);
         installed_count++;
     }
-
-    /* link */
     orig = dlsym(RTLD_NEXT, "link");
     if (orig) {
         sc_pipe_link = new ldx_sc_link_pipe_t(orig);
         dlreplace("link", (void *)wrap_link);
         installed_count++;
     }
-
-    /* symlink */
     orig = dlsym(RTLD_NEXT, "symlink");
     if (orig) {
         sc_pipe_symlink = new ldx_sc_symlink_pipe_t(orig);
         dlreplace("symlink", (void *)wrap_symlink);
         installed_count++;
     }
-
-    /* readlink */
     orig = dlsym(RTLD_NEXT, "readlink");
     if (orig) {
         sc_pipe_readlink = new ldx_sc_readlink_pipe_t(orig);
         dlreplace("readlink", (void *)wrap_readlink);
         installed_count++;
     }
-
-    /* chdir */
     orig = dlsym(RTLD_NEXT, "chdir");
     if (orig) {
         sc_pipe_chdir = new ldx_sc_chdir_pipe_t(orig);
         dlreplace("chdir", (void *)wrap_chdir);
         installed_count++;
     }
-
-    /* fchdir */
     orig = dlsym(RTLD_NEXT, "fchdir");
     if (orig) {
         sc_pipe_fchdir = new ldx_sc_fchdir_pipe_t(orig);
         dlreplace("fchdir", (void *)wrap_fchdir);
         installed_count++;
     }
-
-    /* umask */
     orig = dlsym(RTLD_NEXT, "umask");
     if (orig) {
         sc_pipe_umask = new ldx_sc_umask_pipe_t(orig);
         dlreplace("umask", (void *)wrap_umask);
         installed_count++;
     }
-
-    /* rename */
     orig = dlsym(RTLD_NEXT, "rename");
     if (orig) {
         sc_pipe_rename = new ldx_sc_rename_pipe_t(orig);
         dlreplace("rename", (void *)wrap_rename);
         installed_count++;
     }
-
-    /* truncate */
     orig = dlsym(RTLD_NEXT, "truncate");
     if (orig) {
         sc_pipe_truncate = new ldx_sc_truncate_pipe_t(orig);
         dlreplace("truncate", (void *)wrap_truncate);
         installed_count++;
     }
-
-    /* ftruncate */
     orig = dlsym(RTLD_NEXT, "ftruncate");
     if (orig) {
         sc_pipe_ftruncate = new ldx_sc_ftruncate_pipe_t(orig);
         dlreplace("ftruncate", (void *)wrap_ftruncate);
         installed_count++;
     }
-
-    /* socket */
     orig = dlsym(RTLD_NEXT, "socket");
     if (orig) {
         sc_pipe_socket = new ldx_sc_socket_pipe_t(orig);
         dlreplace("socket", (void *)wrap_socket);
         installed_count++;
     }
-
-    /* bind */
     orig = dlsym(RTLD_NEXT, "bind");
     if (orig) {
         sc_pipe_bind = new ldx_sc_bind_pipe_t(orig);
         dlreplace("bind", (void *)wrap_bind);
         installed_count++;
     }
-
-    /* connect */
     orig = dlsym(RTLD_NEXT, "connect");
     if (orig) {
         sc_pipe_connect = new ldx_sc_connect_pipe_t(orig);
         dlreplace("connect", (void *)wrap_connect);
         installed_count++;
     }
-
-    /* listen */
     orig = dlsym(RTLD_NEXT, "listen");
     if (orig) {
         sc_pipe_listen = new ldx_sc_listen_pipe_t(orig);
         dlreplace("listen", (void *)wrap_listen);
         installed_count++;
     }
-
-    /* shutdown */
     orig = dlsym(RTLD_NEXT, "shutdown");
     if (orig) {
         sc_pipe_shutdown = new ldx_sc_shutdown_pipe_t(orig);
         dlreplace("shutdown", (void *)wrap_shutdown);
         installed_count++;
     }
-
-    /* send */
     orig = dlsym(RTLD_NEXT, "send");
     if (orig) {
         sc_pipe_send = new ldx_sc_send_pipe_t(orig);
         dlreplace("send", (void *)wrap_send);
         installed_count++;
     }
-
-    /* recv */
     orig = dlsym(RTLD_NEXT, "recv");
     if (orig) {
         sc_pipe_recv = new ldx_sc_recv_pipe_t(orig);
         dlreplace("recv", (void *)wrap_recv);
         installed_count++;
     }
-
-    /* setsockopt */
     orig = dlsym(RTLD_NEXT, "setsockopt");
     if (orig) {
         sc_pipe_setsockopt = new ldx_sc_setsockopt_pipe_t(orig);
         dlreplace("setsockopt", (void *)wrap_setsockopt);
         installed_count++;
     }
-
-    /* mmap */
     orig = dlsym(RTLD_NEXT, "mmap");
     if (orig) {
         sc_pipe_mmap = new ldx_sc_mmap_pipe_t(orig);
         dlreplace("mmap", (void *)wrap_mmap);
         installed_count++;
     }
-
-    /* munmap */
     orig = dlsym(RTLD_NEXT, "munmap");
     if (orig) {
         sc_pipe_munmap = new ldx_sc_munmap_pipe_t(orig);
         dlreplace("munmap", (void *)wrap_munmap);
         installed_count++;
     }
-
-    /* mprotect */
     orig = dlsym(RTLD_NEXT, "mprotect");
     if (orig) {
         sc_pipe_mprotect = new ldx_sc_mprotect_pipe_t(orig);
         dlreplace("mprotect", (void *)wrap_mprotect);
         installed_count++;
     }
-
-    /* getpid */
     orig = dlsym(RTLD_NEXT, "getpid");
     if (orig) {
         sc_pipe_getpid = new ldx_sc_getpid_pipe_t(orig);
         dlreplace("getpid", (void *)wrap_getpid);
         installed_count++;
     }
-
-    /* getppid */
     orig = dlsym(RTLD_NEXT, "getppid");
     if (orig) {
         sc_pipe_getppid = new ldx_sc_getppid_pipe_t(orig);
         dlreplace("getppid", (void *)wrap_getppid);
         installed_count++;
     }
-
-    /* getuid */
     orig = dlsym(RTLD_NEXT, "getuid");
     if (orig) {
         sc_pipe_getuid = new ldx_sc_getuid_pipe_t(orig);
         dlreplace("getuid", (void *)wrap_getuid);
         installed_count++;
     }
-
-    /* geteuid */
     orig = dlsym(RTLD_NEXT, "geteuid");
     if (orig) {
         sc_pipe_geteuid = new ldx_sc_geteuid_pipe_t(orig);
         dlreplace("geteuid", (void *)wrap_geteuid);
         installed_count++;
     }
-
-    /* getgid */
     orig = dlsym(RTLD_NEXT, "getgid");
     if (orig) {
         sc_pipe_getgid = new ldx_sc_getgid_pipe_t(orig);
         dlreplace("getgid", (void *)wrap_getgid);
         installed_count++;
     }
-
-    /* getegid */
     orig = dlsym(RTLD_NEXT, "getegid");
     if (orig) {
         sc_pipe_getegid = new ldx_sc_getegid_pipe_t(orig);
         dlreplace("getegid", (void *)wrap_getegid);
         installed_count++;
     }
-
-    /* setuid */
     orig = dlsym(RTLD_NEXT, "setuid");
     if (orig) {
         sc_pipe_setuid = new ldx_sc_setuid_pipe_t(orig);
         dlreplace("setuid", (void *)wrap_setuid);
         installed_count++;
     }
-
-    /* setgid */
     orig = dlsym(RTLD_NEXT, "setgid");
     if (orig) {
         sc_pipe_setgid = new ldx_sc_setgid_pipe_t(orig);
         dlreplace("setgid", (void *)wrap_setgid);
         installed_count++;
     }
-
-    /* kill */
     orig = dlsym(RTLD_NEXT, "kill");
     if (orig) {
         sc_pipe_kill = new ldx_sc_kill_pipe_t(orig);
         dlreplace("kill", (void *)wrap_kill);
         installed_count++;
     }
-
-    /* epoll_create1 */
     orig = dlsym(RTLD_NEXT, "epoll_create1");
     if (orig) {
         sc_pipe_epoll_create1 = new ldx_sc_epoll_create1_pipe_t(orig);
         dlreplace("epoll_create1", (void *)wrap_epoll_create1);
         installed_count++;
     }
-
-    /* epoll_ctl */
     orig = dlsym(RTLD_NEXT, "epoll_ctl");
     if (orig) {
         sc_pipe_epoll_ctl = new ldx_sc_epoll_ctl_pipe_t(orig);
         dlreplace("epoll_ctl", (void *)wrap_epoll_ctl);
         installed_count++;
     }
-
-    /* gethostname */
     orig = dlsym(RTLD_NEXT, "gethostname");
     if (orig) {
         sc_pipe_gethostname = new ldx_sc_gethostname_pipe_t(orig);
         dlreplace("gethostname", (void *)wrap_gethostname);
         installed_count++;
     }
-
-    /* sethostname */
     orig = dlsym(RTLD_NEXT, "sethostname");
     if (orig) {
         sc_pipe_sethostname = new ldx_sc_sethostname_pipe_t(orig);
         dlreplace("sethostname", (void *)wrap_sethostname);
         installed_count++;
     }
-
     fprintf(stderr, "ldx: installed %d syscall PbV wrappers\n", installed_count);
     return installed_count;
 }
 
-extern "C" int ldx_syscall_pbv_count(void)
+extern "C" int ldx_syscall_pbv_count(void) { return installed_count; }
+
+/* ====== Socket Pipe (client in container) ====== */
+
+static ldx_sc_read_sockpipe_t *sc_sockpipe_read = nullptr;
+static ldx_sc_write_sockpipe_t *sc_sockpipe_write = nullptr;
+static ldx_sc_pread_sockpipe_t *sc_sockpipe_pread = nullptr;
+static ldx_sc_pwrite_sockpipe_t *sc_sockpipe_pwrite = nullptr;
+static ldx_sc_close_sockpipe_t *sc_sockpipe_close = nullptr;
+static ldx_sc_lseek_sockpipe_t *sc_sockpipe_lseek = nullptr;
+static ldx_sc_dup_sockpipe_t *sc_sockpipe_dup = nullptr;
+static ldx_sc_dup2_sockpipe_t *sc_sockpipe_dup2 = nullptr;
+static ldx_sc_pipe_sockpipe_t *sc_sockpipe_pipe = nullptr;
+static ldx_sc_stat_sockpipe_t *sc_sockpipe_stat = nullptr;
+static ldx_sc_fstat_sockpipe_t *sc_sockpipe_fstat = nullptr;
+static ldx_sc_lstat_sockpipe_t *sc_sockpipe_lstat = nullptr;
+static ldx_sc_access_sockpipe_t *sc_sockpipe_access = nullptr;
+static ldx_sc_unlink_sockpipe_t *sc_sockpipe_unlink = nullptr;
+static ldx_sc_rmdir_sockpipe_t *sc_sockpipe_rmdir = nullptr;
+static ldx_sc_mkdir_sockpipe_t *sc_sockpipe_mkdir = nullptr;
+static ldx_sc_chmod_sockpipe_t *sc_sockpipe_chmod = nullptr;
+static ldx_sc_fchmod_sockpipe_t *sc_sockpipe_fchmod = nullptr;
+static ldx_sc_chown_sockpipe_t *sc_sockpipe_chown = nullptr;
+static ldx_sc_fchown_sockpipe_t *sc_sockpipe_fchown = nullptr;
+static ldx_sc_link_sockpipe_t *sc_sockpipe_link = nullptr;
+static ldx_sc_symlink_sockpipe_t *sc_sockpipe_symlink = nullptr;
+static ldx_sc_readlink_sockpipe_t *sc_sockpipe_readlink = nullptr;
+static ldx_sc_chdir_sockpipe_t *sc_sockpipe_chdir = nullptr;
+static ldx_sc_fchdir_sockpipe_t *sc_sockpipe_fchdir = nullptr;
+static ldx_sc_umask_sockpipe_t *sc_sockpipe_umask = nullptr;
+static ldx_sc_rename_sockpipe_t *sc_sockpipe_rename = nullptr;
+static ldx_sc_truncate_sockpipe_t *sc_sockpipe_truncate = nullptr;
+static ldx_sc_ftruncate_sockpipe_t *sc_sockpipe_ftruncate = nullptr;
+static ldx_sc_socket_sockpipe_t *sc_sockpipe_socket = nullptr;
+static ldx_sc_bind_sockpipe_t *sc_sockpipe_bind = nullptr;
+static ldx_sc_connect_sockpipe_t *sc_sockpipe_connect = nullptr;
+static ldx_sc_listen_sockpipe_t *sc_sockpipe_listen = nullptr;
+static ldx_sc_shutdown_sockpipe_t *sc_sockpipe_shutdown = nullptr;
+static ldx_sc_send_sockpipe_t *sc_sockpipe_send = nullptr;
+static ldx_sc_recv_sockpipe_t *sc_sockpipe_recv = nullptr;
+static ldx_sc_setsockopt_sockpipe_t *sc_sockpipe_setsockopt = nullptr;
+static ldx_sc_mmap_sockpipe_t *sc_sockpipe_mmap = nullptr;
+static ldx_sc_munmap_sockpipe_t *sc_sockpipe_munmap = nullptr;
+static ldx_sc_mprotect_sockpipe_t *sc_sockpipe_mprotect = nullptr;
+static ldx_sc_getpid_sockpipe_t *sc_sockpipe_getpid = nullptr;
+static ldx_sc_getppid_sockpipe_t *sc_sockpipe_getppid = nullptr;
+static ldx_sc_getuid_sockpipe_t *sc_sockpipe_getuid = nullptr;
+static ldx_sc_geteuid_sockpipe_t *sc_sockpipe_geteuid = nullptr;
+static ldx_sc_getgid_sockpipe_t *sc_sockpipe_getgid = nullptr;
+static ldx_sc_getegid_sockpipe_t *sc_sockpipe_getegid = nullptr;
+static ldx_sc_setuid_sockpipe_t *sc_sockpipe_setuid = nullptr;
+static ldx_sc_setgid_sockpipe_t *sc_sockpipe_setgid = nullptr;
+static ldx_sc_kill_sockpipe_t *sc_sockpipe_kill = nullptr;
+static ldx_sc_epoll_create1_sockpipe_t *sc_sockpipe_epoll_create1 = nullptr;
+static ldx_sc_epoll_ctl_sockpipe_t *sc_sockpipe_epoll_ctl = nullptr;
+static ldx_sc_gethostname_sockpipe_t *sc_sockpipe_gethostname = nullptr;
+static ldx_sc_sethostname_sockpipe_t *sc_sockpipe_sethostname = nullptr;
+
+static ssize_t sock_wrap_read(int fd, void * buf, size_t n)
 {
-    return installed_count;
+    ldx_sc_read_args args = {fd, buf, n};
+    return sc_sockpipe_read->call(args);
+}
+
+static ssize_t sock_wrap_write(int fd, const void * buf, size_t n)
+{
+    ldx_sc_write_args args = {fd, buf, n};
+    return sc_sockpipe_write->call(args);
+}
+
+static ssize_t sock_wrap_pread(int fd, void * buf, size_t n, off_t offset)
+{
+    ldx_sc_pread_args args = {fd, buf, n, offset};
+    return sc_sockpipe_pread->call(args);
+}
+
+static ssize_t sock_wrap_pwrite(int fd, const void * buf, size_t n, off_t offset)
+{
+    ldx_sc_pwrite_args args = {fd, buf, n, offset};
+    return sc_sockpipe_pwrite->call(args);
+}
+
+static int sock_wrap_close(int fd)
+{
+    ldx_sc_close_args args = {fd};
+    return sc_sockpipe_close->call(args);
+}
+
+static off_t sock_wrap_lseek(int fd, off_t offset, int whence)
+{
+    ldx_sc_lseek_args args = {fd, offset, whence};
+    return sc_sockpipe_lseek->call(args);
+}
+
+static int sock_wrap_dup(int fd)
+{
+    ldx_sc_dup_args args = {fd};
+    return sc_sockpipe_dup->call(args);
+}
+
+static int sock_wrap_dup2(int fd, int fd2)
+{
+    ldx_sc_dup2_args args = {fd, fd2};
+    return sc_sockpipe_dup2->call(args);
+}
+
+static int sock_wrap_pipe(int * pipedes)
+{
+    ldx_sc_pipe_args args = {pipedes};
+    return sc_sockpipe_pipe->call(args);
+}
+
+static int sock_wrap_stat(const char * path, struct stat * buf)
+{
+    ldx_sc_stat_args args = {path, buf};
+    return sc_sockpipe_stat->call(args);
+}
+
+static int sock_wrap_fstat(int fd, struct stat * buf)
+{
+    ldx_sc_fstat_args args = {fd, buf};
+    return sc_sockpipe_fstat->call(args);
+}
+
+static int sock_wrap_lstat(const char * path, struct stat * buf)
+{
+    ldx_sc_lstat_args args = {path, buf};
+    return sc_sockpipe_lstat->call(args);
+}
+
+static int sock_wrap_access(const char * path, int mode)
+{
+    ldx_sc_access_args args = {path, mode};
+    return sc_sockpipe_access->call(args);
+}
+
+static int sock_wrap_unlink(const char * path)
+{
+    ldx_sc_unlink_args args = {path};
+    return sc_sockpipe_unlink->call(args);
+}
+
+static int sock_wrap_rmdir(const char * path)
+{
+    ldx_sc_rmdir_args args = {path};
+    return sc_sockpipe_rmdir->call(args);
+}
+
+static int sock_wrap_mkdir(const char * path, mode_t mode)
+{
+    ldx_sc_mkdir_args args = {path, mode};
+    return sc_sockpipe_mkdir->call(args);
+}
+
+static int sock_wrap_chmod(const char * path, mode_t mode)
+{
+    ldx_sc_chmod_args args = {path, mode};
+    return sc_sockpipe_chmod->call(args);
+}
+
+static int sock_wrap_fchmod(int fd, mode_t mode)
+{
+    ldx_sc_fchmod_args args = {fd, mode};
+    return sc_sockpipe_fchmod->call(args);
+}
+
+static int sock_wrap_chown(const char * path, uid_t owner, gid_t group)
+{
+    ldx_sc_chown_args args = {path, owner, group};
+    return sc_sockpipe_chown->call(args);
+}
+
+static int sock_wrap_fchown(int fd, uid_t owner, gid_t group)
+{
+    ldx_sc_fchown_args args = {fd, owner, group};
+    return sc_sockpipe_fchown->call(args);
+}
+
+static int sock_wrap_link(const char * from_path, const char * to_path)
+{
+    ldx_sc_link_args args = {from_path, to_path};
+    return sc_sockpipe_link->call(args);
+}
+
+static int sock_wrap_symlink(const char * from_path, const char * to_path)
+{
+    ldx_sc_symlink_args args = {from_path, to_path};
+    return sc_sockpipe_symlink->call(args);
+}
+
+static ssize_t sock_wrap_readlink(const char * path, char * buf, size_t len)
+{
+    ldx_sc_readlink_args args = {path, buf, len};
+    return sc_sockpipe_readlink->call(args);
+}
+
+static int sock_wrap_chdir(const char * path)
+{
+    ldx_sc_chdir_args args = {path};
+    return sc_sockpipe_chdir->call(args);
+}
+
+static int sock_wrap_fchdir(int fd)
+{
+    ldx_sc_fchdir_args args = {fd};
+    return sc_sockpipe_fchdir->call(args);
+}
+
+static mode_t sock_wrap_umask(mode_t mask)
+{
+    ldx_sc_umask_args args = {mask};
+    return sc_sockpipe_umask->call(args);
+}
+
+static int sock_wrap_rename(const char * old_path, const char * new_path)
+{
+    ldx_sc_rename_args args = {old_path, new_path};
+    return sc_sockpipe_rename->call(args);
+}
+
+static int sock_wrap_truncate(const char * path, off_t length)
+{
+    ldx_sc_truncate_args args = {path, length};
+    return sc_sockpipe_truncate->call(args);
+}
+
+static int sock_wrap_ftruncate(int fd, off_t length)
+{
+    ldx_sc_ftruncate_args args = {fd, length};
+    return sc_sockpipe_ftruncate->call(args);
+}
+
+static int sock_wrap_socket(int domain, int type, int protocol)
+{
+    ldx_sc_socket_args args = {domain, type, protocol};
+    return sc_sockpipe_socket->call(args);
+}
+
+static int sock_wrap_bind(int fd, const struct sockaddr * addr, socklen_t len)
+{
+    ldx_sc_bind_args args = {fd, addr, len};
+    return sc_sockpipe_bind->call(args);
+}
+
+static int sock_wrap_connect(int fd, const struct sockaddr * addr, socklen_t len)
+{
+    ldx_sc_connect_args args = {fd, addr, len};
+    return sc_sockpipe_connect->call(args);
+}
+
+static int sock_wrap_listen(int fd, int backlog)
+{
+    ldx_sc_listen_args args = {fd, backlog};
+    return sc_sockpipe_listen->call(args);
+}
+
+static int sock_wrap_shutdown(int fd, int how)
+{
+    ldx_sc_shutdown_args args = {fd, how};
+    return sc_sockpipe_shutdown->call(args);
+}
+
+static ssize_t sock_wrap_send(int fd, const void * buf, size_t n, int flags)
+{
+    ldx_sc_send_args args = {fd, buf, n, flags};
+    return sc_sockpipe_send->call(args);
+}
+
+static ssize_t sock_wrap_recv(int fd, void * buf, size_t n, int flags)
+{
+    ldx_sc_recv_args args = {fd, buf, n, flags};
+    return sc_sockpipe_recv->call(args);
+}
+
+static int sock_wrap_setsockopt(int fd, int level, int optname, const void * optval, socklen_t optlen)
+{
+    ldx_sc_setsockopt_args args = {fd, level, optname, optval, optlen};
+    return sc_sockpipe_setsockopt->call(args);
+}
+
+static void * sock_wrap_mmap(void * addr, size_t len, int prot, int flags, int fd, off_t offset)
+{
+    ldx_sc_mmap_args args = {addr, len, prot, flags, fd, offset};
+    return sc_sockpipe_mmap->call(args);
+}
+
+static int sock_wrap_munmap(void * addr, size_t len)
+{
+    ldx_sc_munmap_args args = {addr, len};
+    return sc_sockpipe_munmap->call(args);
+}
+
+static int sock_wrap_mprotect(void * addr, size_t len, int prot)
+{
+    ldx_sc_mprotect_args args = {addr, len, prot};
+    return sc_sockpipe_mprotect->call(args);
+}
+
+static pid_t sock_wrap_getpid(void)
+{
+    ldx_sc_getpid_args args = {};
+    return sc_sockpipe_getpid->call(args);
+}
+
+static pid_t sock_wrap_getppid(void)
+{
+    ldx_sc_getppid_args args = {};
+    return sc_sockpipe_getppid->call(args);
+}
+
+static uid_t sock_wrap_getuid(void)
+{
+    ldx_sc_getuid_args args = {};
+    return sc_sockpipe_getuid->call(args);
+}
+
+static uid_t sock_wrap_geteuid(void)
+{
+    ldx_sc_geteuid_args args = {};
+    return sc_sockpipe_geteuid->call(args);
+}
+
+static gid_t sock_wrap_getgid(void)
+{
+    ldx_sc_getgid_args args = {};
+    return sc_sockpipe_getgid->call(args);
+}
+
+static gid_t sock_wrap_getegid(void)
+{
+    ldx_sc_getegid_args args = {};
+    return sc_sockpipe_getegid->call(args);
+}
+
+static int sock_wrap_setuid(uid_t uid)
+{
+    ldx_sc_setuid_args args = {uid};
+    return sc_sockpipe_setuid->call(args);
+}
+
+static int sock_wrap_setgid(gid_t gid)
+{
+    ldx_sc_setgid_args args = {gid};
+    return sc_sockpipe_setgid->call(args);
+}
+
+static int sock_wrap_kill(pid_t pid, int sig)
+{
+    ldx_sc_kill_args args = {pid, sig};
+    return sc_sockpipe_kill->call(args);
+}
+
+static int sock_wrap_epoll_create1(int flags)
+{
+    ldx_sc_epoll_create1_args args = {flags};
+    return sc_sockpipe_epoll_create1->call(args);
+}
+
+static int sock_wrap_epoll_ctl(int epfd, int op, int fd, struct epoll_event * event)
+{
+    ldx_sc_epoll_ctl_args args = {epfd, op, fd, event};
+    return sc_sockpipe_epoll_ctl->call(args);
+}
+
+static int sock_wrap_gethostname(char * name, size_t len)
+{
+    ldx_sc_gethostname_args args = {name, len};
+    return sc_sockpipe_gethostname->call(args);
+}
+
+static int sock_wrap_sethostname(const char * name, size_t len)
+{
+    ldx_sc_sethostname_args args = {name, len};
+    return sc_sockpipe_sethostname->call(args);
+}
+
+extern "C" int ldx_syscall_sock_init(int sockfd)
+{
+    ldx_init();
+    int count = 0;
+    void *orig;
+
+    orig = dlsym(RTLD_NEXT, "read");
+    if (orig) {
+        sc_sockpipe_read = new ldx_sc_read_sockpipe_t(orig, sockfd);
+        dlreplace("read", (void *)sock_wrap_read);
+        count++;
+    }
+    orig = dlsym(RTLD_NEXT, "write");
+    if (orig) {
+        sc_sockpipe_write = new ldx_sc_write_sockpipe_t(orig, sockfd);
+        dlreplace("write", (void *)sock_wrap_write);
+        count++;
+    }
+    orig = dlsym(RTLD_NEXT, "pread");
+    if (orig) {
+        sc_sockpipe_pread = new ldx_sc_pread_sockpipe_t(orig, sockfd);
+        dlreplace("pread", (void *)sock_wrap_pread);
+        count++;
+    }
+    orig = dlsym(RTLD_NEXT, "pwrite");
+    if (orig) {
+        sc_sockpipe_pwrite = new ldx_sc_pwrite_sockpipe_t(orig, sockfd);
+        dlreplace("pwrite", (void *)sock_wrap_pwrite);
+        count++;
+    }
+    orig = dlsym(RTLD_NEXT, "close");
+    if (orig) {
+        sc_sockpipe_close = new ldx_sc_close_sockpipe_t(orig, sockfd);
+        dlreplace("close", (void *)sock_wrap_close);
+        count++;
+    }
+    orig = dlsym(RTLD_NEXT, "lseek");
+    if (orig) {
+        sc_sockpipe_lseek = new ldx_sc_lseek_sockpipe_t(orig, sockfd);
+        dlreplace("lseek", (void *)sock_wrap_lseek);
+        count++;
+    }
+    orig = dlsym(RTLD_NEXT, "dup");
+    if (orig) {
+        sc_sockpipe_dup = new ldx_sc_dup_sockpipe_t(orig, sockfd);
+        dlreplace("dup", (void *)sock_wrap_dup);
+        count++;
+    }
+    orig = dlsym(RTLD_NEXT, "dup2");
+    if (orig) {
+        sc_sockpipe_dup2 = new ldx_sc_dup2_sockpipe_t(orig, sockfd);
+        dlreplace("dup2", (void *)sock_wrap_dup2);
+        count++;
+    }
+    orig = dlsym(RTLD_NEXT, "pipe");
+    if (orig) {
+        sc_sockpipe_pipe = new ldx_sc_pipe_sockpipe_t(orig, sockfd);
+        dlreplace("pipe", (void *)sock_wrap_pipe);
+        count++;
+    }
+    orig = dlsym(RTLD_NEXT, "stat");
+    if (orig) {
+        sc_sockpipe_stat = new ldx_sc_stat_sockpipe_t(orig, sockfd);
+        dlreplace("stat", (void *)sock_wrap_stat);
+        count++;
+    }
+    orig = dlsym(RTLD_NEXT, "fstat");
+    if (orig) {
+        sc_sockpipe_fstat = new ldx_sc_fstat_sockpipe_t(orig, sockfd);
+        dlreplace("fstat", (void *)sock_wrap_fstat);
+        count++;
+    }
+    orig = dlsym(RTLD_NEXT, "lstat");
+    if (orig) {
+        sc_sockpipe_lstat = new ldx_sc_lstat_sockpipe_t(orig, sockfd);
+        dlreplace("lstat", (void *)sock_wrap_lstat);
+        count++;
+    }
+    orig = dlsym(RTLD_NEXT, "access");
+    if (orig) {
+        sc_sockpipe_access = new ldx_sc_access_sockpipe_t(orig, sockfd);
+        dlreplace("access", (void *)sock_wrap_access);
+        count++;
+    }
+    orig = dlsym(RTLD_NEXT, "unlink");
+    if (orig) {
+        sc_sockpipe_unlink = new ldx_sc_unlink_sockpipe_t(orig, sockfd);
+        dlreplace("unlink", (void *)sock_wrap_unlink);
+        count++;
+    }
+    orig = dlsym(RTLD_NEXT, "rmdir");
+    if (orig) {
+        sc_sockpipe_rmdir = new ldx_sc_rmdir_sockpipe_t(orig, sockfd);
+        dlreplace("rmdir", (void *)sock_wrap_rmdir);
+        count++;
+    }
+    orig = dlsym(RTLD_NEXT, "mkdir");
+    if (orig) {
+        sc_sockpipe_mkdir = new ldx_sc_mkdir_sockpipe_t(orig, sockfd);
+        dlreplace("mkdir", (void *)sock_wrap_mkdir);
+        count++;
+    }
+    orig = dlsym(RTLD_NEXT, "chmod");
+    if (orig) {
+        sc_sockpipe_chmod = new ldx_sc_chmod_sockpipe_t(orig, sockfd);
+        dlreplace("chmod", (void *)sock_wrap_chmod);
+        count++;
+    }
+    orig = dlsym(RTLD_NEXT, "fchmod");
+    if (orig) {
+        sc_sockpipe_fchmod = new ldx_sc_fchmod_sockpipe_t(orig, sockfd);
+        dlreplace("fchmod", (void *)sock_wrap_fchmod);
+        count++;
+    }
+    orig = dlsym(RTLD_NEXT, "chown");
+    if (orig) {
+        sc_sockpipe_chown = new ldx_sc_chown_sockpipe_t(orig, sockfd);
+        dlreplace("chown", (void *)sock_wrap_chown);
+        count++;
+    }
+    orig = dlsym(RTLD_NEXT, "fchown");
+    if (orig) {
+        sc_sockpipe_fchown = new ldx_sc_fchown_sockpipe_t(orig, sockfd);
+        dlreplace("fchown", (void *)sock_wrap_fchown);
+        count++;
+    }
+    orig = dlsym(RTLD_NEXT, "link");
+    if (orig) {
+        sc_sockpipe_link = new ldx_sc_link_sockpipe_t(orig, sockfd);
+        dlreplace("link", (void *)sock_wrap_link);
+        count++;
+    }
+    orig = dlsym(RTLD_NEXT, "symlink");
+    if (orig) {
+        sc_sockpipe_symlink = new ldx_sc_symlink_sockpipe_t(orig, sockfd);
+        dlreplace("symlink", (void *)sock_wrap_symlink);
+        count++;
+    }
+    orig = dlsym(RTLD_NEXT, "readlink");
+    if (orig) {
+        sc_sockpipe_readlink = new ldx_sc_readlink_sockpipe_t(orig, sockfd);
+        dlreplace("readlink", (void *)sock_wrap_readlink);
+        count++;
+    }
+    orig = dlsym(RTLD_NEXT, "chdir");
+    if (orig) {
+        sc_sockpipe_chdir = new ldx_sc_chdir_sockpipe_t(orig, sockfd);
+        dlreplace("chdir", (void *)sock_wrap_chdir);
+        count++;
+    }
+    orig = dlsym(RTLD_NEXT, "fchdir");
+    if (orig) {
+        sc_sockpipe_fchdir = new ldx_sc_fchdir_sockpipe_t(orig, sockfd);
+        dlreplace("fchdir", (void *)sock_wrap_fchdir);
+        count++;
+    }
+    orig = dlsym(RTLD_NEXT, "umask");
+    if (orig) {
+        sc_sockpipe_umask = new ldx_sc_umask_sockpipe_t(orig, sockfd);
+        dlreplace("umask", (void *)sock_wrap_umask);
+        count++;
+    }
+    orig = dlsym(RTLD_NEXT, "rename");
+    if (orig) {
+        sc_sockpipe_rename = new ldx_sc_rename_sockpipe_t(orig, sockfd);
+        dlreplace("rename", (void *)sock_wrap_rename);
+        count++;
+    }
+    orig = dlsym(RTLD_NEXT, "truncate");
+    if (orig) {
+        sc_sockpipe_truncate = new ldx_sc_truncate_sockpipe_t(orig, sockfd);
+        dlreplace("truncate", (void *)sock_wrap_truncate);
+        count++;
+    }
+    orig = dlsym(RTLD_NEXT, "ftruncate");
+    if (orig) {
+        sc_sockpipe_ftruncate = new ldx_sc_ftruncate_sockpipe_t(orig, sockfd);
+        dlreplace("ftruncate", (void *)sock_wrap_ftruncate);
+        count++;
+    }
+    orig = dlsym(RTLD_NEXT, "socket");
+    if (orig) {
+        sc_sockpipe_socket = new ldx_sc_socket_sockpipe_t(orig, sockfd);
+        dlreplace("socket", (void *)sock_wrap_socket);
+        count++;
+    }
+    orig = dlsym(RTLD_NEXT, "bind");
+    if (orig) {
+        sc_sockpipe_bind = new ldx_sc_bind_sockpipe_t(orig, sockfd);
+        dlreplace("bind", (void *)sock_wrap_bind);
+        count++;
+    }
+    orig = dlsym(RTLD_NEXT, "connect");
+    if (orig) {
+        sc_sockpipe_connect = new ldx_sc_connect_sockpipe_t(orig, sockfd);
+        dlreplace("connect", (void *)sock_wrap_connect);
+        count++;
+    }
+    orig = dlsym(RTLD_NEXT, "listen");
+    if (orig) {
+        sc_sockpipe_listen = new ldx_sc_listen_sockpipe_t(orig, sockfd);
+        dlreplace("listen", (void *)sock_wrap_listen);
+        count++;
+    }
+    orig = dlsym(RTLD_NEXT, "shutdown");
+    if (orig) {
+        sc_sockpipe_shutdown = new ldx_sc_shutdown_sockpipe_t(orig, sockfd);
+        dlreplace("shutdown", (void *)sock_wrap_shutdown);
+        count++;
+    }
+    orig = dlsym(RTLD_NEXT, "send");
+    if (orig) {
+        sc_sockpipe_send = new ldx_sc_send_sockpipe_t(orig, sockfd);
+        dlreplace("send", (void *)sock_wrap_send);
+        count++;
+    }
+    orig = dlsym(RTLD_NEXT, "recv");
+    if (orig) {
+        sc_sockpipe_recv = new ldx_sc_recv_sockpipe_t(orig, sockfd);
+        dlreplace("recv", (void *)sock_wrap_recv);
+        count++;
+    }
+    orig = dlsym(RTLD_NEXT, "setsockopt");
+    if (orig) {
+        sc_sockpipe_setsockopt = new ldx_sc_setsockopt_sockpipe_t(orig, sockfd);
+        dlreplace("setsockopt", (void *)sock_wrap_setsockopt);
+        count++;
+    }
+    orig = dlsym(RTLD_NEXT, "mmap");
+    if (orig) {
+        sc_sockpipe_mmap = new ldx_sc_mmap_sockpipe_t(orig, sockfd);
+        dlreplace("mmap", (void *)sock_wrap_mmap);
+        count++;
+    }
+    orig = dlsym(RTLD_NEXT, "munmap");
+    if (orig) {
+        sc_sockpipe_munmap = new ldx_sc_munmap_sockpipe_t(orig, sockfd);
+        dlreplace("munmap", (void *)sock_wrap_munmap);
+        count++;
+    }
+    orig = dlsym(RTLD_NEXT, "mprotect");
+    if (orig) {
+        sc_sockpipe_mprotect = new ldx_sc_mprotect_sockpipe_t(orig, sockfd);
+        dlreplace("mprotect", (void *)sock_wrap_mprotect);
+        count++;
+    }
+    orig = dlsym(RTLD_NEXT, "getpid");
+    if (orig) {
+        sc_sockpipe_getpid = new ldx_sc_getpid_sockpipe_t(orig, sockfd);
+        dlreplace("getpid", (void *)sock_wrap_getpid);
+        count++;
+    }
+    orig = dlsym(RTLD_NEXT, "getppid");
+    if (orig) {
+        sc_sockpipe_getppid = new ldx_sc_getppid_sockpipe_t(orig, sockfd);
+        dlreplace("getppid", (void *)sock_wrap_getppid);
+        count++;
+    }
+    orig = dlsym(RTLD_NEXT, "getuid");
+    if (orig) {
+        sc_sockpipe_getuid = new ldx_sc_getuid_sockpipe_t(orig, sockfd);
+        dlreplace("getuid", (void *)sock_wrap_getuid);
+        count++;
+    }
+    orig = dlsym(RTLD_NEXT, "geteuid");
+    if (orig) {
+        sc_sockpipe_geteuid = new ldx_sc_geteuid_sockpipe_t(orig, sockfd);
+        dlreplace("geteuid", (void *)sock_wrap_geteuid);
+        count++;
+    }
+    orig = dlsym(RTLD_NEXT, "getgid");
+    if (orig) {
+        sc_sockpipe_getgid = new ldx_sc_getgid_sockpipe_t(orig, sockfd);
+        dlreplace("getgid", (void *)sock_wrap_getgid);
+        count++;
+    }
+    orig = dlsym(RTLD_NEXT, "getegid");
+    if (orig) {
+        sc_sockpipe_getegid = new ldx_sc_getegid_sockpipe_t(orig, sockfd);
+        dlreplace("getegid", (void *)sock_wrap_getegid);
+        count++;
+    }
+    orig = dlsym(RTLD_NEXT, "setuid");
+    if (orig) {
+        sc_sockpipe_setuid = new ldx_sc_setuid_sockpipe_t(orig, sockfd);
+        dlreplace("setuid", (void *)sock_wrap_setuid);
+        count++;
+    }
+    orig = dlsym(RTLD_NEXT, "setgid");
+    if (orig) {
+        sc_sockpipe_setgid = new ldx_sc_setgid_sockpipe_t(orig, sockfd);
+        dlreplace("setgid", (void *)sock_wrap_setgid);
+        count++;
+    }
+    orig = dlsym(RTLD_NEXT, "kill");
+    if (orig) {
+        sc_sockpipe_kill = new ldx_sc_kill_sockpipe_t(orig, sockfd);
+        dlreplace("kill", (void *)sock_wrap_kill);
+        count++;
+    }
+    orig = dlsym(RTLD_NEXT, "epoll_create1");
+    if (orig) {
+        sc_sockpipe_epoll_create1 = new ldx_sc_epoll_create1_sockpipe_t(orig, sockfd);
+        dlreplace("epoll_create1", (void *)sock_wrap_epoll_create1);
+        count++;
+    }
+    orig = dlsym(RTLD_NEXT, "epoll_ctl");
+    if (orig) {
+        sc_sockpipe_epoll_ctl = new ldx_sc_epoll_ctl_sockpipe_t(orig, sockfd);
+        dlreplace("epoll_ctl", (void *)sock_wrap_epoll_ctl);
+        count++;
+    }
+    orig = dlsym(RTLD_NEXT, "gethostname");
+    if (orig) {
+        sc_sockpipe_gethostname = new ldx_sc_gethostname_sockpipe_t(orig, sockfd);
+        dlreplace("gethostname", (void *)sock_wrap_gethostname);
+        count++;
+    }
+    orig = dlsym(RTLD_NEXT, "sethostname");
+    if (orig) {
+        sc_sockpipe_sethostname = new ldx_sc_sethostname_sockpipe_t(orig, sockfd);
+        dlreplace("sethostname", (void *)sock_wrap_sethostname);
+        count++;
+    }
+    fprintf(stderr, "ldx: installed %d socket pipe wrappers\n", count);
+    return count;
+}
+
+/* ====== Server handlers (host side) ====== */
+
+/* Saved real function pointers for server execution. */
+static ssize_t (*real_read)(int, void *, size_t) = nullptr;
+static ssize_t (*real_write)(int, const void *, size_t) = nullptr;
+static ssize_t (*real_pread)(int, void *, size_t, off_t) = nullptr;
+static ssize_t (*real_pwrite)(int, const void *, size_t, off_t) = nullptr;
+static int (*real_close)(int) = nullptr;
+static off_t (*real_lseek)(int, off_t, int) = nullptr;
+static int (*real_dup)(int) = nullptr;
+static int (*real_dup2)(int, int) = nullptr;
+static int (*real_pipe)(int *) = nullptr;
+static int (*real_stat)(const char *, struct stat *) = nullptr;
+static int (*real_fstat)(int, struct stat *) = nullptr;
+static int (*real_lstat)(const char *, struct stat *) = nullptr;
+static int (*real_access)(const char *, int) = nullptr;
+static int (*real_unlink)(const char *) = nullptr;
+static int (*real_rmdir)(const char *) = nullptr;
+static int (*real_mkdir)(const char *, mode_t) = nullptr;
+static int (*real_chmod)(const char *, mode_t) = nullptr;
+static int (*real_fchmod)(int, mode_t) = nullptr;
+static int (*real_chown)(const char *, uid_t, gid_t) = nullptr;
+static int (*real_fchown)(int, uid_t, gid_t) = nullptr;
+static int (*real_link)(const char *, const char *) = nullptr;
+static int (*real_symlink)(const char *, const char *) = nullptr;
+static ssize_t (*real_readlink)(const char *, char *, size_t) = nullptr;
+static int (*real_chdir)(const char *) = nullptr;
+static int (*real_fchdir)(int) = nullptr;
+static mode_t (*real_umask)(mode_t) = nullptr;
+static int (*real_rename)(const char *, const char *) = nullptr;
+static int (*real_truncate)(const char *, off_t) = nullptr;
+static int (*real_ftruncate)(int, off_t) = nullptr;
+static int (*real_socket)(int, int, int) = nullptr;
+static int (*real_bind)(int, const struct sockaddr *, socklen_t) = nullptr;
+static int (*real_connect)(int, const struct sockaddr *, socklen_t) = nullptr;
+static int (*real_listen)(int, int) = nullptr;
+static int (*real_shutdown)(int, int) = nullptr;
+static ssize_t (*real_send)(int, const void *, size_t, int) = nullptr;
+static ssize_t (*real_recv)(int, void *, size_t, int) = nullptr;
+static int (*real_setsockopt)(int, int, int, const void *, socklen_t) = nullptr;
+static void * (*real_mmap)(void *, size_t, int, int, int, off_t) = nullptr;
+static int (*real_munmap)(void *, size_t) = nullptr;
+static int (*real_mprotect)(void *, size_t, int) = nullptr;
+static pid_t (*real_getpid)(void) = nullptr;
+static pid_t (*real_getppid)(void) = nullptr;
+static uid_t (*real_getuid)(void) = nullptr;
+static uid_t (*real_geteuid)(void) = nullptr;
+static gid_t (*real_getgid)(void) = nullptr;
+static gid_t (*real_getegid)(void) = nullptr;
+static int (*real_setuid)(uid_t) = nullptr;
+static int (*real_setgid)(gid_t) = nullptr;
+static int (*real_kill)(pid_t, int) = nullptr;
+static int (*real_epoll_create1)(int) = nullptr;
+static int (*real_epoll_ctl)(int, int, int, struct epoll_event *) = nullptr;
+static int (*real_gethostname)(char *, size_t) = nullptr;
+static int (*real_sethostname)(const char *, size_t) = nullptr;
+
+static int server_read(const void *raw_args, size_t args_size,
+                           void *ret_buf, size_t ret_size, int sockfd)
+{
+    (void)args_size; (void)ret_size;
+    ldx_sc_read_args args;
+    memcpy(&args, raw_args, sizeof(args));
+
+    /* Allocate output buffers. */
+    size_t out_sz_buf = (size_t)(args.n);
+    args.buf = (void *)calloc(1, out_sz_buf);
+
+    errno = 0;
+    ssize_t result = real_read(args.fd, args.buf, args.n);
+    int err = (result == (ssize_t)-1) ? errno : 0;
+    memcpy(ret_buf, &result, sizeof(result) <= ret_size ? sizeof(result) : ret_size);
+
+    /* Send output buffers to client. */
+    ldx::SockMsg::send_u32(sockfd, 1);
+    ldx::SockMsg::send_u32(sockfd, 1);
+    ldx::SockMsg::send_u32(sockfd, (uint32_t)out_sz_buf);
+    if (out_sz_buf > 0)
+        ldx::SockMsg::send_all(sockfd, args.buf, out_sz_buf);
+    free((void *)args.buf);
+    return err;
+}
+
+static int server_write(const void *raw_args, size_t args_size,
+                           void *ret_buf, size_t ret_size, int sockfd)
+{
+    (void)args_size; (void)ret_size;
+    ldx_sc_write_args args;
+    memcpy(&args, raw_args, sizeof(args));
+
+    /* Receive PTR_IN buffers from client. */
+    uint32_t n_in = 0;
+    ldx::SockMsg::recv_u32(sockfd, &n_in);
+    for (uint32_t i = 0; i < n_in; i++) {
+        uint32_t idx = 0, sz = 0;
+        ldx::SockMsg::recv_u32(sockfd, &idx);
+        ldx::SockMsg::recv_u32(sockfd, &sz);
+        if (idx == 1 && sz > 0) {
+            void *buf = malloc(sz);
+            ldx::SockMsg::recv_all(sockfd, buf, sz);
+            args.buf = (const void *)buf;
+        }
+    }
+
+    errno = 0;
+    ssize_t result = real_write(args.fd, args.buf, args.n);
+    int err = (result == (ssize_t)-1) ? errno : 0;
+    memcpy(ret_buf, &result, sizeof(result) <= ret_size ? sizeof(result) : ret_size);
+
+    /* Send output buffers to client. */
+    ldx::SockMsg::send_u32(sockfd, 0);
+    free((void *)args.buf);
+    return err;
+}
+
+static int server_pread(const void *raw_args, size_t args_size,
+                           void *ret_buf, size_t ret_size, int sockfd)
+{
+    (void)args_size; (void)ret_size;
+    ldx_sc_pread_args args;
+    memcpy(&args, raw_args, sizeof(args));
+
+    /* Allocate output buffers. */
+    size_t out_sz_buf = (size_t)(args.n);
+    args.buf = (void *)calloc(1, out_sz_buf);
+
+    errno = 0;
+    ssize_t result = real_pread(args.fd, args.buf, args.n, args.offset);
+    int err = (result == (ssize_t)-1) ? errno : 0;
+    memcpy(ret_buf, &result, sizeof(result) <= ret_size ? sizeof(result) : ret_size);
+
+    /* Send output buffers to client. */
+    ldx::SockMsg::send_u32(sockfd, 1);
+    ldx::SockMsg::send_u32(sockfd, 1);
+    ldx::SockMsg::send_u32(sockfd, (uint32_t)out_sz_buf);
+    if (out_sz_buf > 0)
+        ldx::SockMsg::send_all(sockfd, args.buf, out_sz_buf);
+    free((void *)args.buf);
+    return err;
+}
+
+static int server_pwrite(const void *raw_args, size_t args_size,
+                           void *ret_buf, size_t ret_size, int sockfd)
+{
+    (void)args_size; (void)ret_size;
+    ldx_sc_pwrite_args args;
+    memcpy(&args, raw_args, sizeof(args));
+
+    /* Receive PTR_IN buffers from client. */
+    uint32_t n_in = 0;
+    ldx::SockMsg::recv_u32(sockfd, &n_in);
+    for (uint32_t i = 0; i < n_in; i++) {
+        uint32_t idx = 0, sz = 0;
+        ldx::SockMsg::recv_u32(sockfd, &idx);
+        ldx::SockMsg::recv_u32(sockfd, &sz);
+        if (idx == 1 && sz > 0) {
+            void *buf = malloc(sz);
+            ldx::SockMsg::recv_all(sockfd, buf, sz);
+            args.buf = (const void *)buf;
+        }
+    }
+
+    errno = 0;
+    ssize_t result = real_pwrite(args.fd, args.buf, args.n, args.offset);
+    int err = (result == (ssize_t)-1) ? errno : 0;
+    memcpy(ret_buf, &result, sizeof(result) <= ret_size ? sizeof(result) : ret_size);
+
+    /* Send output buffers to client. */
+    ldx::SockMsg::send_u32(sockfd, 0);
+    free((void *)args.buf);
+    return err;
+}
+
+static int server_close(const void *raw_args, size_t args_size,
+                           void *ret_buf, size_t ret_size, int sockfd)
+{
+    (void)args_size; (void)ret_size;
+    ldx_sc_close_args args;
+    memcpy(&args, raw_args, sizeof(args));
+
+    errno = 0;
+    int result = real_close(args.fd);
+    int err = (result == (int)-1) ? errno : 0;
+    memcpy(ret_buf, &result, sizeof(result) <= ret_size ? sizeof(result) : ret_size);
+
+    /* Send output buffers to client. */
+    ldx::SockMsg::send_u32(sockfd, 0);
+    return err;
+}
+
+static int server_lseek(const void *raw_args, size_t args_size,
+                           void *ret_buf, size_t ret_size, int sockfd)
+{
+    (void)args_size; (void)ret_size;
+    ldx_sc_lseek_args args;
+    memcpy(&args, raw_args, sizeof(args));
+
+    errno = 0;
+    off_t result = real_lseek(args.fd, args.offset, args.whence);
+    int err = (result == (off_t)-1) ? errno : 0;
+    memcpy(ret_buf, &result, sizeof(result) <= ret_size ? sizeof(result) : ret_size);
+
+    /* Send output buffers to client. */
+    ldx::SockMsg::send_u32(sockfd, 0);
+    return err;
+}
+
+static int server_dup(const void *raw_args, size_t args_size,
+                           void *ret_buf, size_t ret_size, int sockfd)
+{
+    (void)args_size; (void)ret_size;
+    ldx_sc_dup_args args;
+    memcpy(&args, raw_args, sizeof(args));
+
+    errno = 0;
+    int result = real_dup(args.fd);
+    int err = (result == (int)-1) ? errno : 0;
+    memcpy(ret_buf, &result, sizeof(result) <= ret_size ? sizeof(result) : ret_size);
+
+    /* Send output buffers to client. */
+    ldx::SockMsg::send_u32(sockfd, 0);
+    return err;
+}
+
+static int server_dup2(const void *raw_args, size_t args_size,
+                           void *ret_buf, size_t ret_size, int sockfd)
+{
+    (void)args_size; (void)ret_size;
+    ldx_sc_dup2_args args;
+    memcpy(&args, raw_args, sizeof(args));
+
+    errno = 0;
+    int result = real_dup2(args.fd, args.fd2);
+    int err = (result == (int)-1) ? errno : 0;
+    memcpy(ret_buf, &result, sizeof(result) <= ret_size ? sizeof(result) : ret_size);
+
+    /* Send output buffers to client. */
+    ldx::SockMsg::send_u32(sockfd, 0);
+    return err;
+}
+
+static int server_pipe(const void *raw_args, size_t args_size,
+                           void *ret_buf, size_t ret_size, int sockfd)
+{
+    (void)args_size; (void)ret_size;
+    ldx_sc_pipe_args args;
+    memcpy(&args, raw_args, sizeof(args));
+
+    /* Allocate output buffers. */
+    size_t out_sz_pipedes = (size_t)(2 * sizeof(int));
+    args.pipedes = (int *)calloc(1, out_sz_pipedes);
+
+    errno = 0;
+    int result = real_pipe(args.pipedes);
+    int err = (result == (int)-1) ? errno : 0;
+    memcpy(ret_buf, &result, sizeof(result) <= ret_size ? sizeof(result) : ret_size);
+
+    /* Send output buffers to client. */
+    ldx::SockMsg::send_u32(sockfd, 1);
+    ldx::SockMsg::send_u32(sockfd, 0);
+    ldx::SockMsg::send_u32(sockfd, (uint32_t)out_sz_pipedes);
+    if (out_sz_pipedes > 0)
+        ldx::SockMsg::send_all(sockfd, args.pipedes, out_sz_pipedes);
+    free((void *)args.pipedes);
+    return err;
+}
+
+static int server_stat(const void *raw_args, size_t args_size,
+                           void *ret_buf, size_t ret_size, int sockfd)
+{
+    (void)args_size; (void)ret_size;
+    ldx_sc_stat_args args;
+    memcpy(&args, raw_args, sizeof(args));
+
+    /* Receive PTR_IN buffers from client. */
+    uint32_t n_in = 0;
+    ldx::SockMsg::recv_u32(sockfd, &n_in);
+    for (uint32_t i = 0; i < n_in; i++) {
+        uint32_t idx = 0, sz = 0;
+        ldx::SockMsg::recv_u32(sockfd, &idx);
+        ldx::SockMsg::recv_u32(sockfd, &sz);
+        if (idx == 0 && sz > 0) {
+            void *buf = malloc(sz);
+            ldx::SockMsg::recv_all(sockfd, buf, sz);
+            args.path = (const char *)buf;
+        }
+    }
+
+    /* Allocate output buffers. */
+    size_t out_sz_buf = (size_t)(sizeof(struct stat));
+    args.buf = (struct stat *)calloc(1, out_sz_buf);
+
+    errno = 0;
+    int result = real_stat(args.path, args.buf);
+    int err = (result == (int)-1) ? errno : 0;
+    memcpy(ret_buf, &result, sizeof(result) <= ret_size ? sizeof(result) : ret_size);
+
+    /* Send output buffers to client. */
+    ldx::SockMsg::send_u32(sockfd, 1);
+    ldx::SockMsg::send_u32(sockfd, 1);
+    ldx::SockMsg::send_u32(sockfd, (uint32_t)out_sz_buf);
+    if (out_sz_buf > 0)
+        ldx::SockMsg::send_all(sockfd, args.buf, out_sz_buf);
+    free((void *)args.path);
+    free((void *)args.buf);
+    return err;
+}
+
+static int server_fstat(const void *raw_args, size_t args_size,
+                           void *ret_buf, size_t ret_size, int sockfd)
+{
+    (void)args_size; (void)ret_size;
+    ldx_sc_fstat_args args;
+    memcpy(&args, raw_args, sizeof(args));
+
+    /* Allocate output buffers. */
+    size_t out_sz_buf = (size_t)(sizeof(struct stat));
+    args.buf = (struct stat *)calloc(1, out_sz_buf);
+
+    errno = 0;
+    int result = real_fstat(args.fd, args.buf);
+    int err = (result == (int)-1) ? errno : 0;
+    memcpy(ret_buf, &result, sizeof(result) <= ret_size ? sizeof(result) : ret_size);
+
+    /* Send output buffers to client. */
+    ldx::SockMsg::send_u32(sockfd, 1);
+    ldx::SockMsg::send_u32(sockfd, 1);
+    ldx::SockMsg::send_u32(sockfd, (uint32_t)out_sz_buf);
+    if (out_sz_buf > 0)
+        ldx::SockMsg::send_all(sockfd, args.buf, out_sz_buf);
+    free((void *)args.buf);
+    return err;
+}
+
+static int server_lstat(const void *raw_args, size_t args_size,
+                           void *ret_buf, size_t ret_size, int sockfd)
+{
+    (void)args_size; (void)ret_size;
+    ldx_sc_lstat_args args;
+    memcpy(&args, raw_args, sizeof(args));
+
+    /* Receive PTR_IN buffers from client. */
+    uint32_t n_in = 0;
+    ldx::SockMsg::recv_u32(sockfd, &n_in);
+    for (uint32_t i = 0; i < n_in; i++) {
+        uint32_t idx = 0, sz = 0;
+        ldx::SockMsg::recv_u32(sockfd, &idx);
+        ldx::SockMsg::recv_u32(sockfd, &sz);
+        if (idx == 0 && sz > 0) {
+            void *buf = malloc(sz);
+            ldx::SockMsg::recv_all(sockfd, buf, sz);
+            args.path = (const char *)buf;
+        }
+    }
+
+    /* Allocate output buffers. */
+    size_t out_sz_buf = (size_t)(sizeof(struct stat));
+    args.buf = (struct stat *)calloc(1, out_sz_buf);
+
+    errno = 0;
+    int result = real_lstat(args.path, args.buf);
+    int err = (result == (int)-1) ? errno : 0;
+    memcpy(ret_buf, &result, sizeof(result) <= ret_size ? sizeof(result) : ret_size);
+
+    /* Send output buffers to client. */
+    ldx::SockMsg::send_u32(sockfd, 1);
+    ldx::SockMsg::send_u32(sockfd, 1);
+    ldx::SockMsg::send_u32(sockfd, (uint32_t)out_sz_buf);
+    if (out_sz_buf > 0)
+        ldx::SockMsg::send_all(sockfd, args.buf, out_sz_buf);
+    free((void *)args.path);
+    free((void *)args.buf);
+    return err;
+}
+
+static int server_access(const void *raw_args, size_t args_size,
+                           void *ret_buf, size_t ret_size, int sockfd)
+{
+    (void)args_size; (void)ret_size;
+    ldx_sc_access_args args;
+    memcpy(&args, raw_args, sizeof(args));
+
+    /* Receive PTR_IN buffers from client. */
+    uint32_t n_in = 0;
+    ldx::SockMsg::recv_u32(sockfd, &n_in);
+    for (uint32_t i = 0; i < n_in; i++) {
+        uint32_t idx = 0, sz = 0;
+        ldx::SockMsg::recv_u32(sockfd, &idx);
+        ldx::SockMsg::recv_u32(sockfd, &sz);
+        if (idx == 0 && sz > 0) {
+            void *buf = malloc(sz);
+            ldx::SockMsg::recv_all(sockfd, buf, sz);
+            args.path = (const char *)buf;
+        }
+    }
+
+    errno = 0;
+    int result = real_access(args.path, args.mode);
+    int err = (result == (int)-1) ? errno : 0;
+    memcpy(ret_buf, &result, sizeof(result) <= ret_size ? sizeof(result) : ret_size);
+
+    /* Send output buffers to client. */
+    ldx::SockMsg::send_u32(sockfd, 0);
+    free((void *)args.path);
+    return err;
+}
+
+static int server_unlink(const void *raw_args, size_t args_size,
+                           void *ret_buf, size_t ret_size, int sockfd)
+{
+    (void)args_size; (void)ret_size;
+    ldx_sc_unlink_args args;
+    memcpy(&args, raw_args, sizeof(args));
+
+    /* Receive PTR_IN buffers from client. */
+    uint32_t n_in = 0;
+    ldx::SockMsg::recv_u32(sockfd, &n_in);
+    for (uint32_t i = 0; i < n_in; i++) {
+        uint32_t idx = 0, sz = 0;
+        ldx::SockMsg::recv_u32(sockfd, &idx);
+        ldx::SockMsg::recv_u32(sockfd, &sz);
+        if (idx == 0 && sz > 0) {
+            void *buf = malloc(sz);
+            ldx::SockMsg::recv_all(sockfd, buf, sz);
+            args.path = (const char *)buf;
+        }
+    }
+
+    errno = 0;
+    int result = real_unlink(args.path);
+    int err = (result == (int)-1) ? errno : 0;
+    memcpy(ret_buf, &result, sizeof(result) <= ret_size ? sizeof(result) : ret_size);
+
+    /* Send output buffers to client. */
+    ldx::SockMsg::send_u32(sockfd, 0);
+    free((void *)args.path);
+    return err;
+}
+
+static int server_rmdir(const void *raw_args, size_t args_size,
+                           void *ret_buf, size_t ret_size, int sockfd)
+{
+    (void)args_size; (void)ret_size;
+    ldx_sc_rmdir_args args;
+    memcpy(&args, raw_args, sizeof(args));
+
+    /* Receive PTR_IN buffers from client. */
+    uint32_t n_in = 0;
+    ldx::SockMsg::recv_u32(sockfd, &n_in);
+    for (uint32_t i = 0; i < n_in; i++) {
+        uint32_t idx = 0, sz = 0;
+        ldx::SockMsg::recv_u32(sockfd, &idx);
+        ldx::SockMsg::recv_u32(sockfd, &sz);
+        if (idx == 0 && sz > 0) {
+            void *buf = malloc(sz);
+            ldx::SockMsg::recv_all(sockfd, buf, sz);
+            args.path = (const char *)buf;
+        }
+    }
+
+    errno = 0;
+    int result = real_rmdir(args.path);
+    int err = (result == (int)-1) ? errno : 0;
+    memcpy(ret_buf, &result, sizeof(result) <= ret_size ? sizeof(result) : ret_size);
+
+    /* Send output buffers to client. */
+    ldx::SockMsg::send_u32(sockfd, 0);
+    free((void *)args.path);
+    return err;
+}
+
+static int server_mkdir(const void *raw_args, size_t args_size,
+                           void *ret_buf, size_t ret_size, int sockfd)
+{
+    (void)args_size; (void)ret_size;
+    ldx_sc_mkdir_args args;
+    memcpy(&args, raw_args, sizeof(args));
+
+    /* Receive PTR_IN buffers from client. */
+    uint32_t n_in = 0;
+    ldx::SockMsg::recv_u32(sockfd, &n_in);
+    for (uint32_t i = 0; i < n_in; i++) {
+        uint32_t idx = 0, sz = 0;
+        ldx::SockMsg::recv_u32(sockfd, &idx);
+        ldx::SockMsg::recv_u32(sockfd, &sz);
+        if (idx == 0 && sz > 0) {
+            void *buf = malloc(sz);
+            ldx::SockMsg::recv_all(sockfd, buf, sz);
+            args.path = (const char *)buf;
+        }
+    }
+
+    errno = 0;
+    int result = real_mkdir(args.path, args.mode);
+    int err = (result == (int)-1) ? errno : 0;
+    memcpy(ret_buf, &result, sizeof(result) <= ret_size ? sizeof(result) : ret_size);
+
+    /* Send output buffers to client. */
+    ldx::SockMsg::send_u32(sockfd, 0);
+    free((void *)args.path);
+    return err;
+}
+
+static int server_chmod(const void *raw_args, size_t args_size,
+                           void *ret_buf, size_t ret_size, int sockfd)
+{
+    (void)args_size; (void)ret_size;
+    ldx_sc_chmod_args args;
+    memcpy(&args, raw_args, sizeof(args));
+
+    /* Receive PTR_IN buffers from client. */
+    uint32_t n_in = 0;
+    ldx::SockMsg::recv_u32(sockfd, &n_in);
+    for (uint32_t i = 0; i < n_in; i++) {
+        uint32_t idx = 0, sz = 0;
+        ldx::SockMsg::recv_u32(sockfd, &idx);
+        ldx::SockMsg::recv_u32(sockfd, &sz);
+        if (idx == 0 && sz > 0) {
+            void *buf = malloc(sz);
+            ldx::SockMsg::recv_all(sockfd, buf, sz);
+            args.path = (const char *)buf;
+        }
+    }
+
+    errno = 0;
+    int result = real_chmod(args.path, args.mode);
+    int err = (result == (int)-1) ? errno : 0;
+    memcpy(ret_buf, &result, sizeof(result) <= ret_size ? sizeof(result) : ret_size);
+
+    /* Send output buffers to client. */
+    ldx::SockMsg::send_u32(sockfd, 0);
+    free((void *)args.path);
+    return err;
+}
+
+static int server_fchmod(const void *raw_args, size_t args_size,
+                           void *ret_buf, size_t ret_size, int sockfd)
+{
+    (void)args_size; (void)ret_size;
+    ldx_sc_fchmod_args args;
+    memcpy(&args, raw_args, sizeof(args));
+
+    errno = 0;
+    int result = real_fchmod(args.fd, args.mode);
+    int err = (result == (int)-1) ? errno : 0;
+    memcpy(ret_buf, &result, sizeof(result) <= ret_size ? sizeof(result) : ret_size);
+
+    /* Send output buffers to client. */
+    ldx::SockMsg::send_u32(sockfd, 0);
+    return err;
+}
+
+static int server_chown(const void *raw_args, size_t args_size,
+                           void *ret_buf, size_t ret_size, int sockfd)
+{
+    (void)args_size; (void)ret_size;
+    ldx_sc_chown_args args;
+    memcpy(&args, raw_args, sizeof(args));
+
+    /* Receive PTR_IN buffers from client. */
+    uint32_t n_in = 0;
+    ldx::SockMsg::recv_u32(sockfd, &n_in);
+    for (uint32_t i = 0; i < n_in; i++) {
+        uint32_t idx = 0, sz = 0;
+        ldx::SockMsg::recv_u32(sockfd, &idx);
+        ldx::SockMsg::recv_u32(sockfd, &sz);
+        if (idx == 0 && sz > 0) {
+            void *buf = malloc(sz);
+            ldx::SockMsg::recv_all(sockfd, buf, sz);
+            args.path = (const char *)buf;
+        }
+    }
+
+    errno = 0;
+    int result = real_chown(args.path, args.owner, args.group);
+    int err = (result == (int)-1) ? errno : 0;
+    memcpy(ret_buf, &result, sizeof(result) <= ret_size ? sizeof(result) : ret_size);
+
+    /* Send output buffers to client. */
+    ldx::SockMsg::send_u32(sockfd, 0);
+    free((void *)args.path);
+    return err;
+}
+
+static int server_fchown(const void *raw_args, size_t args_size,
+                           void *ret_buf, size_t ret_size, int sockfd)
+{
+    (void)args_size; (void)ret_size;
+    ldx_sc_fchown_args args;
+    memcpy(&args, raw_args, sizeof(args));
+
+    errno = 0;
+    int result = real_fchown(args.fd, args.owner, args.group);
+    int err = (result == (int)-1) ? errno : 0;
+    memcpy(ret_buf, &result, sizeof(result) <= ret_size ? sizeof(result) : ret_size);
+
+    /* Send output buffers to client. */
+    ldx::SockMsg::send_u32(sockfd, 0);
+    return err;
+}
+
+static int server_link(const void *raw_args, size_t args_size,
+                           void *ret_buf, size_t ret_size, int sockfd)
+{
+    (void)args_size; (void)ret_size;
+    ldx_sc_link_args args;
+    memcpy(&args, raw_args, sizeof(args));
+
+    /* Receive PTR_IN buffers from client. */
+    uint32_t n_in = 0;
+    ldx::SockMsg::recv_u32(sockfd, &n_in);
+    for (uint32_t i = 0; i < n_in; i++) {
+        uint32_t idx = 0, sz = 0;
+        ldx::SockMsg::recv_u32(sockfd, &idx);
+        ldx::SockMsg::recv_u32(sockfd, &sz);
+        if (idx == 0 && sz > 0) {
+            void *buf = malloc(sz);
+            ldx::SockMsg::recv_all(sockfd, buf, sz);
+            args.from_path = (const char *)buf;
+        }
+        if (idx == 1 && sz > 0) {
+            void *buf = malloc(sz);
+            ldx::SockMsg::recv_all(sockfd, buf, sz);
+            args.to_path = (const char *)buf;
+        }
+    }
+
+    errno = 0;
+    int result = real_link(args.from_path, args.to_path);
+    int err = (result == (int)-1) ? errno : 0;
+    memcpy(ret_buf, &result, sizeof(result) <= ret_size ? sizeof(result) : ret_size);
+
+    /* Send output buffers to client. */
+    ldx::SockMsg::send_u32(sockfd, 0);
+    free((void *)args.from_path);
+    free((void *)args.to_path);
+    return err;
+}
+
+static int server_symlink(const void *raw_args, size_t args_size,
+                           void *ret_buf, size_t ret_size, int sockfd)
+{
+    (void)args_size; (void)ret_size;
+    ldx_sc_symlink_args args;
+    memcpy(&args, raw_args, sizeof(args));
+
+    /* Receive PTR_IN buffers from client. */
+    uint32_t n_in = 0;
+    ldx::SockMsg::recv_u32(sockfd, &n_in);
+    for (uint32_t i = 0; i < n_in; i++) {
+        uint32_t idx = 0, sz = 0;
+        ldx::SockMsg::recv_u32(sockfd, &idx);
+        ldx::SockMsg::recv_u32(sockfd, &sz);
+        if (idx == 0 && sz > 0) {
+            void *buf = malloc(sz);
+            ldx::SockMsg::recv_all(sockfd, buf, sz);
+            args.from_path = (const char *)buf;
+        }
+        if (idx == 1 && sz > 0) {
+            void *buf = malloc(sz);
+            ldx::SockMsg::recv_all(sockfd, buf, sz);
+            args.to_path = (const char *)buf;
+        }
+    }
+
+    errno = 0;
+    int result = real_symlink(args.from_path, args.to_path);
+    int err = (result == (int)-1) ? errno : 0;
+    memcpy(ret_buf, &result, sizeof(result) <= ret_size ? sizeof(result) : ret_size);
+
+    /* Send output buffers to client. */
+    ldx::SockMsg::send_u32(sockfd, 0);
+    free((void *)args.from_path);
+    free((void *)args.to_path);
+    return err;
+}
+
+static int server_readlink(const void *raw_args, size_t args_size,
+                           void *ret_buf, size_t ret_size, int sockfd)
+{
+    (void)args_size; (void)ret_size;
+    ldx_sc_readlink_args args;
+    memcpy(&args, raw_args, sizeof(args));
+
+    /* Receive PTR_IN buffers from client. */
+    uint32_t n_in = 0;
+    ldx::SockMsg::recv_u32(sockfd, &n_in);
+    for (uint32_t i = 0; i < n_in; i++) {
+        uint32_t idx = 0, sz = 0;
+        ldx::SockMsg::recv_u32(sockfd, &idx);
+        ldx::SockMsg::recv_u32(sockfd, &sz);
+        if (idx == 0 && sz > 0) {
+            void *buf = malloc(sz);
+            ldx::SockMsg::recv_all(sockfd, buf, sz);
+            args.path = (const char *)buf;
+        }
+    }
+
+    /* Allocate output buffers. */
+    size_t out_sz_buf = (size_t)(args.len);
+    args.buf = (char *)calloc(1, out_sz_buf);
+
+    errno = 0;
+    ssize_t result = real_readlink(args.path, args.buf, args.len);
+    int err = (result == (ssize_t)-1) ? errno : 0;
+    memcpy(ret_buf, &result, sizeof(result) <= ret_size ? sizeof(result) : ret_size);
+
+    /* Send output buffers to client. */
+    ldx::SockMsg::send_u32(sockfd, 1);
+    ldx::SockMsg::send_u32(sockfd, 1);
+    ldx::SockMsg::send_u32(sockfd, (uint32_t)out_sz_buf);
+    if (out_sz_buf > 0)
+        ldx::SockMsg::send_all(sockfd, args.buf, out_sz_buf);
+    free((void *)args.path);
+    free((void *)args.buf);
+    return err;
+}
+
+static int server_chdir(const void *raw_args, size_t args_size,
+                           void *ret_buf, size_t ret_size, int sockfd)
+{
+    (void)args_size; (void)ret_size;
+    ldx_sc_chdir_args args;
+    memcpy(&args, raw_args, sizeof(args));
+
+    /* Receive PTR_IN buffers from client. */
+    uint32_t n_in = 0;
+    ldx::SockMsg::recv_u32(sockfd, &n_in);
+    for (uint32_t i = 0; i < n_in; i++) {
+        uint32_t idx = 0, sz = 0;
+        ldx::SockMsg::recv_u32(sockfd, &idx);
+        ldx::SockMsg::recv_u32(sockfd, &sz);
+        if (idx == 0 && sz > 0) {
+            void *buf = malloc(sz);
+            ldx::SockMsg::recv_all(sockfd, buf, sz);
+            args.path = (const char *)buf;
+        }
+    }
+
+    errno = 0;
+    int result = real_chdir(args.path);
+    int err = (result == (int)-1) ? errno : 0;
+    memcpy(ret_buf, &result, sizeof(result) <= ret_size ? sizeof(result) : ret_size);
+
+    /* Send output buffers to client. */
+    ldx::SockMsg::send_u32(sockfd, 0);
+    free((void *)args.path);
+    return err;
+}
+
+static int server_fchdir(const void *raw_args, size_t args_size,
+                           void *ret_buf, size_t ret_size, int sockfd)
+{
+    (void)args_size; (void)ret_size;
+    ldx_sc_fchdir_args args;
+    memcpy(&args, raw_args, sizeof(args));
+
+    errno = 0;
+    int result = real_fchdir(args.fd);
+    int err = (result == (int)-1) ? errno : 0;
+    memcpy(ret_buf, &result, sizeof(result) <= ret_size ? sizeof(result) : ret_size);
+
+    /* Send output buffers to client. */
+    ldx::SockMsg::send_u32(sockfd, 0);
+    return err;
+}
+
+static int server_umask(const void *raw_args, size_t args_size,
+                           void *ret_buf, size_t ret_size, int sockfd)
+{
+    (void)args_size; (void)ret_size;
+    ldx_sc_umask_args args;
+    memcpy(&args, raw_args, sizeof(args));
+
+    errno = 0;
+    mode_t result = real_umask(args.mask);
+    int err = (result == (mode_t)-1) ? errno : 0;
+    memcpy(ret_buf, &result, sizeof(result) <= ret_size ? sizeof(result) : ret_size);
+
+    /* Send output buffers to client. */
+    ldx::SockMsg::send_u32(sockfd, 0);
+    return err;
+}
+
+static int server_rename(const void *raw_args, size_t args_size,
+                           void *ret_buf, size_t ret_size, int sockfd)
+{
+    (void)args_size; (void)ret_size;
+    ldx_sc_rename_args args;
+    memcpy(&args, raw_args, sizeof(args));
+
+    /* Receive PTR_IN buffers from client. */
+    uint32_t n_in = 0;
+    ldx::SockMsg::recv_u32(sockfd, &n_in);
+    for (uint32_t i = 0; i < n_in; i++) {
+        uint32_t idx = 0, sz = 0;
+        ldx::SockMsg::recv_u32(sockfd, &idx);
+        ldx::SockMsg::recv_u32(sockfd, &sz);
+        if (idx == 0 && sz > 0) {
+            void *buf = malloc(sz);
+            ldx::SockMsg::recv_all(sockfd, buf, sz);
+            args.old_path = (const char *)buf;
+        }
+        if (idx == 1 && sz > 0) {
+            void *buf = malloc(sz);
+            ldx::SockMsg::recv_all(sockfd, buf, sz);
+            args.new_path = (const char *)buf;
+        }
+    }
+
+    errno = 0;
+    int result = real_rename(args.old_path, args.new_path);
+    int err = (result == (int)-1) ? errno : 0;
+    memcpy(ret_buf, &result, sizeof(result) <= ret_size ? sizeof(result) : ret_size);
+
+    /* Send output buffers to client. */
+    ldx::SockMsg::send_u32(sockfd, 0);
+    free((void *)args.old_path);
+    free((void *)args.new_path);
+    return err;
+}
+
+static int server_truncate(const void *raw_args, size_t args_size,
+                           void *ret_buf, size_t ret_size, int sockfd)
+{
+    (void)args_size; (void)ret_size;
+    ldx_sc_truncate_args args;
+    memcpy(&args, raw_args, sizeof(args));
+
+    /* Receive PTR_IN buffers from client. */
+    uint32_t n_in = 0;
+    ldx::SockMsg::recv_u32(sockfd, &n_in);
+    for (uint32_t i = 0; i < n_in; i++) {
+        uint32_t idx = 0, sz = 0;
+        ldx::SockMsg::recv_u32(sockfd, &idx);
+        ldx::SockMsg::recv_u32(sockfd, &sz);
+        if (idx == 0 && sz > 0) {
+            void *buf = malloc(sz);
+            ldx::SockMsg::recv_all(sockfd, buf, sz);
+            args.path = (const char *)buf;
+        }
+    }
+
+    errno = 0;
+    int result = real_truncate(args.path, args.length);
+    int err = (result == (int)-1) ? errno : 0;
+    memcpy(ret_buf, &result, sizeof(result) <= ret_size ? sizeof(result) : ret_size);
+
+    /* Send output buffers to client. */
+    ldx::SockMsg::send_u32(sockfd, 0);
+    free((void *)args.path);
+    return err;
+}
+
+static int server_ftruncate(const void *raw_args, size_t args_size,
+                           void *ret_buf, size_t ret_size, int sockfd)
+{
+    (void)args_size; (void)ret_size;
+    ldx_sc_ftruncate_args args;
+    memcpy(&args, raw_args, sizeof(args));
+
+    errno = 0;
+    int result = real_ftruncate(args.fd, args.length);
+    int err = (result == (int)-1) ? errno : 0;
+    memcpy(ret_buf, &result, sizeof(result) <= ret_size ? sizeof(result) : ret_size);
+
+    /* Send output buffers to client. */
+    ldx::SockMsg::send_u32(sockfd, 0);
+    return err;
+}
+
+static int server_socket(const void *raw_args, size_t args_size,
+                           void *ret_buf, size_t ret_size, int sockfd)
+{
+    (void)args_size; (void)ret_size;
+    ldx_sc_socket_args args;
+    memcpy(&args, raw_args, sizeof(args));
+
+    errno = 0;
+    int result = real_socket(args.domain, args.type, args.protocol);
+    int err = (result == (int)-1) ? errno : 0;
+    memcpy(ret_buf, &result, sizeof(result) <= ret_size ? sizeof(result) : ret_size);
+
+    /* Send output buffers to client. */
+    ldx::SockMsg::send_u32(sockfd, 0);
+    return err;
+}
+
+static int server_bind(const void *raw_args, size_t args_size,
+                           void *ret_buf, size_t ret_size, int sockfd)
+{
+    (void)args_size; (void)ret_size;
+    ldx_sc_bind_args args;
+    memcpy(&args, raw_args, sizeof(args));
+
+    /* Receive PTR_IN buffers from client. */
+    uint32_t n_in = 0;
+    ldx::SockMsg::recv_u32(sockfd, &n_in);
+    for (uint32_t i = 0; i < n_in; i++) {
+        uint32_t idx = 0, sz = 0;
+        ldx::SockMsg::recv_u32(sockfd, &idx);
+        ldx::SockMsg::recv_u32(sockfd, &sz);
+        if (idx == 1 && sz > 0) {
+            void *buf = malloc(sz);
+            ldx::SockMsg::recv_all(sockfd, buf, sz);
+            args.addr = (const struct sockaddr *)buf;
+        }
+    }
+
+    errno = 0;
+    int result = real_bind(args.fd, args.addr, args.len);
+    int err = (result == (int)-1) ? errno : 0;
+    memcpy(ret_buf, &result, sizeof(result) <= ret_size ? sizeof(result) : ret_size);
+
+    /* Send output buffers to client. */
+    ldx::SockMsg::send_u32(sockfd, 0);
+    free((void *)args.addr);
+    return err;
+}
+
+static int server_connect(const void *raw_args, size_t args_size,
+                           void *ret_buf, size_t ret_size, int sockfd)
+{
+    (void)args_size; (void)ret_size;
+    ldx_sc_connect_args args;
+    memcpy(&args, raw_args, sizeof(args));
+
+    /* Receive PTR_IN buffers from client. */
+    uint32_t n_in = 0;
+    ldx::SockMsg::recv_u32(sockfd, &n_in);
+    for (uint32_t i = 0; i < n_in; i++) {
+        uint32_t idx = 0, sz = 0;
+        ldx::SockMsg::recv_u32(sockfd, &idx);
+        ldx::SockMsg::recv_u32(sockfd, &sz);
+        if (idx == 1 && sz > 0) {
+            void *buf = malloc(sz);
+            ldx::SockMsg::recv_all(sockfd, buf, sz);
+            args.addr = (const struct sockaddr *)buf;
+        }
+    }
+
+    errno = 0;
+    int result = real_connect(args.fd, args.addr, args.len);
+    int err = (result == (int)-1) ? errno : 0;
+    memcpy(ret_buf, &result, sizeof(result) <= ret_size ? sizeof(result) : ret_size);
+
+    /* Send output buffers to client. */
+    ldx::SockMsg::send_u32(sockfd, 0);
+    free((void *)args.addr);
+    return err;
+}
+
+static int server_listen(const void *raw_args, size_t args_size,
+                           void *ret_buf, size_t ret_size, int sockfd)
+{
+    (void)args_size; (void)ret_size;
+    ldx_sc_listen_args args;
+    memcpy(&args, raw_args, sizeof(args));
+
+    errno = 0;
+    int result = real_listen(args.fd, args.backlog);
+    int err = (result == (int)-1) ? errno : 0;
+    memcpy(ret_buf, &result, sizeof(result) <= ret_size ? sizeof(result) : ret_size);
+
+    /* Send output buffers to client. */
+    ldx::SockMsg::send_u32(sockfd, 0);
+    return err;
+}
+
+static int server_shutdown(const void *raw_args, size_t args_size,
+                           void *ret_buf, size_t ret_size, int sockfd)
+{
+    (void)args_size; (void)ret_size;
+    ldx_sc_shutdown_args args;
+    memcpy(&args, raw_args, sizeof(args));
+
+    errno = 0;
+    int result = real_shutdown(args.fd, args.how);
+    int err = (result == (int)-1) ? errno : 0;
+    memcpy(ret_buf, &result, sizeof(result) <= ret_size ? sizeof(result) : ret_size);
+
+    /* Send output buffers to client. */
+    ldx::SockMsg::send_u32(sockfd, 0);
+    return err;
+}
+
+static int server_send(const void *raw_args, size_t args_size,
+                           void *ret_buf, size_t ret_size, int sockfd)
+{
+    (void)args_size; (void)ret_size;
+    ldx_sc_send_args args;
+    memcpy(&args, raw_args, sizeof(args));
+
+    /* Receive PTR_IN buffers from client. */
+    uint32_t n_in = 0;
+    ldx::SockMsg::recv_u32(sockfd, &n_in);
+    for (uint32_t i = 0; i < n_in; i++) {
+        uint32_t idx = 0, sz = 0;
+        ldx::SockMsg::recv_u32(sockfd, &idx);
+        ldx::SockMsg::recv_u32(sockfd, &sz);
+        if (idx == 1 && sz > 0) {
+            void *buf = malloc(sz);
+            ldx::SockMsg::recv_all(sockfd, buf, sz);
+            args.buf = (const void *)buf;
+        }
+    }
+
+    errno = 0;
+    ssize_t result = real_send(args.fd, args.buf, args.n, args.flags);
+    int err = (result == (ssize_t)-1) ? errno : 0;
+    memcpy(ret_buf, &result, sizeof(result) <= ret_size ? sizeof(result) : ret_size);
+
+    /* Send output buffers to client. */
+    ldx::SockMsg::send_u32(sockfd, 0);
+    free((void *)args.buf);
+    return err;
+}
+
+static int server_recv(const void *raw_args, size_t args_size,
+                           void *ret_buf, size_t ret_size, int sockfd)
+{
+    (void)args_size; (void)ret_size;
+    ldx_sc_recv_args args;
+    memcpy(&args, raw_args, sizeof(args));
+
+    /* Allocate output buffers. */
+    size_t out_sz_buf = (size_t)(args.n);
+    args.buf = (void *)calloc(1, out_sz_buf);
+
+    errno = 0;
+    ssize_t result = real_recv(args.fd, args.buf, args.n, args.flags);
+    int err = (result == (ssize_t)-1) ? errno : 0;
+    memcpy(ret_buf, &result, sizeof(result) <= ret_size ? sizeof(result) : ret_size);
+
+    /* Send output buffers to client. */
+    ldx::SockMsg::send_u32(sockfd, 1);
+    ldx::SockMsg::send_u32(sockfd, 1);
+    ldx::SockMsg::send_u32(sockfd, (uint32_t)out_sz_buf);
+    if (out_sz_buf > 0)
+        ldx::SockMsg::send_all(sockfd, args.buf, out_sz_buf);
+    free((void *)args.buf);
+    return err;
+}
+
+static int server_setsockopt(const void *raw_args, size_t args_size,
+                           void *ret_buf, size_t ret_size, int sockfd)
+{
+    (void)args_size; (void)ret_size;
+    ldx_sc_setsockopt_args args;
+    memcpy(&args, raw_args, sizeof(args));
+
+    /* Receive PTR_IN buffers from client. */
+    uint32_t n_in = 0;
+    ldx::SockMsg::recv_u32(sockfd, &n_in);
+    for (uint32_t i = 0; i < n_in; i++) {
+        uint32_t idx = 0, sz = 0;
+        ldx::SockMsg::recv_u32(sockfd, &idx);
+        ldx::SockMsg::recv_u32(sockfd, &sz);
+        if (idx == 3 && sz > 0) {
+            void *buf = malloc(sz);
+            ldx::SockMsg::recv_all(sockfd, buf, sz);
+            args.optval = (const void *)buf;
+        }
+    }
+
+    errno = 0;
+    int result = real_setsockopt(args.fd, args.level, args.optname, args.optval, args.optlen);
+    int err = (result == (int)-1) ? errno : 0;
+    memcpy(ret_buf, &result, sizeof(result) <= ret_size ? sizeof(result) : ret_size);
+
+    /* Send output buffers to client. */
+    ldx::SockMsg::send_u32(sockfd, 0);
+    free((void *)args.optval);
+    return err;
+}
+
+static int server_mmap(const void *raw_args, size_t args_size,
+                           void *ret_buf, size_t ret_size, int sockfd)
+{
+    (void)args_size; (void)ret_size;
+    ldx_sc_mmap_args args;
+    memcpy(&args, raw_args, sizeof(args));
+
+    errno = 0;
+    void * result = real_mmap(args.addr, args.len, args.prot, args.flags, args.fd, args.offset);
+    int err = (result == (void *)-1) ? errno : 0;
+    memcpy(ret_buf, &result, sizeof(result) <= ret_size ? sizeof(result) : ret_size);
+
+    /* Send output buffers to client. */
+    ldx::SockMsg::send_u32(sockfd, 0);
+    return err;
+}
+
+static int server_munmap(const void *raw_args, size_t args_size,
+                           void *ret_buf, size_t ret_size, int sockfd)
+{
+    (void)args_size; (void)ret_size;
+    ldx_sc_munmap_args args;
+    memcpy(&args, raw_args, sizeof(args));
+
+    errno = 0;
+    int result = real_munmap(args.addr, args.len);
+    int err = (result == (int)-1) ? errno : 0;
+    memcpy(ret_buf, &result, sizeof(result) <= ret_size ? sizeof(result) : ret_size);
+
+    /* Send output buffers to client. */
+    ldx::SockMsg::send_u32(sockfd, 0);
+    return err;
+}
+
+static int server_mprotect(const void *raw_args, size_t args_size,
+                           void *ret_buf, size_t ret_size, int sockfd)
+{
+    (void)args_size; (void)ret_size;
+    ldx_sc_mprotect_args args;
+    memcpy(&args, raw_args, sizeof(args));
+
+    errno = 0;
+    int result = real_mprotect(args.addr, args.len, args.prot);
+    int err = (result == (int)-1) ? errno : 0;
+    memcpy(ret_buf, &result, sizeof(result) <= ret_size ? sizeof(result) : ret_size);
+
+    /* Send output buffers to client. */
+    ldx::SockMsg::send_u32(sockfd, 0);
+    return err;
+}
+
+static int server_getpid(const void *raw_args, size_t args_size,
+                           void *ret_buf, size_t ret_size, int sockfd)
+{
+    (void)args_size; (void)ret_size;
+    ldx_sc_getpid_args args;
+    memcpy(&args, raw_args, sizeof(args));
+
+    errno = 0;
+    pid_t result = real_getpid();
+    int err = (result == (pid_t)-1) ? errno : 0;
+    memcpy(ret_buf, &result, sizeof(result) <= ret_size ? sizeof(result) : ret_size);
+
+    /* Send output buffers to client. */
+    ldx::SockMsg::send_u32(sockfd, 0);
+    return err;
+}
+
+static int server_getppid(const void *raw_args, size_t args_size,
+                           void *ret_buf, size_t ret_size, int sockfd)
+{
+    (void)args_size; (void)ret_size;
+    ldx_sc_getppid_args args;
+    memcpy(&args, raw_args, sizeof(args));
+
+    errno = 0;
+    pid_t result = real_getppid();
+    int err = (result == (pid_t)-1) ? errno : 0;
+    memcpy(ret_buf, &result, sizeof(result) <= ret_size ? sizeof(result) : ret_size);
+
+    /* Send output buffers to client. */
+    ldx::SockMsg::send_u32(sockfd, 0);
+    return err;
+}
+
+static int server_getuid(const void *raw_args, size_t args_size,
+                           void *ret_buf, size_t ret_size, int sockfd)
+{
+    (void)args_size; (void)ret_size;
+    ldx_sc_getuid_args args;
+    memcpy(&args, raw_args, sizeof(args));
+
+    errno = 0;
+    uid_t result = real_getuid();
+    int err = (result == (uid_t)-1) ? errno : 0;
+    memcpy(ret_buf, &result, sizeof(result) <= ret_size ? sizeof(result) : ret_size);
+
+    /* Send output buffers to client. */
+    ldx::SockMsg::send_u32(sockfd, 0);
+    return err;
+}
+
+static int server_geteuid(const void *raw_args, size_t args_size,
+                           void *ret_buf, size_t ret_size, int sockfd)
+{
+    (void)args_size; (void)ret_size;
+    ldx_sc_geteuid_args args;
+    memcpy(&args, raw_args, sizeof(args));
+
+    errno = 0;
+    uid_t result = real_geteuid();
+    int err = (result == (uid_t)-1) ? errno : 0;
+    memcpy(ret_buf, &result, sizeof(result) <= ret_size ? sizeof(result) : ret_size);
+
+    /* Send output buffers to client. */
+    ldx::SockMsg::send_u32(sockfd, 0);
+    return err;
+}
+
+static int server_getgid(const void *raw_args, size_t args_size,
+                           void *ret_buf, size_t ret_size, int sockfd)
+{
+    (void)args_size; (void)ret_size;
+    ldx_sc_getgid_args args;
+    memcpy(&args, raw_args, sizeof(args));
+
+    errno = 0;
+    gid_t result = real_getgid();
+    int err = (result == (gid_t)-1) ? errno : 0;
+    memcpy(ret_buf, &result, sizeof(result) <= ret_size ? sizeof(result) : ret_size);
+
+    /* Send output buffers to client. */
+    ldx::SockMsg::send_u32(sockfd, 0);
+    return err;
+}
+
+static int server_getegid(const void *raw_args, size_t args_size,
+                           void *ret_buf, size_t ret_size, int sockfd)
+{
+    (void)args_size; (void)ret_size;
+    ldx_sc_getegid_args args;
+    memcpy(&args, raw_args, sizeof(args));
+
+    errno = 0;
+    gid_t result = real_getegid();
+    int err = (result == (gid_t)-1) ? errno : 0;
+    memcpy(ret_buf, &result, sizeof(result) <= ret_size ? sizeof(result) : ret_size);
+
+    /* Send output buffers to client. */
+    ldx::SockMsg::send_u32(sockfd, 0);
+    return err;
+}
+
+static int server_setuid(const void *raw_args, size_t args_size,
+                           void *ret_buf, size_t ret_size, int sockfd)
+{
+    (void)args_size; (void)ret_size;
+    ldx_sc_setuid_args args;
+    memcpy(&args, raw_args, sizeof(args));
+
+    errno = 0;
+    int result = real_setuid(args.uid);
+    int err = (result == (int)-1) ? errno : 0;
+    memcpy(ret_buf, &result, sizeof(result) <= ret_size ? sizeof(result) : ret_size);
+
+    /* Send output buffers to client. */
+    ldx::SockMsg::send_u32(sockfd, 0);
+    return err;
+}
+
+static int server_setgid(const void *raw_args, size_t args_size,
+                           void *ret_buf, size_t ret_size, int sockfd)
+{
+    (void)args_size; (void)ret_size;
+    ldx_sc_setgid_args args;
+    memcpy(&args, raw_args, sizeof(args));
+
+    errno = 0;
+    int result = real_setgid(args.gid);
+    int err = (result == (int)-1) ? errno : 0;
+    memcpy(ret_buf, &result, sizeof(result) <= ret_size ? sizeof(result) : ret_size);
+
+    /* Send output buffers to client. */
+    ldx::SockMsg::send_u32(sockfd, 0);
+    return err;
+}
+
+static int server_kill(const void *raw_args, size_t args_size,
+                           void *ret_buf, size_t ret_size, int sockfd)
+{
+    (void)args_size; (void)ret_size;
+    ldx_sc_kill_args args;
+    memcpy(&args, raw_args, sizeof(args));
+
+    errno = 0;
+    int result = real_kill(args.pid, args.sig);
+    int err = (result == (int)-1) ? errno : 0;
+    memcpy(ret_buf, &result, sizeof(result) <= ret_size ? sizeof(result) : ret_size);
+
+    /* Send output buffers to client. */
+    ldx::SockMsg::send_u32(sockfd, 0);
+    return err;
+}
+
+static int server_epoll_create1(const void *raw_args, size_t args_size,
+                           void *ret_buf, size_t ret_size, int sockfd)
+{
+    (void)args_size; (void)ret_size;
+    ldx_sc_epoll_create1_args args;
+    memcpy(&args, raw_args, sizeof(args));
+
+    errno = 0;
+    int result = real_epoll_create1(args.flags);
+    int err = (result == (int)-1) ? errno : 0;
+    memcpy(ret_buf, &result, sizeof(result) <= ret_size ? sizeof(result) : ret_size);
+
+    /* Send output buffers to client. */
+    ldx::SockMsg::send_u32(sockfd, 0);
+    return err;
+}
+
+static int server_epoll_ctl(const void *raw_args, size_t args_size,
+                           void *ret_buf, size_t ret_size, int sockfd)
+{
+    (void)args_size; (void)ret_size;
+    ldx_sc_epoll_ctl_args args;
+    memcpy(&args, raw_args, sizeof(args));
+
+    /* Receive PTR_IN buffers from client. */
+    uint32_t n_in = 0;
+    ldx::SockMsg::recv_u32(sockfd, &n_in);
+    for (uint32_t i = 0; i < n_in; i++) {
+        uint32_t idx = 0, sz = 0;
+        ldx::SockMsg::recv_u32(sockfd, &idx);
+        ldx::SockMsg::recv_u32(sockfd, &sz);
+        if (idx == 3 && sz > 0) {
+            void *buf = malloc(sz);
+            ldx::SockMsg::recv_all(sockfd, buf, sz);
+            args.event = (struct epoll_event *)buf;
+        }
+    }
+
+    errno = 0;
+    int result = real_epoll_ctl(args.epfd, args.op, args.fd, args.event);
+    int err = (result == (int)-1) ? errno : 0;
+    memcpy(ret_buf, &result, sizeof(result) <= ret_size ? sizeof(result) : ret_size);
+
+    /* Send output buffers to client. */
+    ldx::SockMsg::send_u32(sockfd, 0);
+    free((void *)args.event);
+    return err;
+}
+
+static int server_gethostname(const void *raw_args, size_t args_size,
+                           void *ret_buf, size_t ret_size, int sockfd)
+{
+    (void)args_size; (void)ret_size;
+    ldx_sc_gethostname_args args;
+    memcpy(&args, raw_args, sizeof(args));
+
+    /* Allocate output buffers. */
+    size_t out_sz_name = (size_t)(args.len);
+    args.name = (char *)calloc(1, out_sz_name);
+
+    errno = 0;
+    int result = real_gethostname(args.name, args.len);
+    int err = (result == (int)-1) ? errno : 0;
+    memcpy(ret_buf, &result, sizeof(result) <= ret_size ? sizeof(result) : ret_size);
+
+    /* Send output buffers to client. */
+    ldx::SockMsg::send_u32(sockfd, 1);
+    ldx::SockMsg::send_u32(sockfd, 0);
+    ldx::SockMsg::send_u32(sockfd, (uint32_t)out_sz_name);
+    if (out_sz_name > 0)
+        ldx::SockMsg::send_all(sockfd, args.name, out_sz_name);
+    free((void *)args.name);
+    return err;
+}
+
+static int server_sethostname(const void *raw_args, size_t args_size,
+                           void *ret_buf, size_t ret_size, int sockfd)
+{
+    (void)args_size; (void)ret_size;
+    ldx_sc_sethostname_args args;
+    memcpy(&args, raw_args, sizeof(args));
+
+    /* Receive PTR_IN buffers from client. */
+    uint32_t n_in = 0;
+    ldx::SockMsg::recv_u32(sockfd, &n_in);
+    for (uint32_t i = 0; i < n_in; i++) {
+        uint32_t idx = 0, sz = 0;
+        ldx::SockMsg::recv_u32(sockfd, &idx);
+        ldx::SockMsg::recv_u32(sockfd, &sz);
+        if (idx == 0 && sz > 0) {
+            void *buf = malloc(sz);
+            ldx::SockMsg::recv_all(sockfd, buf, sz);
+            args.name = (const char *)buf;
+        }
+    }
+
+    errno = 0;
+    int result = real_sethostname(args.name, args.len);
+    int err = (result == (int)-1) ? errno : 0;
+    memcpy(ret_buf, &result, sizeof(result) <= ret_size ? sizeof(result) : ret_size);
+
+    /* Send output buffers to client. */
+    ldx::SockMsg::send_u32(sockfd, 0);
+    free((void *)args.name);
+    return err;
+}
+
+static ldx_sock_handler_t sc_handlers[] = {
+    { "read", server_read },
+    { "write", server_write },
+    { "pread", server_pread },
+    { "pwrite", server_pwrite },
+    { "close", server_close },
+    { "lseek", server_lseek },
+    { "dup", server_dup },
+    { "dup2", server_dup2 },
+    { "pipe", server_pipe },
+    { "stat", server_stat },
+    { "fstat", server_fstat },
+    { "lstat", server_lstat },
+    { "access", server_access },
+    { "unlink", server_unlink },
+    { "rmdir", server_rmdir },
+    { "mkdir", server_mkdir },
+    { "chmod", server_chmod },
+    { "fchmod", server_fchmod },
+    { "chown", server_chown },
+    { "fchown", server_fchown },
+    { "link", server_link },
+    { "symlink", server_symlink },
+    { "readlink", server_readlink },
+    { "chdir", server_chdir },
+    { "fchdir", server_fchdir },
+    { "umask", server_umask },
+    { "rename", server_rename },
+    { "truncate", server_truncate },
+    { "ftruncate", server_ftruncate },
+    { "socket", server_socket },
+    { "bind", server_bind },
+    { "connect", server_connect },
+    { "listen", server_listen },
+    { "shutdown", server_shutdown },
+    { "send", server_send },
+    { "recv", server_recv },
+    { "setsockopt", server_setsockopt },
+    { "mmap", server_mmap },
+    { "munmap", server_munmap },
+    { "mprotect", server_mprotect },
+    { "getpid", server_getpid },
+    { "getppid", server_getppid },
+    { "getuid", server_getuid },
+    { "geteuid", server_geteuid },
+    { "getgid", server_getgid },
+    { "getegid", server_getegid },
+    { "setuid", server_setuid },
+    { "setgid", server_setgid },
+    { "kill", server_kill },
+    { "epoll_create1", server_epoll_create1 },
+    { "epoll_ctl", server_epoll_ctl },
+    { "gethostname", server_gethostname },
+    { "sethostname", server_sethostname },
+};
+static const int sc_nhandlers = 53;
+
+extern "C" int ldx_syscall_sock_server(int sockfd)
+{
+    /* Resolve real functions. */
+    real_read = (ssize_t(*)(int, void *, size_t))dlsym(RTLD_DEFAULT, "read");
+    real_write = (ssize_t(*)(int, const void *, size_t))dlsym(RTLD_DEFAULT, "write");
+    real_pread = (ssize_t(*)(int, void *, size_t, off_t))dlsym(RTLD_DEFAULT, "pread");
+    real_pwrite = (ssize_t(*)(int, const void *, size_t, off_t))dlsym(RTLD_DEFAULT, "pwrite");
+    real_close = (int(*)(int))dlsym(RTLD_DEFAULT, "close");
+    real_lseek = (off_t(*)(int, off_t, int))dlsym(RTLD_DEFAULT, "lseek");
+    real_dup = (int(*)(int))dlsym(RTLD_DEFAULT, "dup");
+    real_dup2 = (int(*)(int, int))dlsym(RTLD_DEFAULT, "dup2");
+    real_pipe = (int(*)(int *))dlsym(RTLD_DEFAULT, "pipe");
+    real_stat = (int(*)(const char *, struct stat *))dlsym(RTLD_DEFAULT, "stat");
+    real_fstat = (int(*)(int, struct stat *))dlsym(RTLD_DEFAULT, "fstat");
+    real_lstat = (int(*)(const char *, struct stat *))dlsym(RTLD_DEFAULT, "lstat");
+    real_access = (int(*)(const char *, int))dlsym(RTLD_DEFAULT, "access");
+    real_unlink = (int(*)(const char *))dlsym(RTLD_DEFAULT, "unlink");
+    real_rmdir = (int(*)(const char *))dlsym(RTLD_DEFAULT, "rmdir");
+    real_mkdir = (int(*)(const char *, mode_t))dlsym(RTLD_DEFAULT, "mkdir");
+    real_chmod = (int(*)(const char *, mode_t))dlsym(RTLD_DEFAULT, "chmod");
+    real_fchmod = (int(*)(int, mode_t))dlsym(RTLD_DEFAULT, "fchmod");
+    real_chown = (int(*)(const char *, uid_t, gid_t))dlsym(RTLD_DEFAULT, "chown");
+    real_fchown = (int(*)(int, uid_t, gid_t))dlsym(RTLD_DEFAULT, "fchown");
+    real_link = (int(*)(const char *, const char *))dlsym(RTLD_DEFAULT, "link");
+    real_symlink = (int(*)(const char *, const char *))dlsym(RTLD_DEFAULT, "symlink");
+    real_readlink = (ssize_t(*)(const char *, char *, size_t))dlsym(RTLD_DEFAULT, "readlink");
+    real_chdir = (int(*)(const char *))dlsym(RTLD_DEFAULT, "chdir");
+    real_fchdir = (int(*)(int))dlsym(RTLD_DEFAULT, "fchdir");
+    real_umask = (mode_t(*)(mode_t))dlsym(RTLD_DEFAULT, "umask");
+    real_rename = (int(*)(const char *, const char *))dlsym(RTLD_DEFAULT, "rename");
+    real_truncate = (int(*)(const char *, off_t))dlsym(RTLD_DEFAULT, "truncate");
+    real_ftruncate = (int(*)(int, off_t))dlsym(RTLD_DEFAULT, "ftruncate");
+    real_socket = (int(*)(int, int, int))dlsym(RTLD_DEFAULT, "socket");
+    real_bind = (int(*)(int, const struct sockaddr *, socklen_t))dlsym(RTLD_DEFAULT, "bind");
+    real_connect = (int(*)(int, const struct sockaddr *, socklen_t))dlsym(RTLD_DEFAULT, "connect");
+    real_listen = (int(*)(int, int))dlsym(RTLD_DEFAULT, "listen");
+    real_shutdown = (int(*)(int, int))dlsym(RTLD_DEFAULT, "shutdown");
+    real_send = (ssize_t(*)(int, const void *, size_t, int))dlsym(RTLD_DEFAULT, "send");
+    real_recv = (ssize_t(*)(int, void *, size_t, int))dlsym(RTLD_DEFAULT, "recv");
+    real_setsockopt = (int(*)(int, int, int, const void *, socklen_t))dlsym(RTLD_DEFAULT, "setsockopt");
+    real_mmap = (void *(*)(void *, size_t, int, int, int, off_t))dlsym(RTLD_DEFAULT, "mmap");
+    real_munmap = (int(*)(void *, size_t))dlsym(RTLD_DEFAULT, "munmap");
+    real_mprotect = (int(*)(void *, size_t, int))dlsym(RTLD_DEFAULT, "mprotect");
+    real_getpid = (pid_t(*)(void))dlsym(RTLD_DEFAULT, "getpid");
+    real_getppid = (pid_t(*)(void))dlsym(RTLD_DEFAULT, "getppid");
+    real_getuid = (uid_t(*)(void))dlsym(RTLD_DEFAULT, "getuid");
+    real_geteuid = (uid_t(*)(void))dlsym(RTLD_DEFAULT, "geteuid");
+    real_getgid = (gid_t(*)(void))dlsym(RTLD_DEFAULT, "getgid");
+    real_getegid = (gid_t(*)(void))dlsym(RTLD_DEFAULT, "getegid");
+    real_setuid = (int(*)(uid_t))dlsym(RTLD_DEFAULT, "setuid");
+    real_setgid = (int(*)(gid_t))dlsym(RTLD_DEFAULT, "setgid");
+    real_kill = (int(*)(pid_t, int))dlsym(RTLD_DEFAULT, "kill");
+    real_epoll_create1 = (int(*)(int))dlsym(RTLD_DEFAULT, "epoll_create1");
+    real_epoll_ctl = (int(*)(int, int, int, struct epoll_event *))dlsym(RTLD_DEFAULT, "epoll_ctl");
+    real_gethostname = (int(*)(char *, size_t))dlsym(RTLD_DEFAULT, "gethostname");
+    real_sethostname = (int(*)(const char *, size_t))dlsym(RTLD_DEFAULT, "sethostname");
+
+    fprintf(stderr, "ldx-server: starting with %d handlers\n", sc_nhandlers);
+    return ldx_sock_server_run(sockfd, sc_handlers, sc_nhandlers);
 }
 

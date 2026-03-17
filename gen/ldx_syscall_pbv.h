@@ -15,6 +15,8 @@
 
 #ifdef __cplusplus
 #include "ldx_pipe.h"
+#include "ldx_socket_pipe.h"
+#include <cstring>
 
 /* read() — excellent candidate */
 struct ldx_sc_read_args {
@@ -25,8 +27,28 @@ struct ldx_sc_read_args {
     ssize_t invoke(void *fn) const {
         return ((ssize_t(*)(int, void *, size_t))fn)(this->fd, this->buf, this->n);
     }
+
+    static const char *syscall_name() { return "read"; }
+
+    void write_outbufs(int _fd) const {
+        uint32_t _n = 0;
+        ldx::SockMsg::send_u32(_fd, _n);
+    }
+
+    void read_outbufs(int _fd) {
+        uint32_t _n = 0;
+        ldx::SockMsg::recv_u32(_fd, &_n);
+        for (uint32_t _i = 0; _i < _n; _i++) {
+            uint32_t _idx = 0, _sz = 0;
+            ldx::SockMsg::recv_u32(_fd, &_idx);
+            ldx::SockMsg::recv_u32(_fd, &_sz);
+            if (_idx == 1 && _sz > 0 && this->buf)
+                ldx::SockMsg::recv_all(_fd, this->buf, _sz);
+        }
+    }
 };
 typedef ldx::Pipe<ldx_sc_read_args, ssize_t> ldx_sc_read_pipe_t;
+typedef ldx::SocketPipe<ldx_sc_read_args, ssize_t> ldx_sc_read_sockpipe_t;
 
 /* write() — excellent candidate */
 struct ldx_sc_write_args {
@@ -37,8 +59,27 @@ struct ldx_sc_write_args {
     ssize_t invoke(void *fn) const {
         return ((ssize_t(*)(int, const void *, size_t))fn)(this->fd, this->buf, this->n);
     }
+
+    static const char *syscall_name() { return "write"; }
+
+    void write_outbufs(int _fd) const {
+        uint32_t _n = 1;
+        ldx::SockMsg::send_u32(_fd, _n);
+        /* arg[1] buf: ptr_in */
+        ldx::SockMsg::send_u32(_fd, 1);
+        { size_t _sz = (size_t)(this->n);
+          ldx::SockMsg::send_u32(_fd, (uint32_t)_sz);
+          if (_sz > 0 && this->buf)
+              ldx::SockMsg::send_all(_fd, this->buf, _sz); }
+    }
+
+    void read_outbufs(int _fd) {
+        uint32_t _n = 0;
+        ldx::SockMsg::recv_u32(_fd, &_n);
+    }
 };
 typedef ldx::Pipe<ldx_sc_write_args, ssize_t> ldx_sc_write_pipe_t;
+typedef ldx::SocketPipe<ldx_sc_write_args, ssize_t> ldx_sc_write_sockpipe_t;
 
 /* pread() — excellent candidate */
 struct ldx_sc_pread_args {
@@ -50,8 +91,28 @@ struct ldx_sc_pread_args {
     ssize_t invoke(void *fn) const {
         return ((ssize_t(*)(int, void *, size_t, off_t))fn)(this->fd, this->buf, this->n, this->offset);
     }
+
+    static const char *syscall_name() { return "pread"; }
+
+    void write_outbufs(int _fd) const {
+        uint32_t _n = 0;
+        ldx::SockMsg::send_u32(_fd, _n);
+    }
+
+    void read_outbufs(int _fd) {
+        uint32_t _n = 0;
+        ldx::SockMsg::recv_u32(_fd, &_n);
+        for (uint32_t _i = 0; _i < _n; _i++) {
+            uint32_t _idx = 0, _sz = 0;
+            ldx::SockMsg::recv_u32(_fd, &_idx);
+            ldx::SockMsg::recv_u32(_fd, &_sz);
+            if (_idx == 1 && _sz > 0 && this->buf)
+                ldx::SockMsg::recv_all(_fd, this->buf, _sz);
+        }
+    }
 };
 typedef ldx::Pipe<ldx_sc_pread_args, ssize_t> ldx_sc_pread_pipe_t;
+typedef ldx::SocketPipe<ldx_sc_pread_args, ssize_t> ldx_sc_pread_sockpipe_t;
 
 /* pwrite() — excellent candidate */
 struct ldx_sc_pwrite_args {
@@ -63,8 +124,27 @@ struct ldx_sc_pwrite_args {
     ssize_t invoke(void *fn) const {
         return ((ssize_t(*)(int, const void *, size_t, off_t))fn)(this->fd, this->buf, this->n, this->offset);
     }
+
+    static const char *syscall_name() { return "pwrite"; }
+
+    void write_outbufs(int _fd) const {
+        uint32_t _n = 1;
+        ldx::SockMsg::send_u32(_fd, _n);
+        /* arg[1] buf: ptr_in */
+        ldx::SockMsg::send_u32(_fd, 1);
+        { size_t _sz = (size_t)(this->n);
+          ldx::SockMsg::send_u32(_fd, (uint32_t)_sz);
+          if (_sz > 0 && this->buf)
+              ldx::SockMsg::send_all(_fd, this->buf, _sz); }
+    }
+
+    void read_outbufs(int _fd) {
+        uint32_t _n = 0;
+        ldx::SockMsg::recv_u32(_fd, &_n);
+    }
 };
 typedef ldx::Pipe<ldx_sc_pwrite_args, ssize_t> ldx_sc_pwrite_pipe_t;
+typedef ldx::SocketPipe<ldx_sc_pwrite_args, ssize_t> ldx_sc_pwrite_sockpipe_t;
 
 /* close() — excellent candidate */
 struct ldx_sc_close_args {
@@ -73,8 +153,21 @@ struct ldx_sc_close_args {
     int invoke(void *fn) const {
         return ((int(*)(int))fn)(this->fd);
     }
+
+    static const char *syscall_name() { return "close"; }
+
+    void write_outbufs(int _fd) const {
+        uint32_t _n = 0;
+        ldx::SockMsg::send_u32(_fd, _n);
+    }
+
+    void read_outbufs(int _fd) {
+        uint32_t _n = 0;
+        ldx::SockMsg::recv_u32(_fd, &_n);
+    }
 };
 typedef ldx::Pipe<ldx_sc_close_args, int> ldx_sc_close_pipe_t;
+typedef ldx::SocketPipe<ldx_sc_close_args, int> ldx_sc_close_sockpipe_t;
 
 /* lseek() — excellent candidate */
 struct ldx_sc_lseek_args {
@@ -85,8 +178,21 @@ struct ldx_sc_lseek_args {
     off_t invoke(void *fn) const {
         return ((off_t(*)(int, off_t, int))fn)(this->fd, this->offset, this->whence);
     }
+
+    static const char *syscall_name() { return "lseek"; }
+
+    void write_outbufs(int _fd) const {
+        uint32_t _n = 0;
+        ldx::SockMsg::send_u32(_fd, _n);
+    }
+
+    void read_outbufs(int _fd) {
+        uint32_t _n = 0;
+        ldx::SockMsg::recv_u32(_fd, &_n);
+    }
 };
 typedef ldx::Pipe<ldx_sc_lseek_args, off_t> ldx_sc_lseek_pipe_t;
+typedef ldx::SocketPipe<ldx_sc_lseek_args, off_t> ldx_sc_lseek_sockpipe_t;
 
 /* dup() — excellent candidate */
 struct ldx_sc_dup_args {
@@ -95,8 +201,21 @@ struct ldx_sc_dup_args {
     int invoke(void *fn) const {
         return ((int(*)(int))fn)(this->fd);
     }
+
+    static const char *syscall_name() { return "dup"; }
+
+    void write_outbufs(int _fd) const {
+        uint32_t _n = 0;
+        ldx::SockMsg::send_u32(_fd, _n);
+    }
+
+    void read_outbufs(int _fd) {
+        uint32_t _n = 0;
+        ldx::SockMsg::recv_u32(_fd, &_n);
+    }
 };
 typedef ldx::Pipe<ldx_sc_dup_args, int> ldx_sc_dup_pipe_t;
+typedef ldx::SocketPipe<ldx_sc_dup_args, int> ldx_sc_dup_sockpipe_t;
 
 /* dup2() — excellent candidate */
 struct ldx_sc_dup2_args {
@@ -106,8 +225,21 @@ struct ldx_sc_dup2_args {
     int invoke(void *fn) const {
         return ((int(*)(int, int))fn)(this->fd, this->fd2);
     }
+
+    static const char *syscall_name() { return "dup2"; }
+
+    void write_outbufs(int _fd) const {
+        uint32_t _n = 0;
+        ldx::SockMsg::send_u32(_fd, _n);
+    }
+
+    void read_outbufs(int _fd) {
+        uint32_t _n = 0;
+        ldx::SockMsg::recv_u32(_fd, &_n);
+    }
 };
 typedef ldx::Pipe<ldx_sc_dup2_args, int> ldx_sc_dup2_pipe_t;
+typedef ldx::SocketPipe<ldx_sc_dup2_args, int> ldx_sc_dup2_sockpipe_t;
 
 /* pipe() — excellent candidate */
 struct ldx_sc_pipe_args {
@@ -116,8 +248,28 @@ struct ldx_sc_pipe_args {
     int invoke(void *fn) const {
         return ((int(*)(int *))fn)(this->pipedes);
     }
+
+    static const char *syscall_name() { return "pipe"; }
+
+    void write_outbufs(int _fd) const {
+        uint32_t _n = 0;
+        ldx::SockMsg::send_u32(_fd, _n);
+    }
+
+    void read_outbufs(int _fd) {
+        uint32_t _n = 0;
+        ldx::SockMsg::recv_u32(_fd, &_n);
+        for (uint32_t _i = 0; _i < _n; _i++) {
+            uint32_t _idx = 0, _sz = 0;
+            ldx::SockMsg::recv_u32(_fd, &_idx);
+            ldx::SockMsg::recv_u32(_fd, &_sz);
+            if (_idx == 0 && _sz > 0 && this->pipedes)
+                ldx::SockMsg::recv_all(_fd, this->pipedes, _sz);
+        }
+    }
 };
 typedef ldx::Pipe<ldx_sc_pipe_args, int> ldx_sc_pipe_pipe_t;
+typedef ldx::SocketPipe<ldx_sc_pipe_args, int> ldx_sc_pipe_sockpipe_t;
 
 /* stat() — good candidate */
 struct ldx_sc_stat_args {
@@ -127,8 +279,34 @@ struct ldx_sc_stat_args {
     int invoke(void *fn) const {
         return ((int(*)(const char *, struct stat *))fn)(this->path, this->buf);
     }
+
+    static const char *syscall_name() { return "stat"; }
+
+    void write_outbufs(int _fd) const {
+        uint32_t _n = 1;
+        ldx::SockMsg::send_u32(_fd, _n);
+        /* arg[0] path: ptr_in */
+        ldx::SockMsg::send_u32(_fd, 0);
+        { size_t _sz = (this->path ? strlen(this->path) + 1 : 0);
+          ldx::SockMsg::send_u32(_fd, (uint32_t)_sz);
+          if (_sz > 0 && this->path)
+              ldx::SockMsg::send_all(_fd, this->path, _sz); }
+    }
+
+    void read_outbufs(int _fd) {
+        uint32_t _n = 0;
+        ldx::SockMsg::recv_u32(_fd, &_n);
+        for (uint32_t _i = 0; _i < _n; _i++) {
+            uint32_t _idx = 0, _sz = 0;
+            ldx::SockMsg::recv_u32(_fd, &_idx);
+            ldx::SockMsg::recv_u32(_fd, &_sz);
+            if (_idx == 1 && _sz > 0 && this->buf)
+                ldx::SockMsg::recv_all(_fd, this->buf, _sz);
+        }
+    }
 };
 typedef ldx::Pipe<ldx_sc_stat_args, int> ldx_sc_stat_pipe_t;
+typedef ldx::SocketPipe<ldx_sc_stat_args, int> ldx_sc_stat_sockpipe_t;
 
 /* fstat() — good candidate */
 struct ldx_sc_fstat_args {
@@ -138,8 +316,28 @@ struct ldx_sc_fstat_args {
     int invoke(void *fn) const {
         return ((int(*)(int, struct stat *))fn)(this->fd, this->buf);
     }
+
+    static const char *syscall_name() { return "fstat"; }
+
+    void write_outbufs(int _fd) const {
+        uint32_t _n = 0;
+        ldx::SockMsg::send_u32(_fd, _n);
+    }
+
+    void read_outbufs(int _fd) {
+        uint32_t _n = 0;
+        ldx::SockMsg::recv_u32(_fd, &_n);
+        for (uint32_t _i = 0; _i < _n; _i++) {
+            uint32_t _idx = 0, _sz = 0;
+            ldx::SockMsg::recv_u32(_fd, &_idx);
+            ldx::SockMsg::recv_u32(_fd, &_sz);
+            if (_idx == 1 && _sz > 0 && this->buf)
+                ldx::SockMsg::recv_all(_fd, this->buf, _sz);
+        }
+    }
 };
 typedef ldx::Pipe<ldx_sc_fstat_args, int> ldx_sc_fstat_pipe_t;
+typedef ldx::SocketPipe<ldx_sc_fstat_args, int> ldx_sc_fstat_sockpipe_t;
 
 /* lstat() — good candidate */
 struct ldx_sc_lstat_args {
@@ -149,8 +347,34 @@ struct ldx_sc_lstat_args {
     int invoke(void *fn) const {
         return ((int(*)(const char *, struct stat *))fn)(this->path, this->buf);
     }
+
+    static const char *syscall_name() { return "lstat"; }
+
+    void write_outbufs(int _fd) const {
+        uint32_t _n = 1;
+        ldx::SockMsg::send_u32(_fd, _n);
+        /* arg[0] path: ptr_in */
+        ldx::SockMsg::send_u32(_fd, 0);
+        { size_t _sz = (this->path ? strlen(this->path) + 1 : 0);
+          ldx::SockMsg::send_u32(_fd, (uint32_t)_sz);
+          if (_sz > 0 && this->path)
+              ldx::SockMsg::send_all(_fd, this->path, _sz); }
+    }
+
+    void read_outbufs(int _fd) {
+        uint32_t _n = 0;
+        ldx::SockMsg::recv_u32(_fd, &_n);
+        for (uint32_t _i = 0; _i < _n; _i++) {
+            uint32_t _idx = 0, _sz = 0;
+            ldx::SockMsg::recv_u32(_fd, &_idx);
+            ldx::SockMsg::recv_u32(_fd, &_sz);
+            if (_idx == 1 && _sz > 0 && this->buf)
+                ldx::SockMsg::recv_all(_fd, this->buf, _sz);
+        }
+    }
 };
 typedef ldx::Pipe<ldx_sc_lstat_args, int> ldx_sc_lstat_pipe_t;
+typedef ldx::SocketPipe<ldx_sc_lstat_args, int> ldx_sc_lstat_sockpipe_t;
 
 /* access() — excellent candidate */
 struct ldx_sc_access_args {
@@ -160,8 +384,27 @@ struct ldx_sc_access_args {
     int invoke(void *fn) const {
         return ((int(*)(const char *, int))fn)(this->path, this->mode);
     }
+
+    static const char *syscall_name() { return "access"; }
+
+    void write_outbufs(int _fd) const {
+        uint32_t _n = 1;
+        ldx::SockMsg::send_u32(_fd, _n);
+        /* arg[0] path: ptr_in */
+        ldx::SockMsg::send_u32(_fd, 0);
+        { size_t _sz = (this->path ? strlen(this->path) + 1 : 0);
+          ldx::SockMsg::send_u32(_fd, (uint32_t)_sz);
+          if (_sz > 0 && this->path)
+              ldx::SockMsg::send_all(_fd, this->path, _sz); }
+    }
+
+    void read_outbufs(int _fd) {
+        uint32_t _n = 0;
+        ldx::SockMsg::recv_u32(_fd, &_n);
+    }
 };
 typedef ldx::Pipe<ldx_sc_access_args, int> ldx_sc_access_pipe_t;
+typedef ldx::SocketPipe<ldx_sc_access_args, int> ldx_sc_access_sockpipe_t;
 
 /* unlink() — excellent candidate */
 struct ldx_sc_unlink_args {
@@ -170,8 +413,27 @@ struct ldx_sc_unlink_args {
     int invoke(void *fn) const {
         return ((int(*)(const char *))fn)(this->path);
     }
+
+    static const char *syscall_name() { return "unlink"; }
+
+    void write_outbufs(int _fd) const {
+        uint32_t _n = 1;
+        ldx::SockMsg::send_u32(_fd, _n);
+        /* arg[0] path: ptr_in */
+        ldx::SockMsg::send_u32(_fd, 0);
+        { size_t _sz = (this->path ? strlen(this->path) + 1 : 0);
+          ldx::SockMsg::send_u32(_fd, (uint32_t)_sz);
+          if (_sz > 0 && this->path)
+              ldx::SockMsg::send_all(_fd, this->path, _sz); }
+    }
+
+    void read_outbufs(int _fd) {
+        uint32_t _n = 0;
+        ldx::SockMsg::recv_u32(_fd, &_n);
+    }
 };
 typedef ldx::Pipe<ldx_sc_unlink_args, int> ldx_sc_unlink_pipe_t;
+typedef ldx::SocketPipe<ldx_sc_unlink_args, int> ldx_sc_unlink_sockpipe_t;
 
 /* rmdir() — excellent candidate */
 struct ldx_sc_rmdir_args {
@@ -180,8 +442,27 @@ struct ldx_sc_rmdir_args {
     int invoke(void *fn) const {
         return ((int(*)(const char *))fn)(this->path);
     }
+
+    static const char *syscall_name() { return "rmdir"; }
+
+    void write_outbufs(int _fd) const {
+        uint32_t _n = 1;
+        ldx::SockMsg::send_u32(_fd, _n);
+        /* arg[0] path: ptr_in */
+        ldx::SockMsg::send_u32(_fd, 0);
+        { size_t _sz = (this->path ? strlen(this->path) + 1 : 0);
+          ldx::SockMsg::send_u32(_fd, (uint32_t)_sz);
+          if (_sz > 0 && this->path)
+              ldx::SockMsg::send_all(_fd, this->path, _sz); }
+    }
+
+    void read_outbufs(int _fd) {
+        uint32_t _n = 0;
+        ldx::SockMsg::recv_u32(_fd, &_n);
+    }
 };
 typedef ldx::Pipe<ldx_sc_rmdir_args, int> ldx_sc_rmdir_pipe_t;
+typedef ldx::SocketPipe<ldx_sc_rmdir_args, int> ldx_sc_rmdir_sockpipe_t;
 
 /* mkdir() — excellent candidate */
 struct ldx_sc_mkdir_args {
@@ -191,8 +472,27 @@ struct ldx_sc_mkdir_args {
     int invoke(void *fn) const {
         return ((int(*)(const char *, mode_t))fn)(this->path, this->mode);
     }
+
+    static const char *syscall_name() { return "mkdir"; }
+
+    void write_outbufs(int _fd) const {
+        uint32_t _n = 1;
+        ldx::SockMsg::send_u32(_fd, _n);
+        /* arg[0] path: ptr_in */
+        ldx::SockMsg::send_u32(_fd, 0);
+        { size_t _sz = (this->path ? strlen(this->path) + 1 : 0);
+          ldx::SockMsg::send_u32(_fd, (uint32_t)_sz);
+          if (_sz > 0 && this->path)
+              ldx::SockMsg::send_all(_fd, this->path, _sz); }
+    }
+
+    void read_outbufs(int _fd) {
+        uint32_t _n = 0;
+        ldx::SockMsg::recv_u32(_fd, &_n);
+    }
 };
 typedef ldx::Pipe<ldx_sc_mkdir_args, int> ldx_sc_mkdir_pipe_t;
+typedef ldx::SocketPipe<ldx_sc_mkdir_args, int> ldx_sc_mkdir_sockpipe_t;
 
 /* chmod() — excellent candidate */
 struct ldx_sc_chmod_args {
@@ -202,8 +502,27 @@ struct ldx_sc_chmod_args {
     int invoke(void *fn) const {
         return ((int(*)(const char *, mode_t))fn)(this->path, this->mode);
     }
+
+    static const char *syscall_name() { return "chmod"; }
+
+    void write_outbufs(int _fd) const {
+        uint32_t _n = 1;
+        ldx::SockMsg::send_u32(_fd, _n);
+        /* arg[0] path: ptr_in */
+        ldx::SockMsg::send_u32(_fd, 0);
+        { size_t _sz = (this->path ? strlen(this->path) + 1 : 0);
+          ldx::SockMsg::send_u32(_fd, (uint32_t)_sz);
+          if (_sz > 0 && this->path)
+              ldx::SockMsg::send_all(_fd, this->path, _sz); }
+    }
+
+    void read_outbufs(int _fd) {
+        uint32_t _n = 0;
+        ldx::SockMsg::recv_u32(_fd, &_n);
+    }
 };
 typedef ldx::Pipe<ldx_sc_chmod_args, int> ldx_sc_chmod_pipe_t;
+typedef ldx::SocketPipe<ldx_sc_chmod_args, int> ldx_sc_chmod_sockpipe_t;
 
 /* fchmod() — excellent candidate */
 struct ldx_sc_fchmod_args {
@@ -213,8 +532,21 @@ struct ldx_sc_fchmod_args {
     int invoke(void *fn) const {
         return ((int(*)(int, mode_t))fn)(this->fd, this->mode);
     }
+
+    static const char *syscall_name() { return "fchmod"; }
+
+    void write_outbufs(int _fd) const {
+        uint32_t _n = 0;
+        ldx::SockMsg::send_u32(_fd, _n);
+    }
+
+    void read_outbufs(int _fd) {
+        uint32_t _n = 0;
+        ldx::SockMsg::recv_u32(_fd, &_n);
+    }
 };
 typedef ldx::Pipe<ldx_sc_fchmod_args, int> ldx_sc_fchmod_pipe_t;
+typedef ldx::SocketPipe<ldx_sc_fchmod_args, int> ldx_sc_fchmod_sockpipe_t;
 
 /* chown() — excellent candidate */
 struct ldx_sc_chown_args {
@@ -225,8 +557,27 @@ struct ldx_sc_chown_args {
     int invoke(void *fn) const {
         return ((int(*)(const char *, uid_t, gid_t))fn)(this->path, this->owner, this->group);
     }
+
+    static const char *syscall_name() { return "chown"; }
+
+    void write_outbufs(int _fd) const {
+        uint32_t _n = 1;
+        ldx::SockMsg::send_u32(_fd, _n);
+        /* arg[0] path: ptr_in */
+        ldx::SockMsg::send_u32(_fd, 0);
+        { size_t _sz = (this->path ? strlen(this->path) + 1 : 0);
+          ldx::SockMsg::send_u32(_fd, (uint32_t)_sz);
+          if (_sz > 0 && this->path)
+              ldx::SockMsg::send_all(_fd, this->path, _sz); }
+    }
+
+    void read_outbufs(int _fd) {
+        uint32_t _n = 0;
+        ldx::SockMsg::recv_u32(_fd, &_n);
+    }
 };
 typedef ldx::Pipe<ldx_sc_chown_args, int> ldx_sc_chown_pipe_t;
+typedef ldx::SocketPipe<ldx_sc_chown_args, int> ldx_sc_chown_sockpipe_t;
 
 /* fchown() — excellent candidate */
 struct ldx_sc_fchown_args {
@@ -237,8 +588,21 @@ struct ldx_sc_fchown_args {
     int invoke(void *fn) const {
         return ((int(*)(int, uid_t, gid_t))fn)(this->fd, this->owner, this->group);
     }
+
+    static const char *syscall_name() { return "fchown"; }
+
+    void write_outbufs(int _fd) const {
+        uint32_t _n = 0;
+        ldx::SockMsg::send_u32(_fd, _n);
+    }
+
+    void read_outbufs(int _fd) {
+        uint32_t _n = 0;
+        ldx::SockMsg::recv_u32(_fd, &_n);
+    }
 };
 typedef ldx::Pipe<ldx_sc_fchown_args, int> ldx_sc_fchown_pipe_t;
+typedef ldx::SocketPipe<ldx_sc_fchown_args, int> ldx_sc_fchown_sockpipe_t;
 
 /* link() — excellent candidate */
 struct ldx_sc_link_args {
@@ -248,8 +612,33 @@ struct ldx_sc_link_args {
     int invoke(void *fn) const {
         return ((int(*)(const char *, const char *))fn)(this->from_path, this->to_path);
     }
+
+    static const char *syscall_name() { return "link"; }
+
+    void write_outbufs(int _fd) const {
+        uint32_t _n = 2;
+        ldx::SockMsg::send_u32(_fd, _n);
+        /* arg[0] from_path: ptr_in */
+        ldx::SockMsg::send_u32(_fd, 0);
+        { size_t _sz = (this->from_path ? strlen(this->from_path) + 1 : 0);
+          ldx::SockMsg::send_u32(_fd, (uint32_t)_sz);
+          if (_sz > 0 && this->from_path)
+              ldx::SockMsg::send_all(_fd, this->from_path, _sz); }
+        /* arg[1] to_path: ptr_in */
+        ldx::SockMsg::send_u32(_fd, 1);
+        { size_t _sz = (this->to_path ? strlen(this->to_path) + 1 : 0);
+          ldx::SockMsg::send_u32(_fd, (uint32_t)_sz);
+          if (_sz > 0 && this->to_path)
+              ldx::SockMsg::send_all(_fd, this->to_path, _sz); }
+    }
+
+    void read_outbufs(int _fd) {
+        uint32_t _n = 0;
+        ldx::SockMsg::recv_u32(_fd, &_n);
+    }
 };
 typedef ldx::Pipe<ldx_sc_link_args, int> ldx_sc_link_pipe_t;
+typedef ldx::SocketPipe<ldx_sc_link_args, int> ldx_sc_link_sockpipe_t;
 
 /* symlink() — excellent candidate */
 struct ldx_sc_symlink_args {
@@ -259,8 +648,33 @@ struct ldx_sc_symlink_args {
     int invoke(void *fn) const {
         return ((int(*)(const char *, const char *))fn)(this->from_path, this->to_path);
     }
+
+    static const char *syscall_name() { return "symlink"; }
+
+    void write_outbufs(int _fd) const {
+        uint32_t _n = 2;
+        ldx::SockMsg::send_u32(_fd, _n);
+        /* arg[0] from_path: ptr_in */
+        ldx::SockMsg::send_u32(_fd, 0);
+        { size_t _sz = (this->from_path ? strlen(this->from_path) + 1 : 0);
+          ldx::SockMsg::send_u32(_fd, (uint32_t)_sz);
+          if (_sz > 0 && this->from_path)
+              ldx::SockMsg::send_all(_fd, this->from_path, _sz); }
+        /* arg[1] to_path: ptr_in */
+        ldx::SockMsg::send_u32(_fd, 1);
+        { size_t _sz = (this->to_path ? strlen(this->to_path) + 1 : 0);
+          ldx::SockMsg::send_u32(_fd, (uint32_t)_sz);
+          if (_sz > 0 && this->to_path)
+              ldx::SockMsg::send_all(_fd, this->to_path, _sz); }
+    }
+
+    void read_outbufs(int _fd) {
+        uint32_t _n = 0;
+        ldx::SockMsg::recv_u32(_fd, &_n);
+    }
 };
 typedef ldx::Pipe<ldx_sc_symlink_args, int> ldx_sc_symlink_pipe_t;
+typedef ldx::SocketPipe<ldx_sc_symlink_args, int> ldx_sc_symlink_sockpipe_t;
 
 /* readlink() — excellent candidate */
 struct ldx_sc_readlink_args {
@@ -271,8 +685,34 @@ struct ldx_sc_readlink_args {
     ssize_t invoke(void *fn) const {
         return ((ssize_t(*)(const char *, char *, size_t))fn)(this->path, this->buf, this->len);
     }
+
+    static const char *syscall_name() { return "readlink"; }
+
+    void write_outbufs(int _fd) const {
+        uint32_t _n = 1;
+        ldx::SockMsg::send_u32(_fd, _n);
+        /* arg[0] path: ptr_in */
+        ldx::SockMsg::send_u32(_fd, 0);
+        { size_t _sz = (this->path ? strlen(this->path) + 1 : 0);
+          ldx::SockMsg::send_u32(_fd, (uint32_t)_sz);
+          if (_sz > 0 && this->path)
+              ldx::SockMsg::send_all(_fd, this->path, _sz); }
+    }
+
+    void read_outbufs(int _fd) {
+        uint32_t _n = 0;
+        ldx::SockMsg::recv_u32(_fd, &_n);
+        for (uint32_t _i = 0; _i < _n; _i++) {
+            uint32_t _idx = 0, _sz = 0;
+            ldx::SockMsg::recv_u32(_fd, &_idx);
+            ldx::SockMsg::recv_u32(_fd, &_sz);
+            if (_idx == 1 && _sz > 0 && this->buf)
+                ldx::SockMsg::recv_all(_fd, this->buf, _sz);
+        }
+    }
 };
 typedef ldx::Pipe<ldx_sc_readlink_args, ssize_t> ldx_sc_readlink_pipe_t;
+typedef ldx::SocketPipe<ldx_sc_readlink_args, ssize_t> ldx_sc_readlink_sockpipe_t;
 
 /* chdir() — excellent candidate */
 struct ldx_sc_chdir_args {
@@ -281,8 +721,27 @@ struct ldx_sc_chdir_args {
     int invoke(void *fn) const {
         return ((int(*)(const char *))fn)(this->path);
     }
+
+    static const char *syscall_name() { return "chdir"; }
+
+    void write_outbufs(int _fd) const {
+        uint32_t _n = 1;
+        ldx::SockMsg::send_u32(_fd, _n);
+        /* arg[0] path: ptr_in */
+        ldx::SockMsg::send_u32(_fd, 0);
+        { size_t _sz = (this->path ? strlen(this->path) + 1 : 0);
+          ldx::SockMsg::send_u32(_fd, (uint32_t)_sz);
+          if (_sz > 0 && this->path)
+              ldx::SockMsg::send_all(_fd, this->path, _sz); }
+    }
+
+    void read_outbufs(int _fd) {
+        uint32_t _n = 0;
+        ldx::SockMsg::recv_u32(_fd, &_n);
+    }
 };
 typedef ldx::Pipe<ldx_sc_chdir_args, int> ldx_sc_chdir_pipe_t;
+typedef ldx::SocketPipe<ldx_sc_chdir_args, int> ldx_sc_chdir_sockpipe_t;
 
 /* fchdir() — excellent candidate */
 struct ldx_sc_fchdir_args {
@@ -291,8 +750,21 @@ struct ldx_sc_fchdir_args {
     int invoke(void *fn) const {
         return ((int(*)(int))fn)(this->fd);
     }
+
+    static const char *syscall_name() { return "fchdir"; }
+
+    void write_outbufs(int _fd) const {
+        uint32_t _n = 0;
+        ldx::SockMsg::send_u32(_fd, _n);
+    }
+
+    void read_outbufs(int _fd) {
+        uint32_t _n = 0;
+        ldx::SockMsg::recv_u32(_fd, &_n);
+    }
 };
 typedef ldx::Pipe<ldx_sc_fchdir_args, int> ldx_sc_fchdir_pipe_t;
+typedef ldx::SocketPipe<ldx_sc_fchdir_args, int> ldx_sc_fchdir_sockpipe_t;
 
 /* umask() — excellent candidate */
 struct ldx_sc_umask_args {
@@ -301,8 +773,21 @@ struct ldx_sc_umask_args {
     mode_t invoke(void *fn) const {
         return ((mode_t(*)(mode_t))fn)(this->mask);
     }
+
+    static const char *syscall_name() { return "umask"; }
+
+    void write_outbufs(int _fd) const {
+        uint32_t _n = 0;
+        ldx::SockMsg::send_u32(_fd, _n);
+    }
+
+    void read_outbufs(int _fd) {
+        uint32_t _n = 0;
+        ldx::SockMsg::recv_u32(_fd, &_n);
+    }
 };
 typedef ldx::Pipe<ldx_sc_umask_args, mode_t> ldx_sc_umask_pipe_t;
+typedef ldx::SocketPipe<ldx_sc_umask_args, mode_t> ldx_sc_umask_sockpipe_t;
 
 /* rename() — excellent candidate */
 struct ldx_sc_rename_args {
@@ -312,8 +797,33 @@ struct ldx_sc_rename_args {
     int invoke(void *fn) const {
         return ((int(*)(const char *, const char *))fn)(this->old_path, this->new_path);
     }
+
+    static const char *syscall_name() { return "rename"; }
+
+    void write_outbufs(int _fd) const {
+        uint32_t _n = 2;
+        ldx::SockMsg::send_u32(_fd, _n);
+        /* arg[0] old_path: ptr_in */
+        ldx::SockMsg::send_u32(_fd, 0);
+        { size_t _sz = (this->old_path ? strlen(this->old_path) + 1 : 0);
+          ldx::SockMsg::send_u32(_fd, (uint32_t)_sz);
+          if (_sz > 0 && this->old_path)
+              ldx::SockMsg::send_all(_fd, this->old_path, _sz); }
+        /* arg[1] new_path: ptr_in */
+        ldx::SockMsg::send_u32(_fd, 1);
+        { size_t _sz = (this->new_path ? strlen(this->new_path) + 1 : 0);
+          ldx::SockMsg::send_u32(_fd, (uint32_t)_sz);
+          if (_sz > 0 && this->new_path)
+              ldx::SockMsg::send_all(_fd, this->new_path, _sz); }
+    }
+
+    void read_outbufs(int _fd) {
+        uint32_t _n = 0;
+        ldx::SockMsg::recv_u32(_fd, &_n);
+    }
 };
 typedef ldx::Pipe<ldx_sc_rename_args, int> ldx_sc_rename_pipe_t;
+typedef ldx::SocketPipe<ldx_sc_rename_args, int> ldx_sc_rename_sockpipe_t;
 
 /* truncate() — excellent candidate */
 struct ldx_sc_truncate_args {
@@ -323,8 +833,27 @@ struct ldx_sc_truncate_args {
     int invoke(void *fn) const {
         return ((int(*)(const char *, off_t))fn)(this->path, this->length);
     }
+
+    static const char *syscall_name() { return "truncate"; }
+
+    void write_outbufs(int _fd) const {
+        uint32_t _n = 1;
+        ldx::SockMsg::send_u32(_fd, _n);
+        /* arg[0] path: ptr_in */
+        ldx::SockMsg::send_u32(_fd, 0);
+        { size_t _sz = (this->path ? strlen(this->path) + 1 : 0);
+          ldx::SockMsg::send_u32(_fd, (uint32_t)_sz);
+          if (_sz > 0 && this->path)
+              ldx::SockMsg::send_all(_fd, this->path, _sz); }
+    }
+
+    void read_outbufs(int _fd) {
+        uint32_t _n = 0;
+        ldx::SockMsg::recv_u32(_fd, &_n);
+    }
 };
 typedef ldx::Pipe<ldx_sc_truncate_args, int> ldx_sc_truncate_pipe_t;
+typedef ldx::SocketPipe<ldx_sc_truncate_args, int> ldx_sc_truncate_sockpipe_t;
 
 /* ftruncate() — excellent candidate */
 struct ldx_sc_ftruncate_args {
@@ -334,8 +863,21 @@ struct ldx_sc_ftruncate_args {
     int invoke(void *fn) const {
         return ((int(*)(int, off_t))fn)(this->fd, this->length);
     }
+
+    static const char *syscall_name() { return "ftruncate"; }
+
+    void write_outbufs(int _fd) const {
+        uint32_t _n = 0;
+        ldx::SockMsg::send_u32(_fd, _n);
+    }
+
+    void read_outbufs(int _fd) {
+        uint32_t _n = 0;
+        ldx::SockMsg::recv_u32(_fd, &_n);
+    }
 };
 typedef ldx::Pipe<ldx_sc_ftruncate_args, int> ldx_sc_ftruncate_pipe_t;
+typedef ldx::SocketPipe<ldx_sc_ftruncate_args, int> ldx_sc_ftruncate_sockpipe_t;
 
 /* socket() — excellent candidate */
 struct ldx_sc_socket_args {
@@ -346,8 +888,21 @@ struct ldx_sc_socket_args {
     int invoke(void *fn) const {
         return ((int(*)(int, int, int))fn)(this->domain, this->type, this->protocol);
     }
+
+    static const char *syscall_name() { return "socket"; }
+
+    void write_outbufs(int _fd) const {
+        uint32_t _n = 0;
+        ldx::SockMsg::send_u32(_fd, _n);
+    }
+
+    void read_outbufs(int _fd) {
+        uint32_t _n = 0;
+        ldx::SockMsg::recv_u32(_fd, &_n);
+    }
 };
 typedef ldx::Pipe<ldx_sc_socket_args, int> ldx_sc_socket_pipe_t;
+typedef ldx::SocketPipe<ldx_sc_socket_args, int> ldx_sc_socket_sockpipe_t;
 
 /* bind() — good candidate */
 struct ldx_sc_bind_args {
@@ -358,8 +913,27 @@ struct ldx_sc_bind_args {
     int invoke(void *fn) const {
         return ((int(*)(int, const struct sockaddr *, socklen_t))fn)(this->fd, this->addr, this->len);
     }
+
+    static const char *syscall_name() { return "bind"; }
+
+    void write_outbufs(int _fd) const {
+        uint32_t _n = 1;
+        ldx::SockMsg::send_u32(_fd, _n);
+        /* arg[1] addr: ptr_in */
+        ldx::SockMsg::send_u32(_fd, 1);
+        { size_t _sz = (size_t)(this->len);
+          ldx::SockMsg::send_u32(_fd, (uint32_t)_sz);
+          if (_sz > 0 && this->addr)
+              ldx::SockMsg::send_all(_fd, this->addr, _sz); }
+    }
+
+    void read_outbufs(int _fd) {
+        uint32_t _n = 0;
+        ldx::SockMsg::recv_u32(_fd, &_n);
+    }
 };
 typedef ldx::Pipe<ldx_sc_bind_args, int> ldx_sc_bind_pipe_t;
+typedef ldx::SocketPipe<ldx_sc_bind_args, int> ldx_sc_bind_sockpipe_t;
 
 /* connect() — good candidate */
 struct ldx_sc_connect_args {
@@ -370,8 +944,27 @@ struct ldx_sc_connect_args {
     int invoke(void *fn) const {
         return ((int(*)(int, const struct sockaddr *, socklen_t))fn)(this->fd, this->addr, this->len);
     }
+
+    static const char *syscall_name() { return "connect"; }
+
+    void write_outbufs(int _fd) const {
+        uint32_t _n = 1;
+        ldx::SockMsg::send_u32(_fd, _n);
+        /* arg[1] addr: ptr_in */
+        ldx::SockMsg::send_u32(_fd, 1);
+        { size_t _sz = (size_t)(this->len);
+          ldx::SockMsg::send_u32(_fd, (uint32_t)_sz);
+          if (_sz > 0 && this->addr)
+              ldx::SockMsg::send_all(_fd, this->addr, _sz); }
+    }
+
+    void read_outbufs(int _fd) {
+        uint32_t _n = 0;
+        ldx::SockMsg::recv_u32(_fd, &_n);
+    }
 };
 typedef ldx::Pipe<ldx_sc_connect_args, int> ldx_sc_connect_pipe_t;
+typedef ldx::SocketPipe<ldx_sc_connect_args, int> ldx_sc_connect_sockpipe_t;
 
 /* listen() — excellent candidate */
 struct ldx_sc_listen_args {
@@ -381,8 +974,21 @@ struct ldx_sc_listen_args {
     int invoke(void *fn) const {
         return ((int(*)(int, int))fn)(this->fd, this->backlog);
     }
+
+    static const char *syscall_name() { return "listen"; }
+
+    void write_outbufs(int _fd) const {
+        uint32_t _n = 0;
+        ldx::SockMsg::send_u32(_fd, _n);
+    }
+
+    void read_outbufs(int _fd) {
+        uint32_t _n = 0;
+        ldx::SockMsg::recv_u32(_fd, &_n);
+    }
 };
 typedef ldx::Pipe<ldx_sc_listen_args, int> ldx_sc_listen_pipe_t;
+typedef ldx::SocketPipe<ldx_sc_listen_args, int> ldx_sc_listen_sockpipe_t;
 
 /* shutdown() — excellent candidate */
 struct ldx_sc_shutdown_args {
@@ -392,8 +998,21 @@ struct ldx_sc_shutdown_args {
     int invoke(void *fn) const {
         return ((int(*)(int, int))fn)(this->fd, this->how);
     }
+
+    static const char *syscall_name() { return "shutdown"; }
+
+    void write_outbufs(int _fd) const {
+        uint32_t _n = 0;
+        ldx::SockMsg::send_u32(_fd, _n);
+    }
+
+    void read_outbufs(int _fd) {
+        uint32_t _n = 0;
+        ldx::SockMsg::recv_u32(_fd, &_n);
+    }
 };
 typedef ldx::Pipe<ldx_sc_shutdown_args, int> ldx_sc_shutdown_pipe_t;
+typedef ldx::SocketPipe<ldx_sc_shutdown_args, int> ldx_sc_shutdown_sockpipe_t;
 
 /* send() — excellent candidate */
 struct ldx_sc_send_args {
@@ -405,8 +1024,27 @@ struct ldx_sc_send_args {
     ssize_t invoke(void *fn) const {
         return ((ssize_t(*)(int, const void *, size_t, int))fn)(this->fd, this->buf, this->n, this->flags);
     }
+
+    static const char *syscall_name() { return "send"; }
+
+    void write_outbufs(int _fd) const {
+        uint32_t _n = 1;
+        ldx::SockMsg::send_u32(_fd, _n);
+        /* arg[1] buf: ptr_in */
+        ldx::SockMsg::send_u32(_fd, 1);
+        { size_t _sz = (size_t)(this->n);
+          ldx::SockMsg::send_u32(_fd, (uint32_t)_sz);
+          if (_sz > 0 && this->buf)
+              ldx::SockMsg::send_all(_fd, this->buf, _sz); }
+    }
+
+    void read_outbufs(int _fd) {
+        uint32_t _n = 0;
+        ldx::SockMsg::recv_u32(_fd, &_n);
+    }
 };
 typedef ldx::Pipe<ldx_sc_send_args, ssize_t> ldx_sc_send_pipe_t;
+typedef ldx::SocketPipe<ldx_sc_send_args, ssize_t> ldx_sc_send_sockpipe_t;
 
 /* recv() — excellent candidate */
 struct ldx_sc_recv_args {
@@ -418,8 +1056,28 @@ struct ldx_sc_recv_args {
     ssize_t invoke(void *fn) const {
         return ((ssize_t(*)(int, void *, size_t, int))fn)(this->fd, this->buf, this->n, this->flags);
     }
+
+    static const char *syscall_name() { return "recv"; }
+
+    void write_outbufs(int _fd) const {
+        uint32_t _n = 0;
+        ldx::SockMsg::send_u32(_fd, _n);
+    }
+
+    void read_outbufs(int _fd) {
+        uint32_t _n = 0;
+        ldx::SockMsg::recv_u32(_fd, &_n);
+        for (uint32_t _i = 0; _i < _n; _i++) {
+            uint32_t _idx = 0, _sz = 0;
+            ldx::SockMsg::recv_u32(_fd, &_idx);
+            ldx::SockMsg::recv_u32(_fd, &_sz);
+            if (_idx == 1 && _sz > 0 && this->buf)
+                ldx::SockMsg::recv_all(_fd, this->buf, _sz);
+        }
+    }
 };
 typedef ldx::Pipe<ldx_sc_recv_args, ssize_t> ldx_sc_recv_pipe_t;
+typedef ldx::SocketPipe<ldx_sc_recv_args, ssize_t> ldx_sc_recv_sockpipe_t;
 
 /* setsockopt() — good candidate */
 struct ldx_sc_setsockopt_args {
@@ -432,8 +1090,27 @@ struct ldx_sc_setsockopt_args {
     int invoke(void *fn) const {
         return ((int(*)(int, int, int, const void *, socklen_t))fn)(this->fd, this->level, this->optname, this->optval, this->optlen);
     }
+
+    static const char *syscall_name() { return "setsockopt"; }
+
+    void write_outbufs(int _fd) const {
+        uint32_t _n = 1;
+        ldx::SockMsg::send_u32(_fd, _n);
+        /* arg[3] optval: ptr_in */
+        ldx::SockMsg::send_u32(_fd, 3);
+        { size_t _sz = (size_t)(this->optlen);
+          ldx::SockMsg::send_u32(_fd, (uint32_t)_sz);
+          if (_sz > 0 && this->optval)
+              ldx::SockMsg::send_all(_fd, this->optval, _sz); }
+    }
+
+    void read_outbufs(int _fd) {
+        uint32_t _n = 0;
+        ldx::SockMsg::recv_u32(_fd, &_n);
+    }
 };
 typedef ldx::Pipe<ldx_sc_setsockopt_args, int> ldx_sc_setsockopt_pipe_t;
+typedef ldx::SocketPipe<ldx_sc_setsockopt_args, int> ldx_sc_setsockopt_sockpipe_t;
 
 /* mmap() — excellent candidate */
 struct ldx_sc_mmap_args {
@@ -447,8 +1124,21 @@ struct ldx_sc_mmap_args {
     void * invoke(void *fn) const {
         return ((void *(*)(void *, size_t, int, int, int, off_t))fn)(this->addr, this->len, this->prot, this->flags, this->fd, this->offset);
     }
+
+    static const char *syscall_name() { return "mmap"; }
+
+    void write_outbufs(int _fd) const {
+        uint32_t _n = 0;
+        ldx::SockMsg::send_u32(_fd, _n);
+    }
+
+    void read_outbufs(int _fd) {
+        uint32_t _n = 0;
+        ldx::SockMsg::recv_u32(_fd, &_n);
+    }
 };
 typedef ldx::Pipe<ldx_sc_mmap_args, void *> ldx_sc_mmap_pipe_t;
+typedef ldx::SocketPipe<ldx_sc_mmap_args, void *> ldx_sc_mmap_sockpipe_t;
 
 /* munmap() — excellent candidate */
 struct ldx_sc_munmap_args {
@@ -458,8 +1148,21 @@ struct ldx_sc_munmap_args {
     int invoke(void *fn) const {
         return ((int(*)(void *, size_t))fn)(this->addr, this->len);
     }
+
+    static const char *syscall_name() { return "munmap"; }
+
+    void write_outbufs(int _fd) const {
+        uint32_t _n = 0;
+        ldx::SockMsg::send_u32(_fd, _n);
+    }
+
+    void read_outbufs(int _fd) {
+        uint32_t _n = 0;
+        ldx::SockMsg::recv_u32(_fd, &_n);
+    }
 };
 typedef ldx::Pipe<ldx_sc_munmap_args, int> ldx_sc_munmap_pipe_t;
+typedef ldx::SocketPipe<ldx_sc_munmap_args, int> ldx_sc_munmap_sockpipe_t;
 
 /* mprotect() — excellent candidate */
 struct ldx_sc_mprotect_args {
@@ -470,8 +1173,21 @@ struct ldx_sc_mprotect_args {
     int invoke(void *fn) const {
         return ((int(*)(void *, size_t, int))fn)(this->addr, this->len, this->prot);
     }
+
+    static const char *syscall_name() { return "mprotect"; }
+
+    void write_outbufs(int _fd) const {
+        uint32_t _n = 0;
+        ldx::SockMsg::send_u32(_fd, _n);
+    }
+
+    void read_outbufs(int _fd) {
+        uint32_t _n = 0;
+        ldx::SockMsg::recv_u32(_fd, &_n);
+    }
 };
 typedef ldx::Pipe<ldx_sc_mprotect_args, int> ldx_sc_mprotect_pipe_t;
+typedef ldx::SocketPipe<ldx_sc_mprotect_args, int> ldx_sc_mprotect_sockpipe_t;
 
 /* getpid() — excellent candidate */
 struct ldx_sc_getpid_args {
@@ -479,8 +1195,21 @@ struct ldx_sc_getpid_args {
     pid_t invoke(void *fn) const {
         return ((pid_t(*)())fn)();
     }
+
+    static const char *syscall_name() { return "getpid"; }
+
+    void write_outbufs(int _fd) const {
+        uint32_t _n = 0;
+        ldx::SockMsg::send_u32(_fd, _n);
+    }
+
+    void read_outbufs(int _fd) {
+        uint32_t _n = 0;
+        ldx::SockMsg::recv_u32(_fd, &_n);
+    }
 };
 typedef ldx::Pipe<ldx_sc_getpid_args, pid_t> ldx_sc_getpid_pipe_t;
+typedef ldx::SocketPipe<ldx_sc_getpid_args, pid_t> ldx_sc_getpid_sockpipe_t;
 
 /* getppid() — excellent candidate */
 struct ldx_sc_getppid_args {
@@ -488,8 +1217,21 @@ struct ldx_sc_getppid_args {
     pid_t invoke(void *fn) const {
         return ((pid_t(*)())fn)();
     }
+
+    static const char *syscall_name() { return "getppid"; }
+
+    void write_outbufs(int _fd) const {
+        uint32_t _n = 0;
+        ldx::SockMsg::send_u32(_fd, _n);
+    }
+
+    void read_outbufs(int _fd) {
+        uint32_t _n = 0;
+        ldx::SockMsg::recv_u32(_fd, &_n);
+    }
 };
 typedef ldx::Pipe<ldx_sc_getppid_args, pid_t> ldx_sc_getppid_pipe_t;
+typedef ldx::SocketPipe<ldx_sc_getppid_args, pid_t> ldx_sc_getppid_sockpipe_t;
 
 /* getuid() — excellent candidate */
 struct ldx_sc_getuid_args {
@@ -497,8 +1239,21 @@ struct ldx_sc_getuid_args {
     uid_t invoke(void *fn) const {
         return ((uid_t(*)())fn)();
     }
+
+    static const char *syscall_name() { return "getuid"; }
+
+    void write_outbufs(int _fd) const {
+        uint32_t _n = 0;
+        ldx::SockMsg::send_u32(_fd, _n);
+    }
+
+    void read_outbufs(int _fd) {
+        uint32_t _n = 0;
+        ldx::SockMsg::recv_u32(_fd, &_n);
+    }
 };
 typedef ldx::Pipe<ldx_sc_getuid_args, uid_t> ldx_sc_getuid_pipe_t;
+typedef ldx::SocketPipe<ldx_sc_getuid_args, uid_t> ldx_sc_getuid_sockpipe_t;
 
 /* geteuid() — excellent candidate */
 struct ldx_sc_geteuid_args {
@@ -506,8 +1261,21 @@ struct ldx_sc_geteuid_args {
     uid_t invoke(void *fn) const {
         return ((uid_t(*)())fn)();
     }
+
+    static const char *syscall_name() { return "geteuid"; }
+
+    void write_outbufs(int _fd) const {
+        uint32_t _n = 0;
+        ldx::SockMsg::send_u32(_fd, _n);
+    }
+
+    void read_outbufs(int _fd) {
+        uint32_t _n = 0;
+        ldx::SockMsg::recv_u32(_fd, &_n);
+    }
 };
 typedef ldx::Pipe<ldx_sc_geteuid_args, uid_t> ldx_sc_geteuid_pipe_t;
+typedef ldx::SocketPipe<ldx_sc_geteuid_args, uid_t> ldx_sc_geteuid_sockpipe_t;
 
 /* getgid() — excellent candidate */
 struct ldx_sc_getgid_args {
@@ -515,8 +1283,21 @@ struct ldx_sc_getgid_args {
     gid_t invoke(void *fn) const {
         return ((gid_t(*)())fn)();
     }
+
+    static const char *syscall_name() { return "getgid"; }
+
+    void write_outbufs(int _fd) const {
+        uint32_t _n = 0;
+        ldx::SockMsg::send_u32(_fd, _n);
+    }
+
+    void read_outbufs(int _fd) {
+        uint32_t _n = 0;
+        ldx::SockMsg::recv_u32(_fd, &_n);
+    }
 };
 typedef ldx::Pipe<ldx_sc_getgid_args, gid_t> ldx_sc_getgid_pipe_t;
+typedef ldx::SocketPipe<ldx_sc_getgid_args, gid_t> ldx_sc_getgid_sockpipe_t;
 
 /* getegid() — excellent candidate */
 struct ldx_sc_getegid_args {
@@ -524,8 +1305,21 @@ struct ldx_sc_getegid_args {
     gid_t invoke(void *fn) const {
         return ((gid_t(*)())fn)();
     }
+
+    static const char *syscall_name() { return "getegid"; }
+
+    void write_outbufs(int _fd) const {
+        uint32_t _n = 0;
+        ldx::SockMsg::send_u32(_fd, _n);
+    }
+
+    void read_outbufs(int _fd) {
+        uint32_t _n = 0;
+        ldx::SockMsg::recv_u32(_fd, &_n);
+    }
 };
 typedef ldx::Pipe<ldx_sc_getegid_args, gid_t> ldx_sc_getegid_pipe_t;
+typedef ldx::SocketPipe<ldx_sc_getegid_args, gid_t> ldx_sc_getegid_sockpipe_t;
 
 /* setuid() — excellent candidate */
 struct ldx_sc_setuid_args {
@@ -534,8 +1328,21 @@ struct ldx_sc_setuid_args {
     int invoke(void *fn) const {
         return ((int(*)(uid_t))fn)(this->uid);
     }
+
+    static const char *syscall_name() { return "setuid"; }
+
+    void write_outbufs(int _fd) const {
+        uint32_t _n = 0;
+        ldx::SockMsg::send_u32(_fd, _n);
+    }
+
+    void read_outbufs(int _fd) {
+        uint32_t _n = 0;
+        ldx::SockMsg::recv_u32(_fd, &_n);
+    }
 };
 typedef ldx::Pipe<ldx_sc_setuid_args, int> ldx_sc_setuid_pipe_t;
+typedef ldx::SocketPipe<ldx_sc_setuid_args, int> ldx_sc_setuid_sockpipe_t;
 
 /* setgid() — excellent candidate */
 struct ldx_sc_setgid_args {
@@ -544,8 +1351,21 @@ struct ldx_sc_setgid_args {
     int invoke(void *fn) const {
         return ((int(*)(gid_t))fn)(this->gid);
     }
+
+    static const char *syscall_name() { return "setgid"; }
+
+    void write_outbufs(int _fd) const {
+        uint32_t _n = 0;
+        ldx::SockMsg::send_u32(_fd, _n);
+    }
+
+    void read_outbufs(int _fd) {
+        uint32_t _n = 0;
+        ldx::SockMsg::recv_u32(_fd, &_n);
+    }
 };
 typedef ldx::Pipe<ldx_sc_setgid_args, int> ldx_sc_setgid_pipe_t;
+typedef ldx::SocketPipe<ldx_sc_setgid_args, int> ldx_sc_setgid_sockpipe_t;
 
 /* kill() — excellent candidate */
 struct ldx_sc_kill_args {
@@ -555,8 +1375,21 @@ struct ldx_sc_kill_args {
     int invoke(void *fn) const {
         return ((int(*)(pid_t, int))fn)(this->pid, this->sig);
     }
+
+    static const char *syscall_name() { return "kill"; }
+
+    void write_outbufs(int _fd) const {
+        uint32_t _n = 0;
+        ldx::SockMsg::send_u32(_fd, _n);
+    }
+
+    void read_outbufs(int _fd) {
+        uint32_t _n = 0;
+        ldx::SockMsg::recv_u32(_fd, &_n);
+    }
 };
 typedef ldx::Pipe<ldx_sc_kill_args, int> ldx_sc_kill_pipe_t;
+typedef ldx::SocketPipe<ldx_sc_kill_args, int> ldx_sc_kill_sockpipe_t;
 
 /* epoll_create1() — excellent candidate */
 struct ldx_sc_epoll_create1_args {
@@ -565,8 +1398,21 @@ struct ldx_sc_epoll_create1_args {
     int invoke(void *fn) const {
         return ((int(*)(int))fn)(this->flags);
     }
+
+    static const char *syscall_name() { return "epoll_create1"; }
+
+    void write_outbufs(int _fd) const {
+        uint32_t _n = 0;
+        ldx::SockMsg::send_u32(_fd, _n);
+    }
+
+    void read_outbufs(int _fd) {
+        uint32_t _n = 0;
+        ldx::SockMsg::recv_u32(_fd, &_n);
+    }
 };
 typedef ldx::Pipe<ldx_sc_epoll_create1_args, int> ldx_sc_epoll_create1_pipe_t;
+typedef ldx::SocketPipe<ldx_sc_epoll_create1_args, int> ldx_sc_epoll_create1_sockpipe_t;
 
 /* epoll_ctl() — good candidate */
 struct ldx_sc_epoll_ctl_args {
@@ -578,8 +1424,27 @@ struct ldx_sc_epoll_ctl_args {
     int invoke(void *fn) const {
         return ((int(*)(int, int, int, struct epoll_event *))fn)(this->epfd, this->op, this->fd, this->event);
     }
+
+    static const char *syscall_name() { return "epoll_ctl"; }
+
+    void write_outbufs(int _fd) const {
+        uint32_t _n = 1;
+        ldx::SockMsg::send_u32(_fd, _n);
+        /* arg[3] event: ptr_in */
+        ldx::SockMsg::send_u32(_fd, 3);
+        { size_t _sz = (size_t)(sizeof(struct epoll_event));
+          ldx::SockMsg::send_u32(_fd, (uint32_t)_sz);
+          if (_sz > 0 && this->event)
+              ldx::SockMsg::send_all(_fd, this->event, _sz); }
+    }
+
+    void read_outbufs(int _fd) {
+        uint32_t _n = 0;
+        ldx::SockMsg::recv_u32(_fd, &_n);
+    }
 };
 typedef ldx::Pipe<ldx_sc_epoll_ctl_args, int> ldx_sc_epoll_ctl_pipe_t;
+typedef ldx::SocketPipe<ldx_sc_epoll_ctl_args, int> ldx_sc_epoll_ctl_sockpipe_t;
 
 /* gethostname() — excellent candidate */
 struct ldx_sc_gethostname_args {
@@ -589,8 +1454,28 @@ struct ldx_sc_gethostname_args {
     int invoke(void *fn) const {
         return ((int(*)(char *, size_t))fn)(this->name, this->len);
     }
+
+    static const char *syscall_name() { return "gethostname"; }
+
+    void write_outbufs(int _fd) const {
+        uint32_t _n = 0;
+        ldx::SockMsg::send_u32(_fd, _n);
+    }
+
+    void read_outbufs(int _fd) {
+        uint32_t _n = 0;
+        ldx::SockMsg::recv_u32(_fd, &_n);
+        for (uint32_t _i = 0; _i < _n; _i++) {
+            uint32_t _idx = 0, _sz = 0;
+            ldx::SockMsg::recv_u32(_fd, &_idx);
+            ldx::SockMsg::recv_u32(_fd, &_sz);
+            if (_idx == 0 && _sz > 0 && this->name)
+                ldx::SockMsg::recv_all(_fd, this->name, _sz);
+        }
+    }
 };
 typedef ldx::Pipe<ldx_sc_gethostname_args, int> ldx_sc_gethostname_pipe_t;
+typedef ldx::SocketPipe<ldx_sc_gethostname_args, int> ldx_sc_gethostname_sockpipe_t;
 
 /* sethostname() — excellent candidate */
 struct ldx_sc_sethostname_args {
@@ -600,8 +1485,27 @@ struct ldx_sc_sethostname_args {
     int invoke(void *fn) const {
         return ((int(*)(const char *, size_t))fn)(this->name, this->len);
     }
+
+    static const char *syscall_name() { return "sethostname"; }
+
+    void write_outbufs(int _fd) const {
+        uint32_t _n = 1;
+        ldx::SockMsg::send_u32(_fd, _n);
+        /* arg[0] name: ptr_in */
+        ldx::SockMsg::send_u32(_fd, 0);
+        { size_t _sz = (size_t)(this->len);
+          ldx::SockMsg::send_u32(_fd, (uint32_t)_sz);
+          if (_sz > 0 && this->name)
+              ldx::SockMsg::send_all(_fd, this->name, _sz); }
+    }
+
+    void read_outbufs(int _fd) {
+        uint32_t _n = 0;
+        ldx::SockMsg::recv_u32(_fd, &_n);
+    }
 };
 typedef ldx::Pipe<ldx_sc_sethostname_args, int> ldx_sc_sethostname_pipe_t;
+typedef ldx::SocketPipe<ldx_sc_sethostname_args, int> ldx_sc_sethostname_sockpipe_t;
 
 #endif /* __cplusplus */
 
@@ -609,9 +1513,14 @@ typedef ldx::Pipe<ldx_sc_sethostname_args, int> ldx_sc_sethostname_pipe_t;
 extern "C" {
 #endif
 
-/* Install PbV pipe wrappers for all supported syscalls.
- * Original functions are saved and called through Pipe<>::propagate(). */
+/* Install PbV pipe wrappers (local passthrough). */
 int ldx_syscall_pbv_init(void);
+
+/* Install socket-backed pipe wrappers (forward to host). */
+int ldx_syscall_sock_init(int sockfd);
+
+/* Run the server loop — execute syscalls on behalf of container. */
+int ldx_syscall_sock_server(int sockfd);
 
 /* Get count of installed wrappers. */
 int ldx_syscall_pbv_count(void);

@@ -13,6 +13,10 @@
 #include <sys/syscall.h>
 #include <linux/limits.h>
 #include <fcntl.h>
+#include <pthread.h>
+
+/* From gen/ldx_syscall_pbv.h — C interface. */
+extern int ldx_syscall_sock_server(int sockfd);
 
 /*
  * ldx_container.c — Minimal container launcher for ldx.
@@ -200,6 +204,10 @@ static int do_pivot_root(const char *rootfs)
  *
  * Returns: only on error (exec replaces the process on success).
  */
+/* Declared with C linkage so C++ linker can find it. */
+#ifdef __cplusplus
+extern "C"
+#endif
 int ldx_container_run(int argc, char **argv, int pipe_os, int isolate_net)
 {
     if (argc < 1) {
@@ -236,9 +244,17 @@ int ldx_container_run(int argc, char **argv, int pipe_os, int isolate_net)
         if (pipe_os) {
             close(sock_pair[1]);  /* close child's end */
 
-            /* TODO: Run ldx_sock_server_run() here to handle piped
-             * syscalls from the container.  For now, just wait. */
-            fprintf(stderr, "ldx-container: host waiting (pipe_fd=%d)\n", sock_pair[0]);
+            /* Run syscall server in a background thread so we can
+             * also waitpid on the child. */
+            pthread_t server_thread;
+            int *server_fd = malloc(sizeof(int));
+            *server_fd = sock_pair[0];
+
+            pthread_create(&server_thread, NULL,
+                (void *(*)(void *))ldx_syscall_sock_server, server_fd);
+            pthread_detach(server_thread);
+
+            fprintf(stderr, "ldx-container: server started (pipe_fd=%d)\n", sock_pair[0]);
         }
 
         int status;
