@@ -226,6 +226,48 @@ class C2VConverter:
                             expr = self._expr(children[-1])
                             self.locals[name] = expr
                             self.wires.append(VWire(name, expr, w))
+            elif stmt.kind == CursorKind.BINARY_OPERATOR and self._is_assignment(stmt):
+                # x = expr  (plain assignment to local or parameter)
+                children = list(stmt.get_children())
+                if len(children) == 2:
+                    target_name = children[0].spelling
+                    rhs = self._expr(children[1])
+                    w = type_width(stmt.type.spelling)
+                    self.wire_counter += 1
+                    wire_name = f"{target_name}_{self.wire_counter}"
+                    self.locals[target_name] = rhs
+                    self.wires.append(VWire(wire_name, rhs, w))
+            elif stmt.kind == CursorKind.COMPOUND_ASSIGNMENT_OPERATOR:
+                # r |= b  →  r = r_old | b
+                children = list(stmt.get_children())
+                if len(children) == 2:
+                    target_name = children[0].spelling
+                    rhs = self._expr(children[1])
+                    # Extract operator from tokens (|=, &=, ^=, +=, -=, <<=, >>=)
+                    tokens = list(stmt.get_tokens())
+                    op = None
+                    for tok in tokens:
+                        if tok.spelling.endswith('=') and len(tok.spelling) >= 2 and tok.spelling != '==':
+                            op = tok.spelling[:-1]  # |= → |, ^= → ^
+                            break
+                    if op and op in C_TO_V_OPS and target_name in self.locals:
+                        old_val = self.locals[target_name]
+                        w = type_width(stmt.type.spelling)
+                        new_expr = VBinOp(C_TO_V_OPS[op], old_val, rhs, w)
+                        # Update the local to the new chained expression
+                        self.wire_counter += 1
+                        wire_name = f"{target_name}_{self.wire_counter}"
+                        self.locals[target_name] = new_expr
+                        self.wires.append(VWire(wire_name, new_expr, w))
+                    elif op and target_name in self.params:
+                        # Parameter used as mutable local (e.g. parity modifies x)
+                        w, s = self.params[target_name]
+                        old_val = self.locals.get(target_name, VInput(target_name, w))
+                        new_expr = VBinOp(C_TO_V_OPS.get(op, op), old_val, rhs, w)
+                        self.wire_counter += 1
+                        wire_name = f"{target_name}_{self.wire_counter}"
+                        self.locals[target_name] = new_expr
+                        self.wires.append(VWire(wire_name, new_expr, w))
             elif stmt.kind == CursorKind.COMPOUND_STMT:
                 r = self._walk_body(stmt)
                 if r:
@@ -237,6 +279,35 @@ class C2VConverter:
                 return_expr = self._handle_for(stmt)
 
         return return_expr
+
+    def _is_assignment(self, cursor) -> bool:
+        """Check if a BINARY_OPERATOR is a plain assignment (=)."""
+        children = list(cursor.get_children())
+        if len(children) != 2:
+            return False
+        # Check if the left side is a DECL_REF_EXPR to a known local/param
+        left = children[0]
+        while left.kind == CursorKind.UNEXPOSED_EXPR:
+            c = list(left.get_children())
+            if c:
+                left = c[0]
+            else:
+                break
+        if left.kind != CursorKind.DECL_REF_EXPR:
+            return False
+        name = left.spelling
+        if name not in self.locals and name not in self.params:
+            return False
+        # Check tokens for '=' but not '==', '!=', '<=', '>='
+        tokens = list(cursor.get_tokens())
+        left_end = children[0].extent.end
+        right_start = children[1].extent.start
+        for tok in tokens:
+            if (tok.location.offset >= left_end.offset and
+                tok.location.offset < right_start.offset):
+                if tok.spelling == '=':
+                    return True
+        return False
 
     def _expr(self, cursor) -> VNode:
         """Convert a C expression cursor to a VNode."""
@@ -402,10 +473,10 @@ class VerilogEmitter:
             return node.name
 
         if isinstance(node, VConst):
-            if node.width <= 32:
-                return f"{node.width}'d{node.value}"
-            else:
-                return f"{node.width}'d{node.value}"
+            # Use hex for values that might overflow signed representation
+            if node.value >= (1 << (node.width - 1)) or node.value > 0xFFFF:
+                return f"{node.width}'h{node.value:X}"
+            return f"{node.width}'d{node.value}"
 
         if isinstance(node, VBinOp):
             left = self._node_to_expr(node.left)

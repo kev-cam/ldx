@@ -186,6 +186,7 @@ def run_pipeline(source_file, func_name, keep=False, verbose=False):
             "verilator", "--cc", verilog_file,
             "--Mdir", os.path.join(workdir, "obj_dir"),
             "--prefix", f"V{func_name}",
+            "-Wno-WIDTH", "-Wno-CMPCONST",
         ]
         r = subprocess.run(cmd, capture_output=True, text=True)
         if r.returncode != 0:
