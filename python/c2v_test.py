@@ -103,37 +103,35 @@ def gen_test_main(module_name, params, ret_width):
     # Generate test vectors
     vals = test_vals(params[0][1]) if params else ["0"]
 
-    if len(params) == 1:
-        for v in vals:
-            lines.append(f'    {{ auto a = ({c_type(params[0][1], params[0][2])}){v};')
-            lines.append(f'      auto c = {module_name}(a);')
-            lines.append(f'      auto v = {module_name}_hw(a);')
-            lines.append(f'      if (c == v) {{ pass++; }} else {{ fail++; printf("  FAIL: {module_name}(%llu) C=%lld V=%lld\\n", (unsigned long long)a, (long long)c, (long long)v); }}')
+    # Generate test vectors: pick fewer values per param to keep test count manageable
+    n = len(params)
+    per_param = max(2, 5 - n)  # fewer values with more params
+    test_vals_per = [test_vals(params[i][1])[:per_param] for i in range(n)]
+
+    # Recursive cartesian product of test values
+    def gen_combos(idx, combo):
+        if idx == n:
+            # Emit one test case
+            var_names = [f"p{i}" for i in range(n)]
+            decls = "; ".join(
+                f"auto {var_names[i]} = ({c_type(params[i][1], params[i][2])}){combo[i]}"
+                for i in range(n)
+            )
+            call_args = ", ".join(var_names)
+            lines.append(f'    {{ {decls};')
+            lines.append(f'      auto c = {module_name}({call_args});')
+            lines.append(f'      auto v = {module_name}_hw({call_args});')
+            lines.append(f'      if (c == v) {{ pass++; }} else {{ fail++; printf("  FAIL: C=%lld V=%lld\\n", (long long)c, (long long)v); }}')
             lines.append(f'    }}')
-    elif len(params) == 2:
-        for v1 in vals[:3]:
-            for v2 in vals[:3]:
-                lines.append(f'    {{ auto a = ({c_type(params[0][1], params[0][2])}){v1}; auto b = ({c_type(params[1][1], params[1][2])}){v2};')
-                lines.append(f'      auto c = {module_name}(a, b);')
-                lines.append(f'      auto v = {module_name}_hw(a, b);')
-                lines.append(f'      if (c == v) {{ pass++; }} else {{ fail++; printf("  FAIL: {module_name}(%llu,%llu) C=%lld V=%lld\\n", (unsigned long long)a, (unsigned long long)b, (long long)c, (long long)v); }}')
-                lines.append(f'    }}')
-    elif len(params) >= 3:
-        for v1 in vals[:2]:
-            for v2 in vals[:2]:
-                for v3 in vals[:2]:
-                    args_cast = ", ".join(
-                        f"({c_type(params[i][1], params[i][2])}){[v1,v2,v3][i]}"
-                        for i in range(min(3, len(params)))
-                    )
-                    args_names = ", ".join(
-                        chr(ord('a') + i) for i in range(min(3, len(params)))
-                    )
-                    lines.append(f'    {{ auto a = ({c_type(params[0][1], params[0][2])}){v1}; auto b = ({c_type(params[1][1], params[1][2])}){v2}; auto c_ = ({c_type(params[2][1], params[2][2])}){v3};')
-                    lines.append(f'      auto c = {module_name}(a, b, c_);')
-                    lines.append(f'      auto v = {module_name}_hw(a, b, c_);')
-                    lines.append(f'      if (c == v) {{ pass++; }} else {{ fail++; printf("  FAIL: C=%lld V=%lld\\n", (long long)c, (long long)v); }}')
-                    lines.append(f'    }}')
+            return
+        for val in test_vals_per[idx]:
+            gen_combos(idx + 1, combo + [val])
+
+    if n == 0:
+        lines.append(f'    {{ auto c = {module_name}(); auto v = {module_name}_hw();')
+        lines.append(f'      if (c == v) pass++; else fail++; }}')
+    else:
+        gen_combos(0, [])
 
     lines.append('')
     lines.append(f'    printf("{module_name}: %d passed, %d failed\\n", pass, fail);')
