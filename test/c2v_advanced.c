@@ -98,3 +98,27 @@ uint32_t popcount_approx(uint32_t x)
     x = (x + (x >> 4)) & 0x0F0F0F0F;
     return (x * 0x01010101) >> 24;
 }
+
+/* Bounded for loop — reduction OR across 4 values */
+uint64_t reduce_or4(uint64_t a, uint64_t b, uint64_t c, uint64_t d)
+{
+    uint64_t vals[4];
+    vals[0] = a; vals[1] = b; vals[2] = c; vals[3] = d;
+    uint64_t result = 0;
+    int i;
+    for (i = 0; i < 4; i++) {
+        result |= vals[i];
+    }
+    return result;
+}
+
+/* Simpler bounded loop — shift and accumulate */
+uint32_t bit_reverse8(uint32_t x)
+{
+    uint32_t r = 0;
+    int i;
+    for (i = 0; i < 8; i++) {
+        r |= ((x >> i) & 1) << (7 - i);
+    }
+    return r;
+}

@@ -88,6 +88,20 @@ class VWire(VNode):
     expr: VNode
     width: int
 
+@dataclass
+class VIndex(VNode):
+    """Array index: array[idx] → bit-select on wide port."""
+    array: VNode
+    index: VNode
+    elem_width: int  # width of each element
+    width: int
+
+@dataclass
+class VConcat(VNode):
+    """Verilog concatenation {a, b, ...}"""
+    parts: list  # List[VNode]
+    width: int
+
 
 # ---- C type → Verilog width ----
 
@@ -176,15 +190,25 @@ class C2VConverter:
     def __init__(self):
         self.params: Dict[str, Tuple[int, bool]] = {}  # name → (width, signed)
         self.locals: Dict[str, VNode] = {}  # name → expression
+        self.struct_fields: Dict[str, Dict[str, VNode]] = {}  # var → {field → expr}
         self.wires: List[VWire] = []
         self.wire_counter = 0
         self.warnings: List[str] = []
+        self.ret_struct_fields: Optional[List[Tuple[str, int]]] = None  # [(name, width)]
 
-    def convert_function(self, cursor) -> Tuple[List[Tuple[str, int, bool]], VNode, int]:
-        """Convert a function cursor to (params, return_expr, return_width)."""
+    def convert_function(self, cursor):
+        """Convert a function cursor.
+        Returns (params, return_expr_or_dict, return_width).
+        For struct returns, return_expr is a dict {field_name: VNode}."""
         params = []
         body = None
-        ret_width = type_width(cursor.result_type.spelling)
+        ret_type = cursor.result_type
+        ret_width = type_width(ret_type.spelling)
+
+        # Check for struct return type
+        ret_struct = self._get_struct_fields(ret_type)
+        if ret_struct:
+            self.ret_struct_fields = ret_struct
 
         for child in cursor.get_children():
             if child.kind == CursorKind.PARM_DECL:
@@ -201,10 +225,36 @@ class C2VConverter:
         # Walk the body, collect local variable assignments, find return
         return_expr = self._walk_body(body)
 
+        # For struct returns, collect field assignments
+        if self.ret_struct_fields:
+            # Find the return variable and its field assignments
+            for var_name, fields in self.struct_fields.items():
+                if fields:
+                    return {
+                        "fields": {name: fields.get(name, VConst(0, w))
+                                   for name, w in self.ret_struct_fields},
+                        "struct_fields": self.ret_struct_fields,
+                    }
+
         if return_expr is None:
             raise ValueError("No return statement found")
 
         return params, return_expr, ret_width
+
+    def _get_struct_fields(self, type_obj) -> Optional[List[Tuple[str, int]]]:
+        """Extract field names and widths from a struct type."""
+        decl = type_obj.get_declaration()
+        if not decl or decl.kind != CursorKind.STRUCT_DECL:
+            # Try canonical type
+            canon = type_obj.get_canonical()
+            decl = canon.get_declaration()
+            if not decl or decl.kind not in (CursorKind.STRUCT_DECL, CursorKind.TYPEDEF_DECL):
+                return None
+        fields = []
+        for child in decl.get_children():
+            if child.kind == CursorKind.FIELD_DECL:
+                fields.append((child.spelling, type_width(child.type.spelling)))
+        return fields if fields else None
 
     def _walk_body(self, compound) -> Optional[VNode]:
         """Walk compound statement, return the VNode for the return value."""
@@ -227,16 +277,37 @@ class C2VConverter:
                             self.locals[name] = expr
                             self.wires.append(VWire(name, expr, w))
             elif stmt.kind == CursorKind.BINARY_OPERATOR and self._is_assignment(stmt):
-                # x = expr  (plain assignment to local or parameter)
                 children = list(stmt.get_children())
                 if len(children) == 2:
-                    target_name = children[0].spelling
+                    left = children[0]
+                    # Unwrap UNEXPOSED_EXPR
+                    left_raw = left
+                    while left_raw.kind == CursorKind.UNEXPOSED_EXPR:
+                        c = list(left_raw.get_children())
+                        if c: left_raw = c[0]
+                        else: break
+
                     rhs = self._expr(children[1])
                     w = type_width(stmt.type.spelling)
-                    self.wire_counter += 1
-                    wire_name = f"{target_name}_{self.wire_counter}"
-                    self.locals[target_name] = rhs
-                    self.wires.append(VWire(wire_name, rhs, w))
+
+                    if left_raw.kind == CursorKind.MEMBER_REF_EXPR:
+                        # Struct field assignment: r.abits = expr
+                        field_name = left_raw.spelling
+                        # Get the struct variable name from the MEMBER_REF children
+                        member_children = list(left_raw.get_children())
+                        var_name = member_children[0].spelling if member_children else "?"
+                        if var_name not in self.struct_fields:
+                            self.struct_fields[var_name] = {}
+                        self.struct_fields[var_name][field_name] = rhs
+                        wire_name = f"{var_name}_{field_name}"
+                        self.wires.append(VWire(wire_name, rhs, w))
+                    else:
+                        # Simple assignment: x = expr
+                        target_name = left.spelling
+                        self.wire_counter += 1
+                        wire_name = f"{target_name}_{self.wire_counter}"
+                        self.locals[target_name] = rhs
+                        self.wires.append(VWire(wire_name, rhs, w))
             elif stmt.kind == CursorKind.COMPOUND_ASSIGNMENT_OPERATOR:
                 # r |= b  →  r = r_old | b
                 children = list(stmt.get_children())
@@ -275,28 +346,32 @@ class C2VConverter:
             elif stmt.kind == CursorKind.IF_STMT:
                 return_expr = self._handle_if(stmt)
             elif stmt.kind == CursorKind.FOR_STMT:
-                self.warnings.append("for loop found — must be unrollable for combinational Verilog")
-                return_expr = self._handle_for(stmt)
+                self._handle_for(stmt)
 
         return return_expr
 
     def _is_assignment(self, cursor) -> bool:
-        """Check if a BINARY_OPERATOR is a plain assignment (=)."""
+        """Check if a BINARY_OPERATOR is a plain assignment (=).
+        Handles both simple vars (x = expr) and struct fields (r.field = expr)."""
         children = list(cursor.get_children())
         if len(children) != 2:
             return False
-        # Check if the left side is a DECL_REF_EXPR to a known local/param
         left = children[0]
+        # Unwrap UNEXPOSED_EXPR
         while left.kind == CursorKind.UNEXPOSED_EXPR:
             c = list(left.get_children())
             if c:
                 left = c[0]
             else:
                 break
-        if left.kind != CursorKind.DECL_REF_EXPR:
-            return False
-        name = left.spelling
-        if name not in self.locals and name not in self.params:
+        # Accept DECL_REF_EXPR (simple var) or MEMBER_REF_EXPR (struct field)
+        if left.kind == CursorKind.DECL_REF_EXPR:
+            name = left.spelling
+            if name not in self.locals and name not in self.params:
+                return False
+        elif left.kind == CursorKind.MEMBER_REF_EXPR:
+            pass  # struct field assignment — always accept
+        else:
             return False
         # Check tokens for '=' but not '==', '!=', '<=', '>='
         tokens = list(cursor.get_tokens())
@@ -405,10 +480,84 @@ class C2VConverter:
             return true_expr
         return None
 
-    def _handle_for(self, cursor) -> Optional[VNode]:
-        """Placeholder for loop unrolling."""
-        self.warnings.append("for loop not yet unrolled — emitting placeholder")
-        return VConst(0, 32)
+    def _handle_for(self, cursor):
+        """Unroll a bounded for loop.
+
+        Expects: for (var = start; var < end; var++) { body }
+        Unrolls by substituting the loop variable with each constant value
+        and walking the body for each iteration.
+        """
+        children = list(cursor.get_children())
+        if len(children) != 4:
+            self.warnings.append(f"for loop with {len(children)} children (expected 4)")
+            return
+
+        init_stmt, cond_stmt, incr_stmt, body_stmt = children
+
+        # Extract loop variable and start value from init: i = 0
+        loop_var = None
+        start_val = 0
+        init_tokens = [t.spelling for t in init_stmt.get_tokens()]
+        if '=' in init_tokens:
+            eq_idx = init_tokens.index('=')
+            if eq_idx > 0 and eq_idx + 1 < len(init_tokens):
+                loop_var = init_tokens[eq_idx - 1]
+                try:
+                    start_val = int(init_tokens[eq_idx + 1], 0)
+                except ValueError:
+                    pass
+
+        # Extract bound from condition: i < N
+        end_val = 0
+        cond_tokens = [t.spelling for t in cond_stmt.get_tokens()]
+        for op in ('<', '<=', '!='):
+            if op in cond_tokens:
+                op_idx = cond_tokens.index(op)
+                if op_idx + 1 < len(cond_tokens):
+                    try:
+                        end_val = int(cond_tokens[op_idx + 1], 0)
+                        if op == '<=':
+                            end_val += 1
+                    except ValueError:
+                        pass
+                break
+
+        if not loop_var or end_val <= start_val:
+            self.warnings.append(f"cannot unroll for loop: var={loop_var} start={start_val} end={end_val}")
+            return
+
+        if end_val - start_val > 1024:
+            self.warnings.append(f"for loop too large to unroll: {end_val - start_val} iterations")
+            return
+
+        # Unroll: for each iteration, set the loop variable to the constant
+        # value and walk the body.
+        for i in range(start_val, end_val):
+            self.locals[loop_var] = VConst(i, 32)
+            self._walk_body(body_stmt) if body_stmt.kind == CursorKind.COMPOUND_STMT else None
+            # Also handle single-statement body (no compound)
+            if body_stmt.kind == CursorKind.COMPOUND_STMT:
+                pass  # already walked above
+            elif body_stmt.kind == CursorKind.COMPOUND_ASSIGNMENT_OPERATOR:
+                # Single compound assignment in loop body
+                stmt = body_stmt
+                children_b = list(stmt.get_children())
+                if len(children_b) == 2:
+                    target_name = children_b[0].spelling
+                    rhs = self._expr(children_b[1])
+                    tokens = list(stmt.get_tokens())
+                    op = None
+                    for tok in tokens:
+                        if tok.spelling.endswith('=') and len(tok.spelling) >= 2 and tok.spelling != '==':
+                            op = tok.spelling[:-1]
+                            break
+                    if op and target_name in self.locals:
+                        old_val = self.locals[target_name]
+                        w = type_width(stmt.type.spelling)
+                        new_expr = VBinOp(C_TO_V_OPS.get(op, op), old_val, rhs, w)
+                        self.wire_counter += 1
+                        self.locals[target_name] = new_expr
+                        self.wires.append(VWire(f"{target_name}_{self.wire_counter}", new_expr, w))
 
 
 # ---- Verilog emitter ----
@@ -422,9 +571,12 @@ class VerilogEmitter:
         self.wires: List[str] = []
         self.assigns: List[str] = []
 
-    def emit(self, params: List[Tuple[str, int, bool]], return_expr: VNode,
+    def emit(self, params: List[Tuple[str, int, bool]], return_expr,
              return_width: int, local_wires: List[VWire]) -> str:
         lines = []
+
+        # Check if return_expr is a struct (dict with "fields")
+        is_struct_return = isinstance(return_expr, dict) and "fields" in return_expr
 
         # Module declaration
         ports = []
@@ -435,11 +587,18 @@ class VerilogEmitter:
             else:
                 ports.append(f"  input {s}[{width-1}:0] {name}")
 
-        s = "signed " if return_width > 1 else ""
-        if return_width == 1:
-            ports.append(f"  output {s}result")
+        if is_struct_return:
+            for field_name, field_width in return_expr["struct_fields"]:
+                if field_width == 1:
+                    ports.append(f"  output {field_name}")
+                else:
+                    ports.append(f"  output [{field_width-1}:0] {field_name}")
         else:
-            ports.append(f"  output {s}[{return_width-1}:0] result")
+            s = "signed " if return_width > 1 else ""
+            if return_width == 1:
+                ports.append(f"  output {s}result")
+            else:
+                ports.append(f"  output {s}[{return_width-1}:0] result")
 
         lines.append(f"module {self.module_name}(")
         lines.append(",\n".join(ports))
@@ -461,8 +620,14 @@ class VerilogEmitter:
         lines.append("")
 
         # Return assignment
-        result_expr = self._node_to_expr(return_expr)
-        lines.append(f"  assign result = {result_expr};")
+        if is_struct_return:
+            for field_name, _ in return_expr["struct_fields"]:
+                field_expr = return_expr["fields"].get(field_name)
+                if field_expr:
+                    lines.append(f"  assign {field_name} = {self._node_to_expr(field_expr)};")
+        else:
+            result_expr_str = self._node_to_expr(return_expr)
+            lines.append(f"  assign result = {result_expr_str};")
         lines.append("")
         lines.append("endmodule")
 
@@ -498,6 +663,16 @@ class VerilogEmitter:
 
         if isinstance(node, VWire):
             return node.name
+
+        if isinstance(node, VIndex):
+            arr = self._node_to_expr(node.array)
+            idx = self._node_to_expr(node.index)
+            ew = node.elem_width
+            return f"{arr}[{idx}*{ew} +: {ew}]"
+
+        if isinstance(node, VConcat):
+            parts = ", ".join(self._node_to_expr(p) for p in node.parts)
+            return f"{{{parts}}}"
 
         return "0 /* unknown */"
 
@@ -557,12 +732,21 @@ def parse_and_convert(source_file: str, func_name: str, extra_args=None):
         return None
 
     conv = C2VConverter()
-    params, return_expr, return_width = conv.convert_function(target)
+    result = conv.convert_function(target)
+
+    # Struct return: result is (params, dict, ret_width) where dict has "fields"
+    if isinstance(result, dict):
+        # Struct return — params are on the converter
+        params = [(n, w, s) for n, (w, s) in conv.params.items()]
+        return_expr = result
+        ret_width = sum(w for _, w in result["struct_fields"])
+    else:
+        params, return_expr, ret_width = result
 
     emitter = VerilogEmitter(func_name)
-    verilog = emitter.emit(params, return_expr, return_width, conv.wires)
+    verilog = emitter.emit(params, return_expr, ret_width, conv.wires)
 
-    return verilog, conv.warnings, params, return_width
+    return verilog, conv.warnings, params, ret_width
 
 
 def main():
