@@ -13,6 +13,8 @@ ldx intercepts the dynamic linker's symbol resolution (GOT/PLT patching) to:
 5. **Forward** syscalls over TCP to a remote machine
 6. **Container** applications in isolated namespaces with piped OS access
 7. **Shard** applications across multiple machines, FPGAs, or SpiNNaker boards
+8. **Rewrite** compiled binaries to use custom hardware instructions (x86, ARM, RISC-V)
+9. **Convert** C functions to synthesizable Verilog for FPGA acceleration
 
 ## Quick Start
 
@@ -74,6 +76,53 @@ python3 python/ldx_ctl.py container:9800 disconnect
 python3 python/ldx_ctl.py container:9800 reconnect newhost:9801
 ```
 
+### Rewrite binaries for custom hardware
+
+Replace function calls with custom instructions — no compiler modifications needed.
+Compile with stock GCC, rewrite afterward.
+
+```bash
+# RISC-V: replace sin/cos with CUSTOM_0 instructions (zero overhead)
+python3 python/riscv_rewrite.py -i app.elf -o app.hw -m mapping.json
+
+# AArch64: replace with UDF traps (route to FPGA via kernel handler)
+python3 python/arm_rewrite.py -i app.elf -o app.hw --func sin:udf:0x0000
+
+# x86_64: replace with UD2 traps (SIGILL handler dispatches to FPGA)
+python3 python/x86_rewrite.py -i app -o app.hw --func sin:0x00:0x00
+
+# x86_64: run patched binary live with trap handler
+LD_PRELOAD=./trap_handler.so ./app.hw
+
+# Scan any binary for rewritable call sites
+python3 python/riscv_rewrite.py -i app --scan
+```
+
+### Convert C functions to Verilog (FPGA acceleration)
+
+```bash
+# List convertible functions
+python3 python/c2v.py mycode.c -f add --list
+
+# Convert a function to synthesizable Verilog
+python3 python/c2v.py mycode.c -f popcount -o popcount.v
+
+# Validate: C → Verilog → Verilator → compare against original
+python3 python/c2v_test.py mycode.c -f popcount
+
+# Full FPGA pipeline:
+#   1. Profile       → find hot function
+#   2. c2v           → generate Verilog
+#   3. Verilator     → validate correctness
+#   4. Vivado/Yosys  → synthesize to FPGA
+#   5. ldx rewrite   → patch binary to use FPGA
+```
+
+Supported C constructs: arithmetic, bitwise, shifts, ternary (→ MUX),
+compound assignment chains, struct returns (→ multiple output ports),
+bounded for-loop unrolling, local arrays, type casts, variable reassignment.
+27 functions validated, 203 Verilator test vectors, 0 failures.
+
 ### Orchestrate sharded applications
 
 ```bash
@@ -133,6 +182,11 @@ curl -X POST localhost:9900/shards/0/migrate -d '{"node_id":1}'
 | Control socket | `src/ldx_control.c` | JSON protocol for disconnect/reconnect/suspend |
 | Registry | `src/ldx_registry.c` | Track nodes, shards, functions, routes |
 | Controller | `python/ldx_controller.py` | REST API for topology management |
+| RISC-V rewriter | `python/riscv_rewrite.py` | Replace calls with CUSTOM_0-3 instructions |
+| ARM rewriter | `python/arm_rewrite.py` | Replace calls with UDF/HVC/SMC traps |
+| x86_64 rewriter | `python/x86_rewrite.py` | Replace calls with UD2 + payload traps |
+| C-to-Verilog | `python/c2v.py` | Convert C functions to synthesizable Verilog |
+| Verilator test | `python/c2v_test.py` | Validate Verilog against C via simulation |
 
 ### Key APIs
 
@@ -218,18 +272,53 @@ Each syscall gets:
 | `ldx-container` | Container launcher with namespace isolation |
 | `ldx-server` | Standalone pipe-os server (TCP) |
 
+## Python Tools
+
+| Tool | Purpose |
+|------|---------|
+| `python/ldx.py` | ctypes bindings for in-process use |
+| `python/ldx_profiler.py` | CLI profiler for unmodified binaries |
+| `python/ldx_ctl.py` | Remote control for container migration |
+| `python/ldx_controller.py` | REST API for topology/shard management |
+| `python/riscv_rewrite.py` | RISC-V binary rewriter (CUSTOM_0-3) |
+| `python/arm_rewrite.py` | AArch64 binary rewriter (UDF/HVC/SMC) |
+| `python/x86_rewrite.py` | x86_64 binary rewriter (UD2 + payload) |
+| `python/c2v.py` | C function → synthesizable Verilog |
+| `python/c2v_test.py` | Verilator validation pipeline |
+| `tools/gen_syscall_pbv.py` | Generate syscall Pipe<> wrappers |
+
 ## Tests
 
 ```
-test/test_basic      — GOT walking, dlreplace, dlreplaceq
-test/test_hooks      — x86_64 trampolines, entry/exit hooks, profiler
-test/test_pbv        — serialize/deserialize roundtrip, live PbV shim
-test/test_pipe       — Pipe<> passthrough, recording, transform, GOT integration
+test/test_basic       — GOT walking, dlreplace, dlreplaceq
+test/test_hooks       — x86_64 trampolines, entry/exit hooks, profiler
+test/test_pbv         — serialize/deserialize roundtrip, live PbV shim
+test/test_pipe        — Pipe<> passthrough, recording, transform, GOT integration
 test/test_syscall_pbv — 53 syscalls through Pipe<> (file I/O, stat, pipe, dup...)
-test/test_control    — control socket commands (status, disconnect, suspend...)
-test/test_registry   — topology tracking (nodes, shards, functions, routes, migration)
-test/test_preload    — LD_PRELOAD on unmodified binary
-test/test_remote     — cross-machine syscall forwarding (tested kc-clevo ↔ zmc1)
+test/test_control     — control socket commands (status, disconnect, suspend...)
+test/test_registry    — topology tracking (nodes, shards, functions, routes, migration)
+test/test_preload     — LD_PRELOAD on unmodified binary
+test/test_remote      — cross-machine syscall forwarding (tested kc-clevo ↔ zmc1)
+test/c2v_test.c       — basic c2v functions (add, max, compute, bitwise_blend)
+test/c2v_ivl.c        — iverilog 4-state logic (8 functions, 114 Verilator tests)
+test/c2v_advanced.c   — shifts, compound ops, parity, popcount, loops (12 functions)
+test/c2v_arrays.c     — arrays, casts, CRC step, fib (9 functions)
+```
+
+## Examples
+
+```
+examples/riscv-accel/  — RISC-V: sin/cos + 4-state logic → CUSTOM_0 instructions
+examples/arm-accel/    — AArch64: sin/cos → UDF traps for FPGA SoC
+examples/x86-accel/    — x86_64: sin/cos → UD2 traps (runs live with trap handler)
+```
+
+## Documentation
+
+```
+doc/riscv-rewriter.md  — RISC-V call-site rewriter, FPGA prototyping workflow
+doc/arm-rewriter.md    — AArch64 rewriter, UDF/HVC/SMC, Zynq/Agilex targets
+doc/x86-rewriter.md    — x86_64 rewriter, UD2 trap handler, PCIe FPGA
 ```
 
 ## Relationship to Wandering Threads
