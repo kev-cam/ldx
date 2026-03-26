@@ -190,6 +190,7 @@ class C2VConverter:
     def __init__(self):
         self.params: Dict[str, Tuple[int, bool]] = {}  # name → (width, signed)
         self.locals: Dict[str, VNode] = {}  # name → expression
+        self.local_arrays: Dict[str, List[VNode]] = {}  # name → [elem0, elem1, ...]
         self.struct_fields: Dict[str, Dict[str, VNode]] = {}  # var → {field → expr}
         self.wires: List[VWire] = []
         self.wire_counter = 0
@@ -270,12 +271,29 @@ class C2VConverter:
                 for decl in stmt.get_children():
                     if decl.kind == CursorKind.VAR_DECL:
                         name = decl.spelling
-                        w = type_width(decl.type.spelling)
+                        type_str = decl.type.spelling
+                        w = type_width(type_str)
+                        # Check for array type: e.g. "uint64_t [4]"
+                        if '[' in type_str:
+                            # Extract array size
+                            try:
+                                arr_size = int(type_str.split('[')[1].split(']')[0])
+                                elem_type = type_str.split('[')[0].strip()
+                                elem_w = type_width(elem_type)
+                                self.local_arrays[name] = [VConst(0, elem_w)] * arr_size
+                            except (ValueError, IndexError):
+                                pass
+                            continue
                         children = list(decl.get_children())
-                        if children:
-                            expr = self._expr(children[-1])
+                        # Skip TYPE_REF children
+                        init_children = [c for c in children if c.kind != CursorKind.TYPE_REF]
+                        if init_children:
+                            expr = self._expr(init_children[-1])
                             self.locals[name] = expr
                             self.wires.append(VWire(name, expr, w))
+                        else:
+                            # Declaration without initializer — register with zero
+                            self.locals[name] = VConst(0, w)
             elif stmt.kind == CursorKind.BINARY_OPERATOR and self._is_assignment(stmt):
                 children = list(stmt.get_children())
                 if len(children) == 2:
@@ -293,7 +311,6 @@ class C2VConverter:
                     if left_raw.kind == CursorKind.MEMBER_REF_EXPR:
                         # Struct field assignment: r.abits = expr
                         field_name = left_raw.spelling
-                        # Get the struct variable name from the MEMBER_REF children
                         member_children = list(left_raw.get_children())
                         var_name = member_children[0].spelling if member_children else "?"
                         if var_name not in self.struct_fields:
@@ -301,6 +318,16 @@ class C2VConverter:
                         self.struct_fields[var_name][field_name] = rhs
                         wire_name = f"{var_name}_{field_name}"
                         self.wires.append(VWire(wire_name, rhs, w))
+                    elif left_raw.kind == CursorKind.ARRAY_SUBSCRIPT_EXPR:
+                        # Array element assignment: vals[0] = a
+                        arr_children = list(left_raw.get_children())
+                        if len(arr_children) == 2:
+                            arr_name = arr_children[0].spelling
+                            idx_node = self._expr(arr_children[1])
+                            if arr_name in self.local_arrays and isinstance(idx_node, VConst):
+                                idx = idx_node.value
+                                if idx < len(self.local_arrays[arr_name]):
+                                    self.local_arrays[arr_name][idx] = rhs
                     else:
                         # Simple assignment: x = expr
                         target_name = left.spelling
@@ -364,13 +391,16 @@ class C2VConverter:
                 left = c[0]
             else:
                 break
-        # Accept DECL_REF_EXPR (simple var) or MEMBER_REF_EXPR (struct field)
+        # Accept DECL_REF_EXPR (simple var), MEMBER_REF_EXPR (struct field),
+        # or ARRAY_SUBSCRIPT_EXPR (array element)
         if left.kind == CursorKind.DECL_REF_EXPR:
             name = left.spelling
             if name not in self.locals and name not in self.params:
                 return False
         elif left.kind == CursorKind.MEMBER_REF_EXPR:
             pass  # struct field assignment — always accept
+        elif left.kind == CursorKind.ARRAY_SUBSCRIPT_EXPR:
+            pass  # array element assignment — always accept
         else:
             return False
         # Check tokens for '=' but not '==', '!=', '<=', '>='
@@ -449,17 +479,74 @@ class C2VConverter:
             if children:
                 return self._expr(children[0])
 
-        if kind in (CursorKind.CSTYLE_CAST_EXPR, CursorKind.UNEXPOSED_EXPR):
+        if kind == CursorKind.CSTYLE_CAST_EXPR:
+            children = list(cursor.get_children())
+            if children:
+                inner = self._expr(children[-1])
+                cast_width = type_width(cursor.type.spelling)
+                if isinstance(inner, VConst):
+                    return VConst(inner.value, cast_width)
+                if hasattr(inner, 'width') and inner.width != cast_width:
+                    return VCast(inner, cast_width)
+                return inner
+
+        if kind == CursorKind.UNEXPOSED_EXPR:
             children = list(cursor.get_children())
             if children:
                 return self._expr(children[0])
 
-        # Array subscript: a[i]
+        # Array subscript: a[i] → bit-select on wide port or local array
         if kind == CursorKind.ARRAY_SUBSCRIPT_EXPR:
-            self.warnings.append("array subscript — will need memory interface")
             children = list(cursor.get_children())
             if len(children) == 2:
-                return VConst(0, type_width(cursor.type.spelling))
+                array_expr = children[0]
+                index_expr = children[1]
+                elem_width = type_width(cursor.type.spelling)
+                # If array is a known local, use the index to select
+                arr_name = array_expr.spelling if array_expr.spelling else None
+                idx_node = self._expr(index_expr)
+                if arr_name and arr_name in self.locals:
+                    return VIndex(self.locals[arr_name], idx_node, elem_width, elem_width)
+                if arr_name and arr_name in self.params:
+                    w, _ = self.params[arr_name]
+                    return VIndex(VInput(arr_name, w), idx_node, elem_width, elem_width)
+                # Constant index on local array — try to resolve directly
+                if isinstance(idx_node, VConst) and arr_name and arr_name in self.local_arrays:
+                    arr = self.local_arrays[arr_name]
+                    if idx_node.value < len(arr):
+                        return arr[idx_node.value]
+                arr_node = self._expr(array_expr)
+                return VIndex(arr_node, idx_node, elem_width, elem_width)
+
+        # Function call → module instantiation (record as warning for now,
+        # emit as inline comment; full support needs separate modules)
+        if kind == CursorKind.CALL_EXPR:
+            func_name = cursor.spelling
+            children = list(cursor.get_children())
+            args = [self._expr(c) for c in children[1:]]  # skip the function ref
+            w = type_width(cursor.type.spelling)
+            self.warnings.append(f"function call '{func_name}' — needs module instantiation")
+            # For known simple builtins, try to inline
+            if func_name == '__builtin_expect' and len(args) >= 1:
+                return args[0]
+            return VConst(0, w)
+
+        # Member access: x.field (read, not assignment)
+        if kind == CursorKind.MEMBER_REF_EXPR:
+            field_name = cursor.spelling
+            children = list(cursor.get_children())
+            if children:
+                var_name = children[0].spelling
+                # Check if we have this field tracked
+                if var_name in self.struct_fields and field_name in self.struct_fields[var_name]:
+                    return self.struct_fields[var_name][field_name]
+                if var_name in self.locals:
+                    return self.locals[var_name]
+            return VConst(0, type_width(cursor.type.spelling))
+
+        # Type reference (harmless, skip)
+        if kind == CursorKind.TYPE_REF:
+            return VConst(0, 32)
 
         self.warnings.append(f"unhandled AST node: {kind.name} at {cursor.location}")
         return VConst(0, 32)
@@ -605,29 +692,41 @@ class VerilogEmitter:
         lines.append(");")
         lines.append("")
 
-        # Local wires
+        # Collect port names to avoid wire conflicts
+        port_names = set(n for n, _, _ in params)
+        port_names.add("result")
+        if is_struct_return:
+            for fn, _ in return_expr["struct_fields"]:
+                port_names.add(fn)
+
+        # Local wires (skip if name conflicts with port)
         for w in local_wires:
+            if w.name in port_names:
+                continue  # this wire is used directly in the assign
             expr_str = self._node_to_expr(w.expr)
             if w.width == 1:
                 lines.append(f"  wire {w.name} = {expr_str};")
             else:
                 lines.append(f"  wire [{w.width-1}:0] {w.name} = {expr_str};")
 
-        # Any generated intermediate wires
+        # Pre-evaluate return expression to collect any cast wires
+        if is_struct_return:
+            assign_lines = []
+            for field_name, _ in return_expr["struct_fields"]:
+                field_expr = return_expr["fields"].get(field_name)
+                if field_expr:
+                    assign_lines.append(f"  assign {field_name} = {self._node_to_expr(field_expr)};")
+        else:
+            result_expr_str = self._node_to_expr(return_expr)
+            assign_lines = [f"  assign result = {result_expr_str};"]
+
+        # Emit any wires generated during expression evaluation (e.g., casts)
         for w in self.wires:
             lines.append(w)
 
         lines.append("")
-
-        # Return assignment
-        if is_struct_return:
-            for field_name, _ in return_expr["struct_fields"]:
-                field_expr = return_expr["fields"].get(field_name)
-                if field_expr:
-                    lines.append(f"  assign {field_name} = {self._node_to_expr(field_expr)};")
-        else:
-            result_expr_str = self._node_to_expr(return_expr)
-            lines.append(f"  assign result = {result_expr_str};")
+        for al in assign_lines:
+            lines.append(al)
         lines.append("")
         lines.append("endmodule")
 
@@ -659,7 +758,20 @@ class VerilogEmitter:
             return f"({sel} ? {true_v} : {false_v})"
 
         if isinstance(node, VCast):
-            return self._node_to_expr(node.operand)
+            inner = self._node_to_expr(node.operand)
+            # Truncation: take lower bits
+            if hasattr(node.operand, 'width') and node.width < node.operand.width:
+                # If inner is a simple name, use direct bit-select
+                # Otherwise wrap in a wire first (Verilog can't bit-select expressions directly)
+                if inner.isidentifier():
+                    return f"{inner}[{node.width-1}:0]"
+                else:
+                    self.wire_id += 1
+                    wname = f"_cast_{self.wire_id}"
+                    ow = node.operand.width
+                    self.wires.append(f"  wire [{ow-1}:0] {wname} = {inner};")
+                    return f"{wname}[{node.width-1}:0]"
+            return inner
 
         if isinstance(node, VWire):
             return node.name
