@@ -110,18 +110,47 @@ python3 python/c2v.py mycode.c -f popcount -o popcount.v
 # Validate: C → Verilog → Verilator → compare against original
 python3 python/c2v_test.py mycode.c -f popcount
 
-# Full FPGA pipeline:
+# Generate FPGA build directory (Quartus project + build script)
+python3 python/c2v.py mycode.c -f add --fpga
+
+# Full FPGA pipeline (tested on DE2i-150: Atom + Cyclone IV GX):
 #   1. Profile       → find hot function
 #   2. c2v           → generate Verilog
 #   3. Verilator     → validate correctness
-#   4. Vivado/Yosys  → synthesize to FPGA
-#   5. ldx rewrite   → patch binary to use FPGA
+#   4. c2v --fpga    → generate Quartus project
+#   5. Quartus       → synthesize to FPGA
+#   6. JTAG program  → load bitstream
+#   7. Atom calls function over PCIe BAR0
 ```
 
 Supported C constructs: arithmetic, bitwise, shifts, ternary (→ MUX),
 compound assignment chains, struct returns (→ multiple output ports),
 bounded for-loop unrolling, local arrays, type casts, variable reassignment.
 27 functions validated, 203 Verilator test vectors, 0 failures.
+
+### FPGA acceleration (DE2i-150)
+
+```bash
+# The Atom CPU calls C functions that execute on the Cyclone IV GX FPGA
+# over PCIe x1. The c2v converter generates combinational Verilog,
+# Quartus synthesizes it, and the result is memory-mapped to PCIe BAR0.
+
+# Build and program
+cd fpga/quartus
+quartus_sh --flow compile ldx_accel
+quartus_pgm -c "USB-Blaster" -m JTAG -o "P;ldx_accel.sof"
+
+# Test from Atom (write args to BAR0, read result)
+python3 -c "
+import mmap, os, struct
+fd = os.open('/sys/bus/pci/devices/0000:01:00.0/resource0', os.O_RDWR | os.O_SYNC)
+m = mmap.mmap(fd, 8192, mmap.MAP_SHARED, mmap.PROT_READ | mmap.PROT_WRITE)
+m[0x00:0x04] = struct.pack('<I', 42)   # arg0
+m[0x04:0x08] = struct.pack('<I', 58)   # arg1
+result = struct.unpack('<I', m[0x40:0x44])[0]
+print(f'add(42, 58) = {result}')       # → 100 (computed in FPGA)
+"
+```
 
 ### Orchestrate sharded applications
 
@@ -187,6 +216,12 @@ curl -X POST localhost:9900/shards/0/migrate -d '{"node_id":1}'
 | x86_64 rewriter | `python/x86_rewrite.py` | Replace calls with UD2 + payload traps |
 | C-to-Verilog | `python/c2v.py` | Convert C functions to synthesizable Verilog |
 | Verilator test | `python/c2v_test.py` | Validate Verilog against C via simulation |
+| FPGA accelerator | `fpga/rtl/ldx_accel_slave.v` | Avalon-MM slave with c2v function module |
+| FPGA top-level | `fpga/rtl/ldx_top.v` | DE2i-150 PCIe system instantiation |
+| PCIe BAR bridge | `fpga/rtl/pcie_bar_bridge.v` | BAR0 address decoder for accelerator slots |
+| Accelerator slot | `fpga/rtl/accel_slot.v` | Generic register-mapped c2v module wrapper |
+| PCIe driver | `src/ldx_pcie.c` | Userspace PCIe BAR access from Atom |
+| QSYS system | `fpga/quartus/pcie_system.tcl` | PCIe hard IP + Avalon-MM interconnect |
 
 ### Key APIs
 
@@ -303,6 +338,8 @@ test/c2v_test.c       — basic c2v functions (add, max, compute, bitwise_blend)
 test/c2v_ivl.c        — iverilog 4-state logic (8 functions, 114 Verilator tests)
 test/c2v_advanced.c   — shifts, compound ops, parity, popcount, loops (12 functions)
 test/c2v_arrays.c     — arrays, casts, CRC step, fib (9 functions)
+fpga/test/tb_accel_slot.v  — accelerator slot register read/write (6 tests, iverilog)
+fpga/test/tb_pcie_bridge.v — PCIe BAR bridge + slot + globals (7 tests, iverilog)
 ```
 
 ## Examples
@@ -312,6 +349,31 @@ examples/riscv-accel/  — RISC-V: sin/cos + 4-state logic → CUSTOM_0 instruct
 examples/arm-accel/    — AArch64: sin/cos → UDF traps for FPGA SoC
 examples/x86-accel/    — x86_64: sin/cos → UD2 traps (runs live with trap handler)
 ```
+
+## FPGA
+
+Target: DE2i-150 (Intel Atom N2600 + Cyclone IV GX EP4CGX150DF31, PCIe x1 Gen1).
+
+```
+fpga/rtl/ldx_top.v            — Top-level: QSYS PCIe system instantiation
+fpga/rtl/ldx_accel_slave.v    — Avalon-MM slave: arg registers + c2v function + result
+fpga/rtl/ldx_accel_slave_hw.tcl — QSYS component definition
+fpga/rtl/add.v                — c2v-generated: add(int, int) → int
+fpga/rtl/pcie_bar_bridge.v    — BAR0 address decoder (multi-slot, tested in simulation)
+fpga/rtl/accel_slot.v         — Generic c2v module wrapper (tested in simulation)
+fpga/quartus/pcie_system.tcl  — QSYS system: PCIe hard IP + Avalon-MM interconnect
+fpga/quartus/de2i_150.tcl     — Quartus project setup (device, pins)
+fpga/quartus/de2i_150.sdc     — Timing constraints
+fpga/quartus/ldx_accel.qpf    — Quartus project file
+fpga/quartus/ldx_accel.qsf    — Pin assignments (from Terasic reference design)
+fpga/test/tb_accel_slot.v     — Accelerator slot testbench (iverilog)
+fpga/test/tb_pcie_bridge.v    — Full-stack testbench (iverilog)
+src/ldx_pcie.h                — Userspace PCIe BAR access API
+src/ldx_pcie.c                — mmap BAR0, write args, read results
+```
+
+Verified end-to-end: `add(42, 58) = 100` computed in FPGA hardware,
+called from the Atom over PCIe BAR0. 6 test vectors, all passing.
 
 ## Documentation
 

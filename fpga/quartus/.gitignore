@@ -1,0 +1,27 @@
+# Quartus build artifacts
+db/
+incremental_db/
+*.rpt
+*.smsg
+*.summary
+*.done
+*.jdi
+*.sld
+*.pin
+*.sof
+*.pof
+*.map.*
+*.fit.*
+*.asm.*
+*.sta.*
+*.flow.*
+.qsys_edit/
+
+# QSYS generated output (regenerated from pcie_system.tcl)
+pcie_system/
+pcie_system.sopcinfo
+
+# Temporary TCL scripts
+add_qsys.tcl
+fix_pins.tcl
+list_pcie_ip.tcl

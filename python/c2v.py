@@ -861,6 +861,137 @@ def parse_and_convert(source_file: str, func_name: str, extra_args=None):
     return verilog, conv.warnings, params, ret_width
 
 
+def emit_fpga_build(func_name, verilog, params, ret_width, fpga_dir=None):
+    """Generate a complete FPGA build directory for the given function.
+
+    Creates:
+      <dir>/<func>.v           — c2v-generated combinational module
+      <dir>/accel_slot_inst.v  — wires c2v module into accel_slot
+      <dir>/build.sh           — one-shot Quartus compile + program script
+    """
+    # Find ldx project root (parent of python/)
+    ldx_root = os.path.normpath(os.path.join(os.path.dirname(__file__), ".."))
+
+    if fpga_dir is None:
+        fpga_dir = os.path.join(ldx_root, "fpga", "build", func_name)
+    os.makedirs(fpga_dir, exist_ok=True)
+
+    n_args = len(params)
+
+    # 1. Write the c2v Verilog module
+    func_v = os.path.join(fpga_dir, f"{func_name}.v")
+    with open(func_v, 'w') as f:
+        f.write(verilog + "\n")
+    print(f"  Wrote {func_v}", file=sys.stderr)
+
+    # 2. Generate accel_slot wiring that instantiates the c2v module
+    port_lines = []
+    for i, (name, width, signed) in enumerate(params):
+        port_lines.append(f"    .{name}(arg_reg[{i}][{width-1}:0])")
+    ports = ",\n".join(port_lines)
+
+    # The result wire declaration needs to match accel_slot's expectation
+    inst_v = os.path.join(fpga_dir, "accel_slot_inst.v")
+    with open(inst_v, 'w') as f:
+        f.write(f"""// Auto-generated: wires {func_name} into accel_slot.
+// Include this in the accel_slot module or use the patched top-level.
+//
+// accel_slot parameters: N_ARGS={n_args}, RET_WIDTH={ret_width}
+
+{func_name} u_func (
+{ports},
+    .result(result)
+);
+""")
+    print(f"  Wrote {inst_v}", file=sys.stderr)
+
+    # 3. Generate a patched top-level that sets the right parameters
+    top_v = os.path.join(fpga_dir, "ldx_top_inst.v")
+    with open(top_v, 'w') as f:
+        f.write(f"""// Auto-generated top-level parameters for {func_name}.
+// This file is `include'd or used to parameterize the build.
+//
+// Function: {func_name}
+// Arguments: {n_args} x 32-bit
+// Return: {ret_width}-bit
+//
+// accel_slot #(.N_ARGS({n_args}), .RET_WIDTH({ret_width}))
+
+`define LDX_FUNC_NAME    "{func_name}"
+`define LDX_N_ARGS       {n_args}
+`define LDX_RET_WIDTH    {ret_width}
+""")
+    print(f"  Wrote {top_v}", file=sys.stderr)
+
+    # 4. Generate build script
+    quartus_bin = os.path.expanduser("~/altera_lite/25.1std/quartus/bin")
+    quartus_dir = os.path.join(ldx_root, "fpga", "quartus")
+
+    build_sh = os.path.join(fpga_dir, "build.sh")
+    with open(build_sh, 'w') as f:
+        f.write(f"""#!/bin/bash
+# Auto-generated build script for {func_name} → FPGA.
+# Usage: bash build.sh [--program]
+set -e
+
+QUARTUS_BIN="{quartus_bin}"
+PROJECT_DIR="{quartus_dir}"
+FUNC_DIR="$(cd "$(dirname "$0")" && pwd)"
+PROJECT_NAME="ldx_accel"
+
+export PATH="$QUARTUS_BIN:$PATH"
+
+echo "=== ldx FPGA build: {func_name} ==="
+echo "  {n_args} args, {ret_width}-bit return"
+
+# Copy function Verilog into project
+cp "$FUNC_DIR/{func_name}.v" "$PROJECT_DIR/"
+
+# Add function source to project (idempotent)
+cd "$PROJECT_DIR"
+quartus_sh -t - <<'TCLEOF'
+package require ::quartus::project
+project_open $PROJECT_NAME
+# Remove old function files, add new one
+catch {{ set_global_assignment -name VERILOG_FILE -remove {func_name}.v }}
+set_global_assignment -name VERILOG_FILE {func_name}.v
+project_close
+TCLEOF
+
+echo "[1/4] Analysis & Synthesis..."
+quartus_map $PROJECT_NAME
+
+echo "[2/4] Fitter..."
+quartus_fit $PROJECT_NAME
+
+echo "[3/4] Timing Analysis..."
+quartus_sta $PROJECT_NAME
+
+echo "[4/4] Assembler..."
+quartus_asm $PROJECT_NAME
+
+echo "=== Build complete ==="
+echo "Bitstream: $PROJECT_DIR/output_files/$PROJECT_NAME.sof"
+
+if [ "$1" = "--program" ]; then
+    echo "Programming FPGA via JTAG..."
+    quartus_pgm -c "USB-Blaster" -m JTAG -o "P;output_files/$PROJECT_NAME.sof"
+    echo "Done — FPGA programmed with {func_name}"
+fi
+""")
+    os.chmod(build_sh, 0o755)
+    print(f"  Wrote {build_sh}", file=sys.stderr)
+
+    # 5. Print register map
+    print(f"\n  FPGA register map for {func_name}:", file=sys.stderr)
+    for i, (name, width, signed) in enumerate(params):
+        print(f"    0x{i*4:02X}: {name} ({width}-bit, write)", file=sys.stderr)
+    print(f"    0x40: result ({ret_width}-bit, read)", file=sys.stderr)
+    print(f"    0x48: status (bit 0 = valid)", file=sys.stderr)
+    print(f"\n  Build:   bash {build_sh}", file=sys.stderr)
+    print(f"  Program: bash {build_sh} --program", file=sys.stderr)
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Convert C functions to synthesizable Verilog",
@@ -869,6 +1000,10 @@ def main():
     parser.add_argument("-f", "--function", required=True, help="Function name")
     parser.add_argument("-o", "--output", help="Output Verilog file (default: stdout)")
     parser.add_argument("--axi", action="store_true", help="Generate AXI-Lite wrapper info")
+    parser.add_argument("--fpga", action="store_true",
+                        help="Generate FPGA build: accel_slot wiring + Quartus build script")
+    parser.add_argument("--fpga-dir", default=None,
+                        help="Output directory for FPGA build files (default: fpga/build/<func>)")
     parser.add_argument("--list", action="store_true", help="List functions in source file")
     parser.add_argument("-I", action="append", default=[], help="Include path")
     args = parser.parse_args()
@@ -896,7 +1031,9 @@ def main():
     if args.axi:
         output += "\n\n" + emit_axi_wrapper(args.function, params, ret_width)
 
-    if args.output:
+    if args.fpga:
+        emit_fpga_build(args.function, verilog, params, ret_width, args.fpga_dir)
+    elif args.output:
         with open(args.output, 'w') as f:
             f.write(output + "\n")
         print(f"Wrote {args.output}", file=sys.stderr)

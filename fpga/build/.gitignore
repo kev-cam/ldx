@@ -1,0 +1,3 @@
+# c2v --fpga generated build directories
+*
+!.gitignore

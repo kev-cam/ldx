@@ -1,0 +1,78 @@
+# -------------------------------------------------------------------------- #
+#
+# Copyright (C) 2025  Altera Corporation. All rights reserved.
+# Your use of Altera Corporation's design tools, logic functions 
+# and other software and tools, and any partner logic 
+# functions, and any output files from any of the foregoing 
+# (including device programming or simulation files), and any 
+# associated documentation or information are expressly subject 
+# to the terms and conditions of the Altera Program License 
+# Subscription Agreement, the Altera Quartus Prime License Agreement,
+# the Altera IP License Agreement, or other applicable license
+# agreement, including, without limitation, that your use is for
+# the sole purpose of programming logic devices manufactured by
+# Altera and sold by Altera or its authorized distributors.  Please
+# refer to the Altera Software License Subscription Agreements 
+# on the Quartus Prime software download page.
+#
+# -------------------------------------------------------------------------- #
+#
+# Quartus Prime
+# Version 25.1std.0 Build 1129 10/21/2025 SC Lite Edition
+# Date created = 21:07:14  March 27, 2026
+#
+# -------------------------------------------------------------------------- #
+#
+# Notes:
+#
+# 1) The default values for assignments are stored in the file:
+#		ldx_accel_assignment_defaults.qdf
+#    If this file doesn't exist, see file:
+#		assignment_defaults.qdf
+#
+# 2) Intel recommends that you do not modify this file. This
+#    file is updated automatically by the Quartus Prime software
+#    and any changes you make may be lost or overwritten.
+#
+# -------------------------------------------------------------------------- #
+
+
+set_global_assignment -name FAMILY "Cyclone IV GX"
+set_global_assignment -name DEVICE EP4CGX150DF31C7
+set_global_assignment -name TOP_LEVEL_ENTITY ldx_top
+set_global_assignment -name ORIGINAL_QUARTUS_VERSION 25.1STD.0
+set_global_assignment -name PROJECT_CREATION_TIME_DATE "21:07:14  MARCH 27, 2026"
+set_global_assignment -name LAST_QUARTUS_VERSION "25.1std.0 Lite Edition"
+set_global_assignment -name VERILOG_FILE ../rtl/ldx_top.v
+set_global_assignment -name SDC_FILE de2i_150.sdc
+# DE2i-150 pin assignments (from Terasic reference design)
+# 50 MHz oscillator
+set_location_assignment PIN_AJ16 -to clk_50
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to clk_50
+
+# PCIe pins (from Terasic reference design)
+set_location_assignment PIN_A4 -to pcie_perstn
+set_instance_assignment -name IO_STANDARD "2.5 V" -to pcie_perstn
+
+set_location_assignment PIN_V15 -to pcie_refclk
+set_instance_assignment -name IO_STANDARD HCSL -to pcie_refclk
+
+set_location_assignment PIN_AC2 -to pcie_rx
+set_instance_assignment -name IO_STANDARD "1.5-V PCML" -to pcie_rx
+
+set_location_assignment PIN_AB4 -to pcie_tx
+set_instance_assignment -name IO_STANDARD "1.5-V PCML" -to pcie_tx
+
+# Green LEDs
+set_location_assignment PIN_AA25 -to led[0]
+set_location_assignment PIN_AB25 -to led[1]
+set_location_assignment PIN_F27 -to led[2]
+set_location_assignment PIN_F26 -to led[3]
+set_instance_assignment -name IO_STANDARD "2.5 V" -to led[*]
+set_global_assignment -name RESERVE_ALL_UNUSED_PINS_WEAK_PULLUP "AS INPUT TRI-STATED"
+set_global_assignment -name STRATIX_DEVICE_IO_STANDARD "2.5 V"
+set_global_assignment -name OPTIMIZE_HOLD_TIMING "ALL PATHS"
+set_global_assignment -name OPTIMIZE_MULTI_CORNER_TIMING ON
+set_global_assignment -name FITTER_EFFORT "STANDARD FIT"
+set_global_assignment -name ENABLE_SIGNALTAP OFF
+set_global_assignment -name QIP_FILE pcie_system/synthesis/pcie_system.qip
