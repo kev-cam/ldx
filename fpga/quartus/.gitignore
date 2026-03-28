@@ -18,6 +18,7 @@ incremental_db/
 .qsys_edit/
 
 # QSYS generated output (regenerated from pcie_system.tcl)
+pcie_system.qsys
 pcie_system/
 pcie_system.sopcinfo
 
