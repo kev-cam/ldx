@@ -283,14 +283,12 @@ def gen_reference_program(source_file, func_name, params, ret_width):
     lines.append('')
     lines.append('int main() {')
 
+    # Use 16-hex-digit format for 64-bit returns, 8 for 32-bit
+    fmt = "%016llx" if ret_width > 32 else "%08llx"
     vectors = gen_test_vectors(params)
     for vec in vectors:
         args = ", ".join(f"({width_to_ctype(w, s)}){v}ULL" for (_, w, s), v in zip(params, vec))
-        mask = f"0x{'F' * (ret_width // 4)}" if ret_width < 64 else ""
-        if mask:
-            lines.append(f'    printf("%08llx\\n", (unsigned long long)({func_name}({args}) & {mask}));')
-        else:
-            lines.append(f'    printf("%08llx\\n", (unsigned long long){func_name}({args}));')
+        lines.append(f'    printf("{fmt}\\n", (unsigned long long){func_name}({args}));')
 
     lines.append('    return 0;')
     lines.append('}')
@@ -319,7 +317,7 @@ def gen_iverilog_testbench(func_name, params, ret_width):
     vectors = gen_test_vectors(params)
     lines.append('  integer pass = 0, fail = 0;')
     lines.append(f'  reg [{ret_width-1}:0] expected;')
-    lines.append(f'  reg [31:0] ref_data [0:{len(vectors)-1}];')
+    lines.append(f'  reg [{ret_width-1}:0] ref_data [0:{len(vectors)-1}];')
     lines.append('')
     lines.append('  initial begin')
     lines.append('    $readmemh(`REF_FILE, ref_data);')
