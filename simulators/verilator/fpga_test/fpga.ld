@@ -4,11 +4,11 @@
 ENTRY(_start)
 
 MEMORY {
-    RAM (rwx) : ORIGIN = 0x80000000, LENGTH = 32K
+    RAM (rwx) : ORIGIN = 0x80000000, LENGTH = 4K
 }
 
 SECTIONS {
-    .text : { *(.text*) } > RAM
+    .text : { *(.text._start) *(.text*) } > RAM
     .rodata : { *(.rodata*) } > RAM
     .data : { *(.data*) } > RAM
     __bss_start = .;

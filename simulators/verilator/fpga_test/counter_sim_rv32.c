@@ -31,7 +31,13 @@ void counter_eval(counter_state_t *s) {
     s->overflow = (s->count == 0xFF) & s->enable;
 }
 
-void _start(void) {
+void __attribute__((naked)) _start(void) {
+    /* Set stack pointer to top of 4KB RAM */
+    __asm__ volatile ("li sp, 0x80001000");
+    __asm__ volatile ("j _main");
+}
+
+void __attribute__((noinline)) _main(void) {
     counter_state_t s = {0, 0, 0, 0, 0, 0};
 
     /* Reset */

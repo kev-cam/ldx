@@ -33,8 +33,8 @@ set_instance_parameter_value pcie {bar0_64bit_mem_space} {false}
 set_instance_parameter_value pcie {bar0_prefetchable} {false}
 set_instance_parameter_value pcie {bar0_size_mask} {13}
 
-# ---- LDX Accelerator Slave (replaces onchip_mem) ----
-add_instance accel ldx_accel_slave
+# ---- LDX VexRiscv SoC (VexRiscv + CFU + RAM) ----
+add_instance accel ldx_soc
 
 # BAR master → accelerator slave
 add_connection pcie.bar1_0 accel.s1
