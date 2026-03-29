@@ -2,3 +2,4 @@
 tb_accel_slot
 tb_pcie_bridge
 tb_c2v_add
+fpga/test/tb_cfu

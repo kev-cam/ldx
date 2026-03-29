@@ -11,3 +11,4 @@ test/test_remote
 test/test_registry
 test/riscv_test.elf
 test/riscv_test.patched
+python/__pycache__/

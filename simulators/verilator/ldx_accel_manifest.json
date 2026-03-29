@@ -1,0 +1,699 @@
+{
+  "source": "/usr/local/src/verilator/ldx_verilator_accel.c",
+  "functions": [
+    {
+      "name": "vl_redxor_2",
+      "signature": "uint32_t vl_redxor_2(uint32_t)",
+      "line": 13,
+      "eligible": true,
+      "converted": true,
+      "n_params": 1,
+      "ret_width": 32,
+      "warnings": [],
+      "verilog_lines": 10,
+      "verified": true,
+      "verify_detail": {
+        "verified": true,
+        "n_pass": 3,
+        "n_fail": 0,
+        "output": "3 PASS, 0 FAIL\nALL PASS\n/tmp/ldx_verify_vl_redxor_2_vec677po/tb.v:37: $finish called at 3000 (1ps)"
+      },
+      "estimate": {
+        "ops": {
+          "add": 0,
+          "sub": 0,
+          "mul": 0,
+          "mux": 0,
+          "and": 1,
+          "or": 0,
+          "xor": 2,
+          "not": 0,
+          "shift": 2,
+          "compare": 4
+        },
+        "total_ops": 9,
+        "est_gates": 288,
+        "est_depth": 4,
+        "n_lines": 7,
+        "fpga_time_ns": 32,
+        "pcie_overhead_ns": 1500,
+        "total_fpga_ns": 1532,
+        "break_even_cpu_ns": 1532,
+        "note": "Accelerating is worthwhile when CPU time > break_even_cpu_ns per call, or when batching many calls amortizes the PCIe overhead."
+      }
+    },
+    {
+      "name": "vl_redxor_4",
+      "signature": "uint32_t vl_redxor_4(uint32_t)",
+      "line": 18,
+      "eligible": true,
+      "converted": true,
+      "n_params": 1,
+      "ret_width": 32,
+      "warnings": [],
+      "verilog_lines": 11,
+      "verified": true,
+      "verify_detail": {
+        "verified": true,
+        "n_pass": 3,
+        "n_fail": 0,
+        "output": "3 PASS, 0 FAIL\nALL PASS\n/tmp/ldx_verify_vl_redxor_4_ipyopd0j/tb.v:37: $finish called at 3000 (1ps)"
+      },
+      "estimate": {
+        "ops": {
+          "add": 0,
+          "sub": 0,
+          "mul": 0,
+          "mux": 0,
+          "and": 1,
+          "or": 0,
+          "xor": 7,
+          "not": 0,
+          "shift": 7,
+          "compare": 14
+        },
+        "total_ops": 29,
+        "est_gates": 928,
+        "est_depth": 14,
+        "n_lines": 8,
+        "fpga_time_ns": 112,
+        "pcie_overhead_ns": 1500,
+        "total_fpga_ns": 1612,
+        "break_even_cpu_ns": 1612,
+        "note": "Accelerating is worthwhile when CPU time > break_even_cpu_ns per call, or when batching many calls amortizes the PCIe overhead."
+      }
+    },
+    {
+      "name": "vl_redxor_8",
+      "signature": "uint32_t vl_redxor_8(uint32_t)",
+      "line": 24,
+      "eligible": true,
+      "converted": true,
+      "n_params": 1,
+      "ret_width": 32,
+      "warnings": [],
+      "verilog_lines": 12,
+      "verified": true,
+      "verify_detail": {
+        "verified": true,
+        "n_pass": 3,
+        "n_fail": 0,
+        "output": "3 PASS, 0 FAIL\nALL PASS\n/tmp/ldx_verify_vl_redxor_8_ip46n5tq/tb.v:37: $finish called at 3000 (1ps)"
+      },
+      "estimate": {
+        "ops": {
+          "add": 0,
+          "sub": 0,
+          "mul": 0,
+          "mux": 0,
+          "and": 1,
+          "or": 0,
+          "xor": 18,
+          "not": 0,
+          "shift": 18,
+          "compare": 36
+        },
+        "total_ops": 73,
+        "est_gates": 2336,
+        "est_depth": 36,
+        "n_lines": 9,
+        "fpga_time_ns": 288,
+        "pcie_overhead_ns": 1500,
+        "total_fpga_ns": 1788,
+        "break_even_cpu_ns": 1788,
+        "note": "Accelerating is worthwhile when CPU time > break_even_cpu_ns per call, or when batching many calls amortizes the PCIe overhead."
+      }
+    },
+    {
+      "name": "vl_redxor_16",
+      "signature": "uint32_t vl_redxor_16(uint32_t)",
+      "line": 31,
+      "eligible": true,
+      "converted": true,
+      "n_params": 1,
+      "ret_width": 32,
+      "warnings": [],
+      "verilog_lines": 13,
+      "verified": true,
+      "verify_detail": {
+        "verified": true,
+        "n_pass": 3,
+        "n_fail": 0,
+        "output": "3 PASS, 0 FAIL\nALL PASS\n/tmp/ldx_verify_vl_redxor_16__4efqhca/tb.v:37: $finish called at 3000 (1ps)"
+      },
+      "estimate": {
+        "ops": {
+          "add": 0,
+          "sub": 0,
+          "mul": 0,
+          "mux": 0,
+          "and": 1,
+          "or": 0,
+          "xor": 41,
+          "not": 0,
+          "shift": 41,
+          "compare": 82
+        },
+        "total_ops": 165,
+        "est_gates": 5280,
+        "est_depth": 82,
+        "n_lines": 10,
+        "fpga_time_ns": 656,
+        "pcie_overhead_ns": 1500,
+        "total_fpga_ns": 2156,
+        "break_even_cpu_ns": 2156,
+        "note": "Accelerating is worthwhile when CPU time > break_even_cpu_ns per call, or when batching many calls amortizes the PCIe overhead."
+      }
+    },
+    {
+      "name": "vl_redxor_32",
+      "signature": "uint32_t vl_redxor_32(uint32_t)",
+      "line": 39,
+      "eligible": true,
+      "converted": true,
+      "n_params": 1,
+      "ret_width": 32,
+      "warnings": [],
+      "verilog_lines": 14,
+      "verified": true,
+      "verify_detail": {
+        "verified": true,
+        "n_pass": 3,
+        "n_fail": 0,
+        "output": "3 PASS, 0 FAIL\nALL PASS\n/tmp/ldx_verify_vl_redxor_32_nwkms8o7/tb.v:37: $finish called at 3000 (1ps)"
+      },
+      "estimate": {
+        "ops": {
+          "add": 0,
+          "sub": 0,
+          "mul": 0,
+          "mux": 0,
+          "and": 1,
+          "or": 0,
+          "xor": 88,
+          "not": 0,
+          "shift": 88,
+          "compare": 176
+        },
+        "total_ops": 353,
+        "est_gates": 11296,
+        "est_depth": 176,
+        "n_lines": 11,
+        "fpga_time_ns": 1408,
+        "pcie_overhead_ns": 1500,
+        "total_fpga_ns": 2908,
+        "break_even_cpu_ns": 2908,
+        "note": "Accelerating is worthwhile when CPU time > break_even_cpu_ns per call, or when batching many calls amortizes the PCIe overhead."
+      }
+    },
+    {
+      "name": "vl_redxor_64",
+      "signature": "uint32_t vl_redxor_64(uint64_t)",
+      "line": 48,
+      "eligible": true,
+      "converted": true,
+      "n_params": 1,
+      "ret_width": 32,
+      "warnings": [],
+      "verilog_lines": 16,
+      "verified": true,
+      "verify_detail": {
+        "verified": true,
+        "n_pass": 3,
+        "n_fail": 0,
+        "output": "3 PASS, 0 FAIL\nALL PASS\n/tmp/ldx_verify_vl_redxor_64_szo_dxj7/tb.v:37: $finish called at 3000 (1ps)"
+      },
+      "estimate": {
+        "ops": {
+          "add": 0,
+          "sub": 0,
+          "mul": 0,
+          "mux": 0,
+          "and": 1,
+          "or": 0,
+          "xor": 183,
+          "not": 0,
+          "shift": 183,
+          "compare": 366
+        },
+        "total_ops": 733,
+        "est_gates": 46912,
+        "est_depth": 366,
+        "n_lines": 13,
+        "fpga_time_ns": 2928,
+        "pcie_overhead_ns": 1500,
+        "total_fpga_ns": 4428,
+        "break_even_cpu_ns": 4428,
+        "note": "Accelerating is worthwhile when CPU time > break_even_cpu_ns per call, or when batching many calls amortizes the PCIe overhead."
+      }
+    },
+    {
+      "name": "vl_countones_i",
+      "signature": "uint32_t vl_countones_i(uint32_t)",
+      "line": 59,
+      "eligible": true,
+      "converted": true,
+      "n_params": 1,
+      "ret_width": 32,
+      "warnings": [],
+      "verilog_lines": 13,
+      "verified": true,
+      "verify_detail": {
+        "verified": true,
+        "n_pass": 3,
+        "n_fail": 0,
+        "output": "3 PASS, 0 FAIL\nALL PASS\n/tmp/ldx_verify_vl_countones_i_2eadcdh5/tb.v:37: $finish called at 3000 (1ps)"
+      },
+      "estimate": {
+        "ops": {
+          "add": 26,
+          "sub": 62,
+          "mul": 0,
+          "mux": 0,
+          "and": 79,
+          "or": 0,
+          "xor": 0,
+          "not": 0,
+          "shift": 88,
+          "compare": 176
+        },
+        "total_ops": 431,
+        "est_gates": 13792,
+        "est_depth": 176,
+        "n_lines": 10,
+        "fpga_time_ns": 1408,
+        "pcie_overhead_ns": 1500,
+        "total_fpga_ns": 2908,
+        "break_even_cpu_ns": 2908,
+        "note": "Accelerating is worthwhile when CPU time > break_even_cpu_ns per call, or when batching many calls amortizes the PCIe overhead."
+      }
+    },
+    {
+      "name": "vl_onehot_i",
+      "signature": "uint32_t vl_onehot_i(uint32_t)",
+      "line": 68,
+      "eligible": true,
+      "converted": true,
+      "n_params": 1,
+      "ret_width": 32,
+      "warnings": [],
+      "verilog_lines": 9,
+      "verified": true,
+      "verify_detail": {
+        "verified": true,
+        "n_pass": 3,
+        "n_fail": 0,
+        "output": "3 PASS, 0 FAIL\nALL PASS\n/tmp/ldx_verify_vl_onehot_i_d11pcbvi/tb.v:37: $finish called at 3000 (1ps)"
+      },
+      "estimate": {
+        "ops": {
+          "add": 0,
+          "sub": 1,
+          "mul": 0,
+          "mux": 0,
+          "and": 2,
+          "or": 0,
+          "xor": 0,
+          "not": 0,
+          "shift": 0,
+          "compare": 2
+        },
+        "total_ops": 5,
+        "est_gates": 160,
+        "est_depth": 2,
+        "n_lines": 6,
+        "fpga_time_ns": 16,
+        "pcie_overhead_ns": 1500,
+        "total_fpga_ns": 1516,
+        "break_even_cpu_ns": 1516,
+        "note": "Accelerating is worthwhile when CPU time > break_even_cpu_ns per call, or when batching many calls amortizes the PCIe overhead."
+      }
+    },
+    {
+      "name": "vl_onehot_q",
+      "signature": "uint32_t vl_onehot_q(uint64_t)",
+      "line": 72,
+      "eligible": true,
+      "converted": true,
+      "n_params": 1,
+      "ret_width": 32,
+      "warnings": [],
+      "verilog_lines": 9,
+      "verified": true,
+      "verify_detail": {
+        "verified": true,
+        "n_pass": 3,
+        "n_fail": 0,
+        "output": "3 PASS, 0 FAIL\nALL PASS\n/tmp/ldx_verify_vl_onehot_q_loc68x7j/tb.v:37: $finish called at 3000 (1ps)"
+      },
+      "estimate": {
+        "ops": {
+          "add": 0,
+          "sub": 1,
+          "mul": 0,
+          "mux": 0,
+          "and": 2,
+          "or": 0,
+          "xor": 0,
+          "not": 0,
+          "shift": 0,
+          "compare": 2
+        },
+        "total_ops": 5,
+        "est_gates": 320,
+        "est_depth": 2,
+        "n_lines": 6,
+        "fpga_time_ns": 16,
+        "pcie_overhead_ns": 1500,
+        "total_fpga_ns": 1516,
+        "break_even_cpu_ns": 1516,
+        "note": "Accelerating is worthwhile when CPU time > break_even_cpu_ns per call, or when batching many calls amortizes the PCIe overhead."
+      }
+    },
+    {
+      "name": "vl_onehot0_i",
+      "signature": "uint32_t vl_onehot0_i(uint32_t)",
+      "line": 77,
+      "eligible": true,
+      "converted": true,
+      "n_params": 1,
+      "ret_width": 32,
+      "warnings": [],
+      "verilog_lines": 9,
+      "verified": true,
+      "verify_detail": {
+        "verified": true,
+        "n_pass": 3,
+        "n_fail": 0,
+        "output": "3 PASS, 0 FAIL\nALL PASS\n/tmp/ldx_verify_vl_onehot0_i_ime0hwbr/tb.v:37: $finish called at 3000 (1ps)"
+      },
+      "estimate": {
+        "ops": {
+          "add": 0,
+          "sub": 1,
+          "mul": 0,
+          "mux": 0,
+          "and": 1,
+          "or": 0,
+          "xor": 0,
+          "not": 0,
+          "shift": 0,
+          "compare": 1
+        },
+        "total_ops": 3,
+        "est_gates": 96,
+        "est_depth": 1,
+        "n_lines": 6,
+        "fpga_time_ns": 8,
+        "pcie_overhead_ns": 1500,
+        "total_fpga_ns": 1508,
+        "break_even_cpu_ns": 1508,
+        "note": "Accelerating is worthwhile when CPU time > break_even_cpu_ns per call, or when batching many calls amortizes the PCIe overhead."
+      }
+    },
+    {
+      "name": "vl_onehot0_q",
+      "signature": "uint32_t vl_onehot0_q(uint64_t)",
+      "line": 81,
+      "eligible": true,
+      "converted": true,
+      "n_params": 1,
+      "ret_width": 32,
+      "warnings": [],
+      "verilog_lines": 9,
+      "verified": true,
+      "verify_detail": {
+        "verified": true,
+        "n_pass": 3,
+        "n_fail": 0,
+        "output": "3 PASS, 0 FAIL\nALL PASS\n/tmp/ldx_verify_vl_onehot0_q_5np98kt4/tb.v:37: $finish called at 3000 (1ps)"
+      },
+      "estimate": {
+        "ops": {
+          "add": 0,
+          "sub": 1,
+          "mul": 0,
+          "mux": 0,
+          "and": 1,
+          "or": 0,
+          "xor": 0,
+          "not": 0,
+          "shift": 0,
+          "compare": 1
+        },
+        "total_ops": 3,
+        "est_gates": 192,
+        "est_depth": 1,
+        "n_lines": 6,
+        "fpga_time_ns": 8,
+        "pcie_overhead_ns": 1500,
+        "total_fpga_ns": 1508,
+        "break_even_cpu_ns": 1508,
+        "note": "Accelerating is worthwhile when CPU time > break_even_cpu_ns per call, or when batching many calls amortizes the PCIe overhead."
+      }
+    },
+    {
+      "name": "vl_extends_ii",
+      "signature": "uint32_t vl_extends_ii(uint32_t, uint32_t)",
+      "line": 86,
+      "eligible": true,
+      "converted": false,
+      "reject_reasons": [
+        "c2v conversion failed"
+      ]
+    },
+    {
+      "name": "vl_gts_iii",
+      "signature": "uint32_t vl_gts_iii(uint32_t, uint32_t, uint32_t)",
+      "line": 91,
+      "eligible": true,
+      "converted": false,
+      "reject_reasons": [
+        "c2v conversion failed"
+      ]
+    },
+    {
+      "name": "vl_lts_iii",
+      "signature": "uint32_t vl_lts_iii(uint32_t, uint32_t, uint32_t)",
+      "line": 99,
+      "eligible": true,
+      "converted": false,
+      "reject_reasons": [
+        "c2v conversion failed"
+      ]
+    },
+    {
+      "name": "vl_div_iii",
+      "signature": "uint32_t vl_div_iii(uint32_t, uint32_t)",
+      "line": 107,
+      "eligible": true,
+      "converted": true,
+      "n_params": 2,
+      "ret_width": 32,
+      "warnings": [],
+      "verilog_lines": 10,
+      "verified": true,
+      "verify_detail": {
+        "verified": true,
+        "n_pass": 9,
+        "n_fail": 0,
+        "output": "9 PASS, 0 FAIL\nALL PASS\n/tmp/ldx_verify_vl_div_iii_n8krqpuo/tb.v:89: $finish called at 9000 (1ps)"
+      },
+      "estimate": {
+        "ops": {
+          "add": 0,
+          "sub": 0,
+          "mul": 0,
+          "mux": 1,
+          "and": 0,
+          "or": 0,
+          "xor": 0,
+          "not": 0,
+          "shift": 0,
+          "compare": 0
+        },
+        "total_ops": 1,
+        "est_gates": 32,
+        "est_depth": 1,
+        "n_lines": 7,
+        "fpga_time_ns": 8,
+        "pcie_overhead_ns": 1500,
+        "total_fpga_ns": 1508,
+        "break_even_cpu_ns": 1508,
+        "note": "Accelerating is worthwhile when CPU time > break_even_cpu_ns per call, or when batching many calls amortizes the PCIe overhead."
+      }
+    },
+    {
+      "name": "vl_moddiv_iii",
+      "signature": "uint32_t vl_moddiv_iii(uint32_t, uint32_t)",
+      "line": 111,
+      "eligible": true,
+      "converted": true,
+      "n_params": 2,
+      "ret_width": 32,
+      "warnings": [],
+      "verilog_lines": 10,
+      "verified": true,
+      "verify_detail": {
+        "verified": true,
+        "n_pass": 9,
+        "n_fail": 0,
+        "output": "9 PASS, 0 FAIL\nALL PASS\n/tmp/ldx_verify_vl_moddiv_iii_g5ay2k7m/tb.v:89: $finish called at 9000 (1ps)"
+      },
+      "estimate": {
+        "ops": {
+          "add": 0,
+          "sub": 0,
+          "mul": 0,
+          "mux": 1,
+          "and": 0,
+          "or": 0,
+          "xor": 0,
+          "not": 0,
+          "shift": 0,
+          "compare": 0
+        },
+        "total_ops": 1,
+        "est_gates": 32,
+        "est_depth": 1,
+        "n_lines": 7,
+        "fpga_time_ns": 8,
+        "pcie_overhead_ns": 1500,
+        "total_fpga_ns": 1508,
+        "break_even_cpu_ns": 1508,
+        "note": "Accelerating is worthwhile when CPU time > break_even_cpu_ns per call, or when batching many calls amortizes the PCIe overhead."
+      }
+    },
+    {
+      "name": "vl_clz_i",
+      "signature": "uint32_t vl_clz_i(uint32_t)",
+      "line": 116,
+      "eligible": true,
+      "converted": true,
+      "n_params": 1,
+      "ret_width": 32,
+      "warnings": [
+        "unhandled AST node: COMPOUND_ASSIGNMENT_OPERATOR at <SourceLocation file '/usr/local/src/verilator/ldx_verilator_accel.c', line 123, column 19>"
+      ],
+      "verilog_lines": 19,
+      "verified": false,
+      "verify_detail": {
+        "verified": false,
+        "n_pass": 1,
+        "n_fail": 2,
+        "output": "FAIL: result=0000001f expected=00000020\nFAIL: result=0000001f expected=0000001a\n1 PASS, 2 FAIL\n/tmp/ldx_verify_vl_clz_i_o4e8yr0a/tb.v:37: $finish called at 3000 (1ps)"
+      },
+      "estimate": {
+        "ops": {
+          "add": 20,
+          "sub": 0,
+          "mul": 0,
+          "mux": 0,
+          "and": 0,
+          "or": 0,
+          "xor": 0,
+          "not": 0,
+          "shift": 10,
+          "compare": 20
+        },
+        "total_ops": 50,
+        "est_gates": 1600,
+        "est_depth": 20,
+        "n_lines": 16,
+        "fpga_time_ns": 160,
+        "pcie_overhead_ns": 1500,
+        "total_fpga_ns": 1660,
+        "break_even_cpu_ns": 1660,
+        "note": "Accelerating is worthwhile when CPU time > break_even_cpu_ns per call, or when batching many calls amortizes the PCIe overhead."
+      }
+    },
+    {
+      "name": "vl_bitreverse8",
+      "signature": "uint32_t vl_bitreverse8(uint32_t)",
+      "line": 128,
+      "eligible": true,
+      "converted": true,
+      "n_params": 1,
+      "ret_width": 32,
+      "warnings": [],
+      "verilog_lines": 12,
+      "verified": true,
+      "verify_detail": {
+        "verified": true,
+        "n_pass": 3,
+        "n_fail": 0,
+        "output": "3 PASS, 0 FAIL\nALL PASS\n/tmp/ldx_verify_vl_bitreverse8_b4nkb09a/tb.v:37: $finish called at 3000 (1ps)"
+      },
+      "estimate": {
+        "ops": {
+          "add": 0,
+          "sub": 0,
+          "mul": 0,
+          "mux": 0,
+          "and": 37,
+          "or": 18,
+          "xor": 0,
+          "not": 0,
+          "shift": 36,
+          "compare": 72
+        },
+        "total_ops": 163,
+        "est_gates": 5216,
+        "est_depth": 72,
+        "n_lines": 9,
+        "fpga_time_ns": 576,
+        "pcie_overhead_ns": 1500,
+        "total_fpga_ns": 2076,
+        "break_even_cpu_ns": 2076,
+        "note": "Accelerating is worthwhile when CPU time > break_even_cpu_ns per call, or when batching many calls amortizes the PCIe overhead."
+      }
+    },
+    {
+      "name": "vl_bswap32",
+      "signature": "uint32_t vl_bswap32(uint32_t)",
+      "line": 136,
+      "eligible": true,
+      "converted": true,
+      "n_params": 1,
+      "ret_width": 32,
+      "warnings": [],
+      "verilog_lines": 9,
+      "verified": true,
+      "verify_detail": {
+        "verified": true,
+        "n_pass": 3,
+        "n_fail": 0,
+        "output": "3 PASS, 0 FAIL\nALL PASS\n/tmp/ldx_verify_vl_bswap32_rb5a6dxv/tb.v:37: $finish called at 3000 (1ps)"
+      },
+      "estimate": {
+        "ops": {
+          "add": 0,
+          "sub": 0,
+          "mul": 0,
+          "mux": 0,
+          "and": 4,
+          "or": 3,
+          "xor": 0,
+          "not": 0,
+          "shift": 4,
+          "compare": 8
+        },
+        "total_ops": 19,
+        "est_gates": 608,
+        "est_depth": 8,
+        "n_lines": 6,
+        "fpga_time_ns": 64,
+        "pcie_overhead_ns": 1500,
+        "total_fpga_ns": 1564,
+        "break_even_cpu_ns": 1564,
+        "note": "Accelerating is worthwhile when CPU time > break_even_cpu_ns per call, or when batching many calls amortizes the PCIe overhead."
+      }
+    }
+  ],
+  "summary": {
+    "total": 19,
+    "eligible": 19,
+    "converted": 16,
+    "verified": 15
+  }
+}
