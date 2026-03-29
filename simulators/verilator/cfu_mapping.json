@@ -1,0 +1,74 @@
+{
+    "vl_countones_i": {
+        "opcode": "custom_0",
+        "funct3": 0,
+        "funct7": 0,
+        "rd": "a0",
+        "rs1": "a0",
+        "rs2": "x0",
+        "comment": "population count (popcount)"
+    },
+    "vl_redxor_32": {
+        "opcode": "custom_0",
+        "funct3": 1,
+        "funct7": 0,
+        "rd": "a0",
+        "rs1": "a0",
+        "rs2": "x0",
+        "comment": "32-bit reduction XOR (parity)"
+    },
+    "vl_onehot_i": {
+        "opcode": "custom_0",
+        "funct3": 2,
+        "funct7": 0,
+        "rd": "a0",
+        "rs1": "a0",
+        "rs2": "x0",
+        "comment": "one-hot check"
+    },
+    "vl_onehot0_i": {
+        "opcode": "custom_0",
+        "funct3": 3,
+        "funct7": 0,
+        "rd": "a0",
+        "rs1": "a0",
+        "rs2": "x0",
+        "comment": "one-hot-or-zero check"
+    },
+    "vl_bswap32": {
+        "opcode": "custom_0",
+        "funct3": 4,
+        "funct7": 0,
+        "rd": "a0",
+        "rs1": "a0",
+        "rs2": "x0",
+        "comment": "32-bit byte swap"
+    },
+    "vl_bitreverse8": {
+        "opcode": "custom_0",
+        "funct3": 5,
+        "funct7": 0,
+        "rd": "a0",
+        "rs1": "a0",
+        "rs2": "x0",
+        "comment": "8-bit reverse"
+    },
+    "vl_div_iii": {
+        "opcode": "custom_0",
+        "funct3": 6,
+        "funct7": 0,
+        "rd": "a0",
+        "rs1": "a0",
+        "rs2": "a1",
+        "comment": "safe divide (0 on div-by-zero)"
+    },
+    "vl_moddiv_iii": {
+        "opcode": "custom_0",
+        "funct3": 7,
+        "funct7": 0,
+        "rd": "a0",
+        "rs1": "a0",
+        "rs2": "a1",
+        "comment": "safe modulo"
+    }
+}

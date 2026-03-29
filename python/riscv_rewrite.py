@@ -233,12 +233,14 @@ class RiscVElf:
         hdr = struct.unpack_from(self.ehdr_fmt, self.data, self.ehdr_off)
         self.e_type = hdr[0]
         self.e_machine = hdr[1]
-        self.e_entry = hdr[3] if self.bits == 64 else hdr[2]
-        self.e_phoff = hdr[4] if self.bits == 64 else hdr[3]
-        self.e_shoff = hdr[5] if self.bits == 64 else hdr[4]
-        self.e_phnum = hdr[9] if self.bits == 64 else hdr[8]
-        self.e_shnum = hdr[11] if self.bits == 64 else hdr[10]
-        self.e_shstrndx = hdr[12] if self.bits == 64 else hdr[11]
+        # ELF32 and ELF64 have the same field order (just different widths for
+        # e_entry/e_phoff/e_shoff: I vs Q).  struct indices are the same.
+        self.e_entry = hdr[3]
+        self.e_phoff = hdr[4]
+        self.e_shoff = hdr[5]
+        self.e_phnum = hdr[9]
+        self.e_shnum = hdr[11]
+        self.e_shstrndx = hdr[12]
 
         if self.e_machine != EM_RISCV:
             raise ValueError(f"Not a RISC-V binary (e_machine={self.e_machine})")
