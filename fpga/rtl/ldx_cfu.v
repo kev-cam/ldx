@@ -28,7 +28,7 @@ module ldx_cfu (
     // CFU command (from VexRiscv)
     input  wire        cmd_valid,
     output wire        cmd_ready,
-    input  wire [9:0]  cmd_function_id,
+    input  wire [2:0]  cmd_function_id,
     input  wire [31:0] cmd_inputs_0,    // rs1
     input  wire [31:0] cmd_inputs_1,    // rs2
 
@@ -83,16 +83,15 @@ module ldx_cfu (
 
     // ---- Function select MUX ----
     always @(*) begin
-        case (cmd_function_id[3:0])
-            4'd0:    rsp_outputs_0 = countones_result;
-            4'd1:    rsp_outputs_0 = redxor_result;
-            4'd2:    rsp_outputs_0 = onehot_result;
-            4'd3:    rsp_outputs_0 = onehot0_result;
-            4'd4:    rsp_outputs_0 = bswap_result;
-            4'd5:    rsp_outputs_0 = bitrev_result;
-            4'd6:    rsp_outputs_0 = div_result;
-            4'd7:    rsp_outputs_0 = mod_result;
-            default: rsp_outputs_0 = 32'd0;
+        case (cmd_function_id)
+            3'd0:    rsp_outputs_0 = countones_result;
+            3'd1:    rsp_outputs_0 = redxor_result;
+            3'd2:    rsp_outputs_0 = onehot_result;
+            3'd3:    rsp_outputs_0 = onehot0_result;
+            3'd4:    rsp_outputs_0 = bswap_result;
+            3'd5:    rsp_outputs_0 = bitrev_result;
+            3'd6:    rsp_outputs_0 = div_result;
+            3'd7:    rsp_outputs_0 = mod_result;
         endcase
     end
 

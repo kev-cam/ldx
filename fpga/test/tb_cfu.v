@@ -6,7 +6,7 @@ module tb_cfu;
     reg         reset = 1;
     reg         cmd_valid = 0;
     wire        cmd_ready;
-    reg  [9:0]  cmd_function_id;
+    reg  [2:0]  cmd_function_id;
     reg  [31:0] cmd_inputs_0;
     reg  [31:0] cmd_inputs_1;
     wire        rsp_valid;
