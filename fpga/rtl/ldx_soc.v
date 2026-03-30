@@ -30,11 +30,13 @@ module ldx_soc (
     wire reset_n = ~reset;
 
     // ---- Control/status registers ----
-    reg         cpu_reset_reg;
-    reg         cpu_done;
+    reg         cpu_reset_reg = 1'b1;  // Start with CPU in reset
+    reg         cpu_done = 1'b0;
     reg [31:0]  cpu_result [0:3];
 
-    wire cpu_rst = reset | cpu_reset_reg;
+    // Use only our control register for CPU reset, not the QSYS reset.
+    // QSYS reset is only used for initializing cpu_reset_reg to 1.
+    wire cpu_rst = cpu_reset_reg;
 
     // ---- On-chip RAM (4 KB — fits in M9K block RAM) ----
     // synthesis attribute ramstyle of ram is "M9K"
