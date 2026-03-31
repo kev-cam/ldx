@@ -111,20 +111,20 @@ module ldx_soc (
 
     // ---- True dual-port RAM (Quartus-friendly inference pattern) ----
     // Single reg array, two always blocks with SAME clock = dual-port block RAM
-    reg [31:0] dpram [0:1023];
+    reg [31:0] dpram [0:2047];  // 8 KB
 
     // Port B mux signals
     wire        pcie_ram_wr = chipselect && write && (address < 11'h400) && cpu_reset_reg;
     wire        cpu_ram_wr  = dbus_cmd_valid && dbus_cmd_payload_wr && dbus_is_ram && !cpu_reset_reg;
     wire        ram_b_we    = pcie_ram_wr || cpu_ram_wr;
-    wire [9:0]  ram_b_addr  = cpu_reset_reg ? address[9:0] : dbus_cmd_payload_address[11:2];
+    wire [9:0]  ram_b_addr  = cpu_reset_reg ? address[10:0] : dbus_cmd_payload_address[12:2];
     wire [31:0] ram_b_wdata = cpu_reset_reg ? writedata : dbus_cmd_payload_data;
 
     // PCIe read address: either RAM or dbus address
-    wire [9:0]  ram_b_raddr = cpu_reset_reg ? address[9:0] : dbus_cmd_payload_address[11:2];
+    wire [9:0]  ram_b_raddr = cpu_reset_reg ? address[10:0] : dbus_cmd_payload_address[12:2];
 
     // Port A: read-only (instruction fetch when CPU running, PCIe read when CPU in reset)
-    wire [9:0] ram_a_addr = cpu_reset_reg ? address[9:0] : ibus_cmd_payload_pc[11:2];
+    wire [9:0] ram_a_addr = cpu_reset_reg ? address[10:0] : ibus_cmd_payload_pc[12:2];
     reg  [31:0] ram_a_data;
 
     always @(posedge clk) begin
@@ -135,7 +135,7 @@ module ldx_soc (
 
     // Port B: read/write (data bus only — CPU uses this for loads/stores)
     always @(posedge clk) begin
-        dbus_rdata <= dpram[dbus_cmd_payload_address[11:2]];
+        dbus_rdata <= dpram[dbus_cmd_payload_address[12:2]];
         dbus_rsp_valid_r <= dbus_cmd_valid & !dbus_cmd_payload_wr & !cpu_rst;
         if (ram_b_we)
             dpram[ram_b_addr] <= ram_b_wdata;
@@ -166,7 +166,7 @@ module ldx_soc (
     // For RAM reads, use direct combinational access (not the registered Port A output)
     always @(*) begin
         if (address < 11'h400)
-            readdata = dpram[address[9:0]];
+            readdata = dpram[address[10:0]];
         else case (address)
             11'h7C0: readdata = {31'd0, cpu_reset_reg};
             11'h7C1: readdata = {31'd0, cpu_done};

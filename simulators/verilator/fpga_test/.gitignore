@@ -1,0 +1,9 @@
+*.bin
+*.elf
+*.hw
+obj_dir/
+shim/
+counter_sim
+counter_sim_rv32
+test_rewrite
+test_rewrite_linux
