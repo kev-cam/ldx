@@ -32,8 +32,8 @@ void counter_eval(counter_state_t *s) {
 }
 
 void __attribute__((naked)) _start(void) {
-    /* Set stack pointer to top of 8KB RAM */
-    __asm__ volatile ("li sp, 0x80002000");
+    /* Set stack pointer to top of 4KB RAM */
+    __asm__ volatile ("li sp, 0x80001000");
     __asm__ volatile ("j _main");
 }
 

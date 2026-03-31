@@ -7,7 +7,7 @@
 //   0x80000000 - 0x80007FFF: On-chip RAM (32 KB)
 //   0xF0000000: Result0  0xF0000004: Done  0xF0000008-10: Result1-3
 //
-// PCIe BAR0 layout (8 KB, word-addressed via avs_address[10:0]):
+// PCIe BAR0 layout (8 KB, word-addressed via avs_address[9:0]):
 //   0x000-0x7FF: RAM (first 8KB, word-addressed)
 //   0x7C0:       Control (bit 0 = cpu_reset, 1=hold 0=run)
 //   0x7C1:       Status (bit 0 = done)
@@ -35,9 +35,15 @@ module ldx_soc (
     reg [31:0]  cpu_result [0:3];
 
     // CPU stays in reset until host explicitly clears cpu_reset_reg.
-    // QSYS reset sets cpu_reset_reg=1; after deassert, it stays 1
-    // until host writes 0 to control register.
-    wire cpu_rst = reset | cpu_reset_reg;
+    // Delay CPU start by 4 cycles after reset release to let RAM pipeline flush.
+    reg [3:0] rst_delay;
+    always @(posedge clk) begin
+        if (reset | cpu_reset_reg)
+            rst_delay <= 4'hF;
+        else if (rst_delay != 0)
+            rst_delay <= rst_delay - 1;
+    end
+    wire cpu_rst = (rst_delay != 0);
 
     // ---- On-chip RAM (4 KB) — explicit dual-port for Quartus ----
     // Port A: instruction fetch (read-only)
@@ -111,20 +117,20 @@ module ldx_soc (
 
     // ---- True dual-port RAM (Quartus-friendly inference pattern) ----
     // Single reg array, two always blocks with SAME clock = dual-port block RAM
-    reg [31:0] dpram [0:2047];  // 8 KB
+    reg [31:0] dpram [0:1023];  // 4 KB
 
     // Port B mux signals
     wire        pcie_ram_wr = chipselect && write && (address < 11'h400) && cpu_reset_reg;
     wire        cpu_ram_wr  = dbus_cmd_valid && dbus_cmd_payload_wr && dbus_is_ram && !cpu_reset_reg;
     wire        ram_b_we    = pcie_ram_wr || cpu_ram_wr;
-    wire [9:0]  ram_b_addr  = cpu_reset_reg ? address[10:0] : dbus_cmd_payload_address[12:2];
+    wire [9:0]  ram_b_addr  = cpu_reset_reg ? address[9:0] : dbus_cmd_payload_address[11:2];
     wire [31:0] ram_b_wdata = cpu_reset_reg ? writedata : dbus_cmd_payload_data;
 
     // PCIe read address: either RAM or dbus address
-    wire [9:0]  ram_b_raddr = cpu_reset_reg ? address[10:0] : dbus_cmd_payload_address[12:2];
+    wire [9:0]  ram_b_raddr = cpu_reset_reg ? address[9:0] : dbus_cmd_payload_address[11:2];
 
     // Port A: read-only (instruction fetch when CPU running, PCIe read when CPU in reset)
-    wire [9:0] ram_a_addr = cpu_reset_reg ? address[10:0] : ibus_cmd_payload_pc[12:2];
+    wire [9:0] ram_a_addr = cpu_reset_reg ? address[9:0] : ibus_cmd_payload_pc[11:2];
     reg  [31:0] ram_a_data;
 
     always @(posedge clk) begin
@@ -135,7 +141,7 @@ module ldx_soc (
 
     // Port B: read/write (data bus only — CPU uses this for loads/stores)
     always @(posedge clk) begin
-        dbus_rdata <= dpram[dbus_cmd_payload_address[12:2]];
+        dbus_rdata <= dpram[dbus_cmd_payload_address[11:2]];
         dbus_rsp_valid_r <= dbus_cmd_valid & !dbus_cmd_payload_wr & !cpu_rst;
         if (ram_b_we)
             dpram[ram_b_addr] <= ram_b_wdata;
@@ -166,7 +172,7 @@ module ldx_soc (
     // For RAM reads, use direct combinational access (not the registered Port A output)
     always @(*) begin
         if (address < 11'h400)
-            readdata = dpram[address[10:0]];
+            readdata = ram_a_data;  // Registered — 1-cycle latency, but avoids huge mux
         else case (address)
             11'h7C0: readdata = {31'd0, cpu_reset_reg};
             11'h7C1: readdata = {31'd0, cpu_done};
