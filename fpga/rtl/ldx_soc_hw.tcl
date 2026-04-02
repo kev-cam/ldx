@@ -44,7 +44,7 @@ set_interface_property s1 associatedClock clk1
 set_interface_property s1 associatedReset reset1
 set_interface_property s1 addressUnits WORDS
 set_interface_property s1 maximumPendingReadTransactions 0
-set_interface_property s1 readLatency 1
+set_interface_property s1 readLatency 2
 set_interface_property s1 readWaitTime 0
 set_interface_property s1 holdTime 0
 set_interface_property s1 setupTime 0

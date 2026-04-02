@@ -33,12 +33,13 @@ module tb_soc;
         end
     endtask
 
-    // Read a word via "PCIe" (2-cycle: set addr, wait for registered output)
+    // Read a word via "PCIe" (readLatency=2: set addr, wait 2 cycles)
     task pcie_read(input [10:0] addr, output [31:0] data);
         begin
             @(posedge clk);
             address = addr; avs_read = 1; chipselect = 1;
-            @(posedge clk);  // RAM registered read
+            @(posedge clk);  // stage 1
+            @(posedge clk);  // stage 2
             @(posedge clk);  // data available
             data = readdata;
             avs_read = 0; chipselect = 0;

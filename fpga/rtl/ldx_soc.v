@@ -139,7 +139,7 @@ module ldx_soc (
         .widthad_b(10),
         .numwords_b(1024),
         .outdata_reg_a("CLOCK0"),
-        .outdata_reg_b("UNREGISTERED"),
+        .outdata_reg_b("CLOCK0"),
         .address_aclr_b("NONE"),
         .outdata_aclr_b("NONE"),
         .read_during_write_mode_mixed_ports("DONT_CARE"),
@@ -176,12 +176,14 @@ module ldx_soc (
         ram_a_q_r <= dpram[ibus_cmd_payload_pc[11:2]];
         ram_a_q_r2 <= ram_a_q_r;  // 2-cycle latency to match altsyncram + output reg
     end
+    reg [31:0] ram_b_q_r2;
     always @(posedge clk) begin
         ram_b_q_r <= dpram[ram_b_we ? ram_b_addr : ram_b_raddr];
+        ram_b_q_r2 <= ram_b_q_r;  // 2-cycle latency
         if (ram_b_we) dpram[ram_b_addr] <= ram_b_wdata;
     end
     assign ram_a_q = ram_a_q_r2;
-    assign ram_b_q = ram_b_q_r;
+    assign ram_b_q = ram_b_q_r2;
 `endif
 
     // Port A → instruction bus (2-cycle latency: M9K + output register)
@@ -192,8 +194,12 @@ module ldx_soc (
         ibus_rsp_valid_r <= ibus_rsp_valid_d1;
     end
 
-    // Port B → data bus / PCIe reads
-    always @(posedge clk) dbus_rsp_valid_r <= dbus_cmd_valid & !dbus_cmd_payload_wr & !cpu_rst;
+    // Port B → data bus / PCIe reads (2-cycle latency to match CLOCK0 output reg)
+    reg dbus_rsp_valid_d1;
+    always @(posedge clk) begin
+        dbus_rsp_valid_d1 <= dbus_cmd_valid & !dbus_cmd_payload_wr & !cpu_rst;
+        dbus_rsp_valid_r <= dbus_rsp_valid_d1;
+    end
     always @(*) dbus_rdata = ram_b_q;
 
     // ---- I/O + control registers (separate from RAM) ----
@@ -221,13 +227,17 @@ module ldx_soc (
     // Address is sampled on cycle N, data appears on cycle N+1.
     // RAM reads: altsyncram handles the 1-cycle latency internally.
     // Control registers: we register them to match.
-    reg [10:0] addr_r;
-    always @(posedge clk) addr_r <= address;
+    // readLatency=2: pipeline address through 2 stages
+    reg [10:0] addr_r1, addr_r2;
+    always @(posedge clk) begin
+        addr_r1 <= address;
+        addr_r2 <= addr_r1;
+    end
 
     always @(*) begin
-        if (addr_r < 11'h400)
+        if (addr_r2 < 11'h400)
             readdata = ram_b_q;
-        else case (addr_r)
+        else case (addr_r2)
             11'h7C0: readdata = {31'd0, cpu_reset_reg};
             11'h7C1: readdata = {31'd0, cpu_done};
             11'h7C2: readdata = cpu_result[0];
