@@ -115,41 +115,90 @@ module ldx_soc (
     assign ibus_cmd_ready = 1'b1;
     assign dbus_cmd_ready = 1'b1;
 
-    // ---- True dual-port RAM (Quartus-friendly inference pattern) ----
-    // Single reg array, two always blocks with SAME clock = dual-port block RAM
-    reg [31:0] dpram [0:1023];  // 4 KB
+    // ---- Dual-port RAM using altsyncram (Quartus native, guaranteed dual-port) ----
+    // Port A: instruction fetch (read-only)
+    // Port B: data bus + PCIe (read/write)
 
-    // Port B mux signals
     wire        pcie_ram_wr = chipselect && write && (address < 11'h400) && cpu_reset_reg;
-    wire        cpu_ram_wr  = dbus_cmd_valid && dbus_cmd_payload_wr && dbus_is_ram && !cpu_reset_reg;
+    wire        cpu_ram_wr  = dbus_cmd_valid && dbus_cmd_payload_wr && dbus_is_ram && !cpu_rst;
     wire        ram_b_we    = pcie_ram_wr || cpu_ram_wr;
     wire [9:0]  ram_b_addr  = cpu_reset_reg ? address[9:0] : dbus_cmd_payload_address[11:2];
     wire [31:0] ram_b_wdata = cpu_reset_reg ? writedata : dbus_cmd_payload_data;
+    wire [9:0]  ram_b_raddr = cpu_rst ? address[9:0] : dbus_cmd_payload_address[11:2];
 
-    // PCIe read address: either RAM or dbus address
-    wire [9:0]  ram_b_raddr = cpu_reset_reg ? address[9:0] : dbus_cmd_payload_address[11:2];
+    wire [31:0] ram_a_q;  // Port A read data
+    wire [31:0] ram_b_q;  // Port B read data
 
-    // Port A: read-only (instruction fetch when CPU running, PCIe read when CPU in reset)
-    wire [9:0] ram_a_addr = cpu_reset_reg ? address[9:0] : ibus_cmd_payload_pc[11:2];
-    reg  [31:0] ram_a_data;
+`ifndef SIMULATION
+    altsyncram #(
+        .operation_mode("BIDIR_DUAL_PORT"),
+        .width_a(32),
+        .widthad_a(10),
+        .numwords_a(1024),
+        .width_b(32),
+        .widthad_b(10),
+        .numwords_b(1024),
+        .outdata_reg_a("CLOCK0"),
+        .outdata_reg_b("UNREGISTERED"),
+        .address_aclr_b("NONE"),
+        .outdata_aclr_b("NONE"),
+        .read_during_write_mode_mixed_ports("DONT_CARE"),
+        .power_up_uninitialized("FALSE"),
+        .intended_device_family("Cyclone IV GX")
+    ) ram (
+        .clock0(clk),
+        // Port A: instruction fetch (read-only)
+        .address_a(ibus_cmd_payload_pc[11:2]),
+        .data_a(32'd0),
+        .wren_a(1'b0),
+        .q_a(ram_a_q),
+        // Port B: data bus + PCIe (read/write)
+        .address_b(ram_b_we ? ram_b_addr : ram_b_raddr),
+        .data_b(ram_b_wdata),
+        .wren_b(ram_b_we),
+        .q_b(ram_b_q),
+        // Clock and enables
+        .clock1(clk),
+        .clocken0(1'b1), .clocken1(1'b1),
+        .clocken2(1'b1), .clocken3(1'b1),
+        .aclr0(1'b0), .aclr1(1'b0),
+        .addressstall_a(1'b0), .addressstall_b(1'b0),
+        .byteena_a(1'b1), .byteena_b(1'b1),
+        .rden_a(1'b1), .rden_b(1'b1),
+        .eccstatus()
+    );
 
+`else
+    // Behavioral dual-port RAM for simulation
+    reg [31:0] dpram [0:1023];
+    reg [31:0] ram_a_q_r, ram_a_q_r2, ram_b_q_r;
     always @(posedge clk) begin
-        ram_a_data <= dpram[ram_a_addr];
-        ibus_rsp_valid_r <= ibus_cmd_valid & !cpu_rst;
+        ram_a_q_r <= dpram[ibus_cmd_payload_pc[11:2]];
+        ram_a_q_r2 <= ram_a_q_r;  // 2-cycle latency to match altsyncram + output reg
     end
-    assign ibus_rdata = ram_a_data;
-
-    // Port B: read/write (data bus only — CPU uses this for loads/stores)
     always @(posedge clk) begin
-        dbus_rdata <= dpram[dbus_cmd_payload_address[11:2]];
-        dbus_rsp_valid_r <= dbus_cmd_valid & !dbus_cmd_payload_wr & !cpu_rst;
-        if (ram_b_we)
-            dpram[ram_b_addr] <= ram_b_wdata;
+        ram_b_q_r <= dpram[ram_b_we ? ram_b_addr : ram_b_raddr];
+        if (ram_b_we) dpram[ram_b_addr] <= ram_b_wdata;
     end
+    assign ram_a_q = ram_a_q_r2;
+    assign ram_b_q = ram_b_q_r;
+`endif
+
+    // Port A → instruction bus (2-cycle latency: M9K + output register)
+    assign ibus_rdata = ram_a_q;
+    reg ibus_rsp_valid_d1;
+    always @(posedge clk) begin
+        ibus_rsp_valid_d1 <= ibus_cmd_valid & !cpu_rst;
+        ibus_rsp_valid_r <= ibus_rsp_valid_d1;
+    end
+
+    // Port B → data bus / PCIe reads
+    always @(posedge clk) dbus_rsp_valid_r <= dbus_cmd_valid & !dbus_cmd_payload_wr & !cpu_rst;
+    always @(*) dbus_rdata = ram_b_q;
 
     // ---- I/O + control registers (separate from RAM) ----
     always @(posedge clk) begin
-        if (dbus_cmd_valid && dbus_cmd_payload_wr && dbus_is_io) begin
+        if (dbus_cmd_valid && dbus_cmd_payload_wr && dbus_is_io && !cpu_rst) begin
             case (dbus_cmd_payload_address[7:0])
                 8'h00: cpu_result[0] <= dbus_cmd_payload_data;
                 8'h04: cpu_done <= 1'b1;
@@ -168,12 +217,17 @@ module ldx_soc (
         end
     end
 
-    // Read output (readLatency=0: combinational)
-    // For RAM reads, use direct combinational access (not the registered Port A output)
+    // Read output (readLatency=1: registered)
+    // Address is sampled on cycle N, data appears on cycle N+1.
+    // RAM reads: altsyncram handles the 1-cycle latency internally.
+    // Control registers: we register them to match.
+    reg [10:0] addr_r;
+    always @(posedge clk) addr_r <= address;
+
     always @(*) begin
-        if (address < 11'h400)
-            readdata = ram_a_data;  // Registered — 1-cycle latency, but avoids huge mux
-        else case (address)
+        if (addr_r < 11'h400)
+            readdata = ram_b_q;
+        else case (addr_r)
             11'h7C0: readdata = {31'd0, cpu_reset_reg};
             11'h7C1: readdata = {31'd0, cpu_done};
             11'h7C2: readdata = cpu_result[0];
