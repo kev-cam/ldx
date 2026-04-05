@@ -33,8 +33,8 @@ package ncl is
 
     -- Constants
     constant NCL_NULL  : ncl_logic := (L => '0', H => '0');
-    constant NCL_DATA0 : ncl_logic := (L => '1', H => '0');
-    constant NCL_DATA1 : ncl_logic := (L => '0', H => '1');
+    constant NCL_DATA0 : ncl_logic := (L => '0', H => '1');  -- encodes value 0
+    constant NCL_DATA1 : ncl_logic := (L => '1', H => '0');  -- encodes value 1
 
     -- ---- State queries ----
     function ncl_is_null(d : ncl_logic)        return boolean;
@@ -93,6 +93,24 @@ package ncl is
     function "="    (l, r: ncl_logic) return boolean;
     function "="    (l  : ncl_logic; r: std_logic) return boolean;
 
+    -- ---- Arithmetic ----
+    -- Ripple-carry adder (N-bit)
+    function ncl_add(a, b : ncl_logic_vector) return ncl_logic_vector;
+    -- Subtraction: a - b (via complement + add)
+    function ncl_sub(a, b : ncl_logic_vector) return ncl_logic_vector;
+    -- Negate (two's complement)
+    function ncl_negate(a : ncl_logic_vector) return ncl_logic_vector;
+
+    -- ---- Multiplexer ----
+    -- 2:1 MUX: if sel=DATA1, return a; if sel=DATA0, return b; if NULL, return NULL
+    function ncl_mux(sel : ncl_logic; a, b : ncl_logic_vector) return ncl_logic_vector;
+    -- MUX with vector selector (uses bit 0)
+    function ncl_mux(sel : ncl_logic_vector; a, b : ncl_logic_vector) return ncl_logic_vector;
+
+    -- ---- Comparators ----
+    -- Returns 1-bit NCL result: DATA1 if true, DATA0 if false, NULL if inputs NULL
+    function ncl_compare(a, b : ncl_logic_vector; op : string) return ncl_logic_vector;
+
     -- ---- Utility ----
     -- Create a NULL vector of given width
     function ncl_null_vector(width : natural) return ncl_logic_vector;
@@ -104,7 +122,7 @@ package body ncl is
     -- ---- State queries ----
     function ncl_is_null(d: ncl_logic) return boolean is
     begin
-        return (d.H xnor d.L) /= '1';
+        return (d.H xnor d.L) = '1';
     end function;
 
     function ncl_is_null(d: ncl_logic) return std_logic is
@@ -312,5 +330,107 @@ package body ncl is
     function ncl_null_vector(width : natural) return ncl_logic_vector is
         variable r : ncl_logic_vector(width-1 downto 0) := (others => NCL_NULL);
     begin return r; end function;
+
+    -- ---- 1-bit full adder (inline, same as ARV's) ----
+    function ncl_fulladd(a, b, cin : ncl_logic) return ncl_logic_vector is
+        variable r : ncl_logic_vector(1 downto 0);  -- (1)=cout, (0)=sum
+    begin
+        r(0) := a xor b xor cin;
+        r(1) := (a and b) or ((a xor b) and cin);
+        return r;
+    end function;
+
+    -- ---- Ripple-carry adder ----
+    function ncl_add(a, b : ncl_logic_vector) return ncl_logic_vector is
+        variable r   : ncl_logic_vector(a'length-1 downto 0);
+        variable cry : ncl_logic := NCL_DATA0;  -- carry starts at 0
+        variable fa  : ncl_logic_vector(1 downto 0);
+    begin
+        for i in 0 to a'length-1 loop
+            fa := ncl_fulladd(a(i), b(i), cry);
+            r(i) := fa(0);  -- sum
+            cry  := fa(1);  -- carry
+        end loop;
+        return r;
+    end function;
+
+    -- ---- Negate (two's complement: NOT + 1) ----
+    function ncl_negate(a : ncl_logic_vector) return ncl_logic_vector is
+        variable inv : ncl_logic_vector(a'range);
+        variable one : ncl_logic_vector(a'range) := (others => NCL_DATA0);
+    begin
+        inv := not a;
+        one(0) := NCL_DATA1;
+        return ncl_add(inv, one);
+    end function;
+
+    -- ---- Subtraction: a - b = a + (~b + 1) ----
+    function ncl_sub(a, b : ncl_logic_vector) return ncl_logic_vector is
+    begin
+        return ncl_add(a, ncl_negate(b));
+    end function;
+
+    -- ---- 2:1 MUX ----
+    -- sel=DATA1 → a; sel=DATA0 → b; sel=NULL → NULL
+    function ncl_mux(sel : ncl_logic; a, b : ncl_logic_vector) return ncl_logic_vector is
+        variable r : ncl_logic_vector(a'range);
+    begin
+        if ncl_is_null(sel) then
+            return (a'range => NCL_NULL);
+        end if;
+        -- sel.L = '1' means value=1 (DATA1) → select a
+        -- sel.L = '0' means value=0 (DATA0) → select b
+        if ncl_decode(sel) = '1' then
+            return a;
+        else
+            return b;
+        end if;
+    end function;
+
+    function ncl_mux(sel : ncl_logic_vector; a, b : ncl_logic_vector) return ncl_logic_vector is
+    begin
+        return ncl_mux(sel(0), a, b);
+    end function;
+
+    -- ---- Comparators ----
+    -- Evaluates comparison in decoded (binary) domain, returns NCL result.
+    -- This is a behavioral model — a structural NCL comparator would use
+    -- threshold gates, but functionally they're equivalent.
+    function ncl_compare(a, b : ncl_logic_vector; op : string) return ncl_logic_vector is
+        variable r    : ncl_logic_vector(0 downto 0);
+        variable av, bv : std_logic_vector(a'range);
+        variable ai, bi : integer;
+        variable cond : boolean;
+    begin
+        -- If any input is NULL, return NULL
+        if ncl_is_null(a) or ncl_is_null(b) then
+            r(0) := NCL_NULL;
+            return r;
+        end if;
+        -- Decode to binary for comparison
+        av := ncl_decode(a);
+        bv := ncl_decode(b);
+        -- Convert to integer for signed/unsigned compare
+        ai := 0; bi := 0;
+        for i in av'range loop
+            if av(i) = '1' then ai := ai + 2**i; end if;
+            if bv(i) = '1' then bi := bi + 2**i; end if;
+        end loop;
+        -- Evaluate
+        if    op = ">"  then cond := ai > bi;
+        elsif op = "<"  then cond := ai < bi;
+        elsif op = ">=" then cond := ai >= bi;
+        elsif op = "<=" then cond := ai <= bi;
+        elsif op = "==" then cond := ai = bi;
+        elsif op = "!=" then cond := ai /= bi;
+        else cond := false;
+        end if;
+        if cond then
+            r(0) := NCL_DATA1;
+        else
+            r(0) := NCL_DATA0;
+        end if;
+        return r;
+    end function;
 
 end package body ncl;
