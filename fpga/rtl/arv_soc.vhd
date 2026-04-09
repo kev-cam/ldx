@@ -59,6 +59,7 @@ architecture rtl of arv_soc is
     -- ---- Phase divider (clk / 4 → ARV instruction every 80 ns @ 50 MHz) ----
     signal phase_cnt : unsigned(1 downto 0) := (others => '0');
     signal phase     : std_logic := '0';
+    signal phase_d   : std_logic := '0';
 
     -- ---- I/O and control registers ----
     signal cpu_done   : std_logic := '0';
@@ -221,13 +222,26 @@ begin
     arv_dmem_rdata <= ncl_encode(portb_q);
 
     -- ---- I/O writes from the CPU (0xF000_0000..0xF000_0010) ----
+    -- Single clk-domain process with rising-phase edge detection so
+    -- each instruction commits exactly once, AFTER dmem_* has had a
+    -- full clk cycle to settle from the previous phase falling edge.
+    -- The earlier "sample on every clk edge" version raced the
+    -- different combinational propagation delays of dmem_addr (through
+    -- the ALU adder) vs dmem_wdata (just a wire) during phase
+    -- transitions and corrupted some result registers.
     io_proc: process(clk)
+        variable phase_rising : boolean;
     begin
         if rising_edge(clk) then
+            phase_rising := (phase = '1' and phase_d = '0');
+            phase_d <= phase;
+
             if reset = '1' then
                 cpu_done   <= '0';
                 cpu_result <= (others => (others => '0'));
-            elsif cpu_reset_reg = '0' and dmem_write_bin = '1' and dmem_is_io = '1' then
+                phase_d    <= '0';
+            elsif phase_rising and cpu_reset_reg = '0'
+                  and dmem_write_bin = '1' and dmem_is_io = '1' then
                 case dmem_addr_bin(7 downto 0) is
                     when X"00" => cpu_result(0) <= dmem_wdata_bin;
                     when X"04" => cpu_done      <= '1';
