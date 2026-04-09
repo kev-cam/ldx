@@ -16,8 +16,7 @@ use ncl.ncl.all;
 
 entity arv_synth_top is
     port (
-        clk    : in  std_logic;
-        resetn : in  std_logic;
+        clk_50 : in  std_logic;
         led    : out std_logic_vector(3 downto 0)
     );
 end entity arv_synth_top;
@@ -25,8 +24,16 @@ end entity arv_synth_top;
 architecture rtl of arv_synth_top is
     constant XLEN : positive := 32;
 
+    -- Power-on reset: hold clr high for the first ~1024 clk_50 cycles
+    -- after configuration, then release. No external button required.
+    signal por_cnt : unsigned(9 downto 0) := (others => '0');
+    signal clr     : std_logic := '1';
+
+    -- Slow phase clock so the LED is visibly observable. clk_50 / 2^24
+    -- → ~3 Hz phase, so each ARV instruction takes ~340 ms. The 8-insn
+    -- loop completes in ~2.7 seconds.
+    signal phase_div : unsigned(23 downto 0) := (others => '0');
     signal phase     : std_logic := '0';
-    signal clr       : std_logic;
 
     -- CPU buses
     signal mem_addr   : ncl_logic_vector(XLEN-1 downto 0);
@@ -71,16 +78,25 @@ architecture rtl of arv_synth_top is
 
     signal led_reg : std_logic_vector(3 downto 0) := (others => '0');
 begin
-    -- Active-low reset → active-high clr for the CPU
-    clr <= not resetn;
-
-    -- Phase = clk / 2
-    phase_proc: process(clk, resetn)
+    -- Power-on reset counter
+    por_proc: process(clk_50)
     begin
-        if resetn = '0' then
-            phase <= '0';
-        elsif rising_edge(clk) then
-            phase <= not phase;
+        if rising_edge(clk_50) then
+            if por_cnt /= "1111111111" then
+                por_cnt <= por_cnt + 1;
+                clr     <= '1';
+            else
+                clr     <= '0';
+            end if;
+        end if;
+    end process;
+
+    -- Slow phase clock from clk_50 / 2^24
+    phase_proc: process(clk_50)
+    begin
+        if rising_edge(clk_50) then
+            phase_div <= phase_div + 1;
+            phase     <= phase_div(23);
         end if;
     end process;
 
