@@ -44,6 +44,16 @@ set_global_assignment -name ORIGINAL_QUARTUS_VERSION 25.1STD.0
 set_global_assignment -name PROJECT_CREATION_TIME_DATE "21:07:14  MARCH 27, 2026"
 set_global_assignment -name LAST_QUARTUS_VERSION "25.1std.0 Lite Edition"
 set_global_assignment -name VERILOG_FILE ../rtl/ldx_top.v
+set_global_assignment -name VHDL_INPUT_VERSION VHDL_2008
+
+# ARV CPU + ncl_sync package (synthesisable NCL → binary collapse)
+set_global_assignment -name VHDL_FILE -library ncl ../lib/ncl_sync/ncl.vhdl
+set_global_assignment -name VHDL_FILE ../../../arv/RISC-V.srcs/asynchronous/cpu/regfile.vhdl
+set_global_assignment -name VHDL_FILE ../../../arv/RISC-V.srcs/asynchronous/cpu/decoder.vhdl
+set_global_assignment -name VHDL_FILE ../../../arv/RISC-V.srcs/asynchronous/cpu/execute.vhdl
+set_global_assignment -name VHDL_FILE ../../../arv/RISC-V.srcs/asynchronous/cpu/arv_cpu.vhdl
+set_global_assignment -name VHDL_FILE ../rtl/arv_soc.vhd
+
 set_global_assignment -name SDC_FILE de2i_150.sdc
 # DE2i-150 pin assignments (from Terasic reference design)
 # 50 MHz oscillator
