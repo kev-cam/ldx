@@ -24,9 +24,9 @@
 --       0x7C1      : status (bit 0 = cpu_done)
 --       0x7C2-0x7C5: cpu_result[0..3]
 --       0x7E0      : magic "LDX2" = 0x4C445832
---   * CFU is currently stubbed (cfu_result <= cfu_cmd, echoes rs1).
---     Wiring it to the real ldx_cfu requires adding pipeline stalls
---     to ARV (Phase 4 — not blocking the SoC swap milestone).
+--   * CFU: ldx_cfu (Verilog, single-cycle combinational) dispatched
+--     via CUSTOM_0 opcode. Functions: countones, redxor, onehot,
+--     onehot0, bswap32, bitreverse8, div, moddiv.
 
 library IEEE;
 use IEEE.std_logic_1164.all;
@@ -96,6 +96,29 @@ architecture rtl of arv_soc is
 
     signal dmem_is_ram : std_logic;
     signal dmem_is_io  : std_logic;
+
+    -- ---- CFU binary signals ----
+    signal cfu_cmd_bin    : std_logic_vector(31 downto 0);
+    signal cfu_arg_bin    : std_logic_vector(31 downto 0);
+    signal cfu_funct3_bin : std_logic_vector(2 downto 0);
+    signal cfu_valid_bin  : std_logic;
+    signal cfu_result_bin : std_logic_vector(31 downto 0);
+
+    -- ---- ldx_cfu Verilog component (single-cycle combinational) ----
+    component ldx_cfu is
+        port (
+            clk             : in  std_logic;
+            reset           : in  std_logic;
+            cmd_valid       : in  std_logic;
+            cmd_ready       : out std_logic;
+            cmd_function_id : in  std_logic_vector(2 downto 0);
+            cmd_inputs_0    : in  std_logic_vector(31 downto 0);
+            cmd_inputs_1    : in  std_logic_vector(31 downto 0);
+            rsp_valid       : out std_logic;
+            rsp_ready       : in  std_logic;
+            rsp_outputs_0   : out std_logic_vector(31 downto 0)
+        );
+    end component;
 
     -- ---- Inferred dual-port RAM ----
     type ram_t is array (0 to 1023) of std_logic_vector(31 downto 0);
@@ -170,9 +193,28 @@ begin
         );
     arv_mem_ready <= NCL_DATA1;
 
-    -- Stub CFU: echo rs1 (real CFU integration deferred until ARV
-    -- has pipeline stalls for multi-cycle accelerators).
-    arv_cfu_result <= arv_cfu_cmd;
+    -- ---- CFU: decode NCL → binary, feed to ldx_cfu, encode result ----
+    -- ldx_cfu is single-cycle combinational so no pipeline stalls needed.
+    cfu_cmd_bin    <= ncl_decode(arv_cfu_cmd);
+    cfu_arg_bin    <= ncl_decode(arv_cfu_arg);
+    cfu_funct3_bin <= ncl_decode(arv_cfu_funct3);
+    cfu_valid_bin  <= ncl_decode(arv_cfu_valid);
+
+    u_cfu: ldx_cfu
+        port map (
+            clk             => clk,
+            reset           => cpu_rst,
+            cmd_valid       => cfu_valid_bin,
+            cmd_ready       => open,
+            cmd_function_id => cfu_funct3_bin,
+            cmd_inputs_0    => cfu_cmd_bin,
+            cmd_inputs_1    => cfu_arg_bin,
+            rsp_valid       => open,
+            rsp_ready       => '1',
+            rsp_outputs_0   => cfu_result_bin
+        );
+
+    arv_cfu_result <= ncl_encode(cfu_result_bin);
     arv_cfu_ready  <= arv_cfu_valid;
 
     -- ---- NCL → binary at the bus boundary ----
