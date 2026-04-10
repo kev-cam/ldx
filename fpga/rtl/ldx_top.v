@@ -9,6 +9,7 @@ module ldx_top (
     output wire        pcie_tx,       // PCIe serial transmit
     input  wire        pcie_perstn,   // PCIe reset (active low)
     input  wire        clk_50,        // 50 MHz board oscillator
+    // input  wire [3:0]  key,        // Push-buttons (active low) -- reserved for future use
     output wire [3:0]  led            // Green LEDs
 );
 

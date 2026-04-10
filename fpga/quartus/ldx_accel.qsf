@@ -73,6 +73,13 @@ set_instance_assignment -name IO_STANDARD "1.5-V PCML" -to pcie_rx
 set_location_assignment PIN_AB4 -to pcie_tx
 set_instance_assignment -name IO_STANDARD "1.5-V PCML" -to pcie_tx
 
+# Push-buttons (active low)
+set_location_assignment PIN_AA26 -to key[0]
+set_location_assignment PIN_AE25 -to key[1]
+set_location_assignment PIN_AF30 -to key[2]
+set_location_assignment PIN_AE26 -to key[3]
+set_instance_assignment -name IO_STANDARD "2.5 V" -to key[*]
+
 # Green LEDs
 set_location_assignment PIN_AA25 -to led[0]
 set_location_assignment PIN_AB25 -to led[1]
