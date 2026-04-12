@@ -56,8 +56,8 @@ architecture rtl of arv_soc is
     signal cpu_rst       : std_logic;
     signal clr           : std_logic;
 
-    -- ---- Phase divider (clk / 4 → ARV instruction every 80 ns @ 50 MHz) ----
-    signal phase_cnt : unsigned(1 downto 0) := (others => '0');
+    -- ---- Phase divider (clk / 8 → ARV instruction every 160 ns @ 50 MHz) ----
+    signal phase_cnt : unsigned(2 downto 0) := (others => '0');
     signal phase     : std_logic := '0';
     signal phase_d   : std_logic := '0';
 
@@ -130,6 +130,7 @@ architecture rtl of arv_soc is
     signal portb_wdata : std_logic_vector(31 downto 0);
     signal portb_we    : std_logic;
     signal portb_q     : std_logic_vector(31 downto 0);
+    signal portb_q_lat : std_logic_vector(31 downto 0) := (others => '0');
 
     -- ---- Avalon-MM read pipeline ----
     signal addr_r : std_logic_vector(10 downto 0) := (others => '0');
@@ -158,7 +159,7 @@ begin
                 phase     <= '0';
             else
                 phase_cnt <= phase_cnt + 1;
-                phase     <= phase_cnt(1);
+                phase     <= phase_cnt(2);
             end if;
         end if;
     end process;
@@ -261,6 +262,10 @@ begin
     end process;
 
     arv_mem_rdata  <= ncl_encode(porta_q);
+
+    -- With phase = clk/8, portb_q has 4 clk cycles to settle between
+    -- address change (at falling phase) and when it's sampled (at the
+    -- next falling phase for forwarding). No extra latch needed.
     arv_dmem_rdata <= ncl_encode(portb_q);
 
     -- ---- I/O writes from the CPU (0xF000_0000..0xF000_0010) ----
