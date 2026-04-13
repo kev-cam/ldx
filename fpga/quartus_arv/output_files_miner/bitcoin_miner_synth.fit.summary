@@ -1,0 +1,20 @@
+Fitter Status : Successful - Mon Apr 13 12:32:56 2026
+Quartus Prime Version : 25.1std.0 Build 1129 10/21/2025 SC Lite Edition
+Revision Name : bitcoin_miner_synth
+Top-level Entity Name : bitcoin_miner_top
+Family : Cyclone IV GX
+Device : EP4CGX150DF31C7
+Timing Models : Final
+Total logic elements : 70,578 / 149,760 ( 47 % )
+    Total combinational functions : 55,233 / 149,760 ( 37 % )
+    Dedicated logic registers : 41,932 / 149,760 ( 28 % )
+Total registers : 41932
+Total pins : 5 / 508 ( < 1 % )
+Total virtual pins : 0
+Total memory bits : 26,682 / 6,635,520 ( < 1 % )
+Embedded Multiplier 9-bit elements : 0 / 720 ( 0 % )
+Total GXB Receiver Channel PCS : 0 / 8 ( 0 % )
+Total GXB Receiver Channel PMA : 0 / 8 ( 0 % )
+Total GXB Transmitter Channel PCS : 0 / 8 ( 0 % )
+Total GXB Transmitter Channel PMA : 0 / 8 ( 0 % )
+Total PLLs : 0 / 8 ( 0 % )

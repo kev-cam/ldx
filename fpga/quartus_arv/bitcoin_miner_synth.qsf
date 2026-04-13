@@ -1,0 +1,28 @@
+set_global_assignment -name FAMILY "Cyclone IV GX"
+set_global_assignment -name DEVICE EP4CGX150DF31C7
+set_global_assignment -name TOP_LEVEL_ENTITY bitcoin_miner_top
+set_global_assignment -name VHDL_INPUT_VERSION VHDL_2008
+set_global_assignment -name PROJECT_OUTPUT_DIRECTORY output_files_miner
+
+# DE2i-150 pin assignments
+set_location_assignment PIN_AJ16 -to clk_50
+set_location_assignment PIN_AA25 -to led[0]
+set_location_assignment PIN_AB25 -to led[1]
+set_location_assignment PIN_F27  -to led[2]
+set_location_assignment PIN_F26  -to led[3]
+set_instance_assignment -name IO_STANDARD "2.5 V" -to clk_50
+set_instance_assignment -name IO_STANDARD "2.5 V" -to led[0]
+set_instance_assignment -name IO_STANDARD "2.5 V" -to led[1]
+set_instance_assignment -name IO_STANDARD "2.5 V" -to led[2]
+set_instance_assignment -name IO_STANDARD "2.5 V" -to led[3]
+
+# NCL synchronous-FPGA library
+set_global_assignment -name VHDL_FILE -library ncl ../../lib/ncl_sync/ncl.vhdl
+
+# SHA-256 pipeline sources
+set_global_assignment -name VHDL_FILE ../../rtl/sha256/sha256_round.vhdl
+set_global_assignment -name VHDL_FILE ../../rtl/sha256/sha256_w_expand.vhdl
+set_global_assignment -name VHDL_FILE ../../rtl/sha256/sha256_pipeline.vhdl
+set_global_assignment -name VHDL_FILE ../../rtl/sha256/sha256d.vhdl
+set_global_assignment -name VHDL_FILE ../../rtl/sha256/bitcoin_miner.vhdl
+set_global_assignment -name VHDL_FILE ../../rtl/sha256/bitcoin_miner_top.vhd
