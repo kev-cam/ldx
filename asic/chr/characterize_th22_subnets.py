@@ -32,11 +32,43 @@ MODELS = "/tmp/sg13g2_models.lib"
 # points covering 0.9..1.5V so NN/IV-table cells can scale predictions
 # across supply variation (previously single-VDD characterisation
 # caused NN cells to fail at VDD < 1.0V — see commit b798105).
-VDD_LIST = [0.9, 1.05, 1.2, 1.35, 1.5]
-VDD = VDD_LIST[2]   # legacy alias; kept for code that still reads VDD
+VDD_LIST = [0.9, 1.05, 1.2, 1.35, 1.5]  # legacy
+VDD = VDD_LIST[2]
 
-V_OUT = np.linspace(0.0, 1.5, 13)            # output-node sweep (absolute)
-V_GATE = np.linspace(0.0, 1.5, 5)            # gate input sweep (absolute)
+# Nested PWL characterisation:
+#   VDD — slow sawtooth 0.9 → 1.5 → 0.9 over full sim (models charge-
+#         pumped supply in energy-harvesting async circuits).
+#   V_X — fast sawtooth V_MIN → V_MAX → V_MIN, multiple cycles per sim.
+# This draws a dense 2D Lissajous through (VDD, V_X) space per (V_A,
+# V_B) combination.
+V_MIN = -0.2           # ≈ -Vt/2 for SG13G2 PSP103
+V_MAX = 1.5
+VDD_MIN = 0.9
+VDD_MAX = 1.5
+T_SIM = 40.0           # ns total
+N_VX_CYCLES = 5        # V_X goes up-down this many times in T_SIM
+T_SAMPLE = 0.05        # ns between samples
+V_GATE = np.linspace(0.0, 1.5, 5)
+
+
+def vx_pwl(t_end: float) -> str:
+    """Build V_X PWL: N_VX_CYCLES sawtooth, spread over t_end ns."""
+    half = t_end / (2 * N_VX_CYCLES)
+    pts = [(0.0, V_MIN)]
+    up = True
+    t = 0.0
+    for _ in range(2 * N_VX_CYCLES):
+        t += half
+        pts.append((t, V_MAX if up else V_MIN))
+        up = not up
+    body = "\n".join(f"+ {p[0]:.4f}n {p[1]}" for p in pts)
+    return "PWL\n" + body
+
+
+def vdd_pwl(t_end: float) -> str:
+    half = t_end / 2.0
+    return (f"PWL\n+ 0n {VDD_MIN}\n+ {half:.3f}n {VDD_MAX}\n"
+            f"+ {t_end:.3f}n {VDD_MIN}")
 
 WORK = "/tmp/th22_char"
 os.makedirs(WORK, exist_ok=True)
@@ -55,114 +87,129 @@ def run_xyce(sp_path):
 
 
 def sweep_pullup():
-    """I_pu(VDD, V_X, V_A, V_B): MPA & MPB PMOS in series VDD→X.
-    4-D table over [VDD, V_X, V_A, V_B]."""
-    data = np.zeros((len(VDD_LIST), len(V_OUT), len(V_GATE), len(V_GATE)))
-    for iv, vd in enumerate(VDD_LIST):
-        print(f"  pu VDD={vd:.2f}")
-        for ib, vb in enumerate(V_GATE):
-            for ia, va in enumerate(V_GATE):
-                sp = f"""* pullup characterization VDD={vd} A={va} B={vb}
+    """I_pu scatter via nested PWL on VDD (slow) + V_X (fast)."""
+    samples = []
+    for ib, vb in enumerate(V_GATE):
+        for ia, va in enumerate(V_GATE):
+            print(f"  pu A={va:.2f} B={vb:.2f}")
+            sp = f"""* pullup A={va} B={vb}
 .include "{MODELS}"
-VVDD VDD 0 {vd}
+VVDD VDD 0 {vdd_pwl(T_SIM)}
 VA   A   0 {va}
 VB   B   0 {vb}
-VX   X   0 0
+VX   X   0 {vx_pwl(T_SIM)}
 MPA  N1 A VDD VDD sg13g2_pmos w=0.7u  l=0.13u
 MPB  X  B N1  VDD sg13g2_pmos w=0.7u  l=0.13u
-.dc VX 0 {V_OUT[-1]} {V_OUT[1]-V_OUT[0]:.3f}
-.print dc format=csv v(X) i(VX)
+.tran {T_SAMPLE}n {T_SIM}n
+.print tran format=csv time v(VDD) v(X) i(VX)
 .end
 """
-                path = f"{WORK}/pu_{iv}_{ia}_{ib}.sp"
-                open(path, "w").write(sp)
-                hdr, d = run_xyce(path)
-                col_i = hdr.index("I(VX)")
-                for ix in range(len(V_OUT)):
-                    data[iv, ix, ia, ib] = float(d[ix, col_i])
-    return data
+            path = f"{WORK}/pu_{ia}_{ib}.sp"
+            open(path, "w").write(sp)
+            hdr, d = run_xyce(path)
+            col_vdd = hdr.index("V(VDD)")
+            col_vx  = hdr.index("V(X)")
+            col_i   = hdr.index("I(VX)")
+            for row in range(d.shape[0]):
+                samples.append((float(d[row, col_vdd]),
+                                float(d[row, col_vx]), va, vb,
+                                float(d[row, col_i])))
+    return np.array(samples)
 
 
 def sweep_pulldown():
-    """I_pd(VDD, V_X, V_A, V_B): MNA & MNB NMOS in series X→VSS."""
-    data = np.zeros((len(VDD_LIST), len(V_OUT), len(V_GATE), len(V_GATE)))
-    for iv, vd in enumerate(VDD_LIST):
-        print(f"  pd VDD={vd:.2f}")
-        for ib, vb in enumerate(V_GATE):
-            for ia, va in enumerate(V_GATE):
-                sp = f"""* pulldown characterization VDD={vd} A={va} B={vb}
+    """I_pd scatter — V_X PWL sawtooth, VSS at 0 (no VDD dep for pd
+    stack itself, but we still include VDD in the tuple for parity)."""
+    samples = []
+    for ib, vb in enumerate(V_GATE):
+        for ia, va in enumerate(V_GATE):
+            print(f"  pd A={va:.2f} B={vb:.2f}")
+            sp = f"""* pulldown A={va} B={vb}
 .include "{MODELS}"
+VVDD VDD 0 {vdd_pwl(T_SIM)}
 VVSS VSS 0 0
 VA   A   0 {va}
 VB   B   0 {vb}
-VX   X   0 0
+VX   X   0 {vx_pwl(T_SIM)}
 MNA  N2 A VSS VSS sg13g2_nmos w=0.35u l=0.13u
 MNB  X  B N2  VSS sg13g2_nmos w=0.35u l=0.13u
-.dc VX 0 {V_OUT[-1]} {V_OUT[1]-V_OUT[0]:.3f}
-.print dc format=csv v(X) i(VX)
+.tran {T_SAMPLE}n {T_SIM}n
+.print tran format=csv time v(VDD) v(X) i(VX)
 .end
 """
-                path = f"{WORK}/pd_{iv}_{ia}_{ib}.sp"
-                open(path, "w").write(sp)
-                hdr, d = run_xyce(path)
-                col_i = hdr.index("I(VX)")
-                for ix in range(len(V_OUT)):
-                    data[iv, ix, ia, ib] = float(d[ix, col_i])
-    return data
+            path = f"{WORK}/pd_{ia}_{ib}.sp"
+            open(path, "w").write(sp)
+            hdr, d = run_xyce(path)
+            col_vdd = hdr.index("V(VDD)")
+            col_vx  = hdr.index("V(X)")
+            col_i   = hdr.index("I(VX)")
+            for row in range(d.shape[0]):
+                samples.append((float(d[row, col_vdd]),
+                                float(d[row, col_vx]), va, vb,
+                                float(d[row, col_i])))
+    return np.array(samples)
 
 
 def sweep_keeper():
-    """I_kp(VDD, V_X, V_Y): weak inverter MPK/MNK — VDD-swept."""
-    data = np.zeros((len(VDD_LIST), len(V_OUT), len(V_OUT)))
-    for iv, vd in enumerate(VDD_LIST):
-        print(f"  kp VDD={vd:.2f}")
-        for iy, vy in enumerate(V_OUT):
-            sp = f"""* keeper VDD={vd} Y={vy}
+    """I_kp scatter — (VDD PWL slow, V_X PWL fast, V_Y stepped)."""
+    samples = []
+    y_points = np.linspace(V_MIN, V_MAX, 9)
+    for vy in y_points:
+        print(f"  kp Y={vy:.2f}")
+        sp = f"""* keeper Y={vy}
 .include "{MODELS}"
-VVDD VDD 0 {vd}
+VVDD VDD 0 {vdd_pwl(T_SIM)}
 VVSS VSS 0 0
 VY   Y   0 {vy}
-VX   X   0 0
+VX   X   0 {vx_pwl(T_SIM)}
 MPK  X  Y VDD VDD sg13g2_pmos w=0.35u l=1.0u
 MNK  X  Y VSS VSS sg13g2_nmos w=0.15u l=1.0u
-.dc VX 0 {V_OUT[-1]} {V_OUT[1]-V_OUT[0]:.3f}
-.print dc format=csv v(X) i(VX)
+.tran {T_SAMPLE}n {T_SIM}n
+.print tran format=csv time v(VDD) v(X) i(VX)
 .end
 """
-            path = f"{WORK}/kp_{iv}_{iy}.sp"
-            open(path, "w").write(sp)
-            hdr, d = run_xyce(path)
-            col_i = hdr.index("I(VX)")
-            for ix in range(len(V_OUT)):
-                data[iv, ix, iy] = float(d[ix, col_i])
-    return data
+        path = f"{WORK}/kp_{int(vy*100)}.sp"
+        open(path, "w").write(sp)
+        hdr, d = run_xyce(path)
+        col_vdd = hdr.index("V(VDD)")
+        col_vx  = hdr.index("V(X)")
+        col_i   = hdr.index("I(VX)")
+        for row in range(d.shape[0]):
+            samples.append((float(d[row, col_vdd]),
+                            float(d[row, col_vx]), vy,
+                            float(d[row, col_i])))
+    return np.array(samples)
 
 
 def sweep_inverter():
-    """I_inv(VDD, V_Y, V_X): MPY/MNY output inverter — VDD-swept."""
-    data = np.zeros((len(VDD_LIST), len(V_OUT), len(V_OUT)))
-    for iv, vd in enumerate(VDD_LIST):
-        print(f"  inv VDD={vd:.2f}")
-        for ix, vx in enumerate(V_OUT):
-            sp = f"""* inverter VDD={vd} X={vx}
+    """I_inv scatter — (VDD PWL slow, V_Y PWL fast, V_X stepped)."""
+    samples = []
+    x_points = np.linspace(V_MIN, V_MAX, 9)
+    for vx in x_points:
+        print(f"  inv X={vx:.2f}")
+        sp = f"""* inverter X={vx}
 .include "{MODELS}"
-VVDD VDD 0 {vd}
+VVDD VDD 0 {vdd_pwl(T_SIM)}
 VVSS VSS 0 0
 VX   X   0 {vx}
-VY   Y   0 0
+VY   Y   0 {vx_pwl(T_SIM)}
 MPY  Y  X VDD VDD sg13g2_pmos w=0.7u  l=0.13u
 MNY  Y  X VSS VSS sg13g2_nmos w=0.35u l=0.13u
-.dc VY 0 {V_OUT[-1]} {V_OUT[1]-V_OUT[0]:.3f}
-.print dc format=csv v(Y) i(VY)
+.tran {T_SAMPLE}n {T_SIM}n
+.print tran format=csv time v(VDD) v(Y) i(VY)
 .end
 """
-            path = f"{WORK}/inv_{iv}_{ix}.sp"
-            open(path, "w").write(sp)
-            hdr, d = run_xyce(path)
-            col_i = hdr.index("I(VY)")
-            for iy in range(len(V_OUT)):
-                data[iv, iy, ix] = float(d[iy, col_i])
-    return data
+        path = f"{WORK}/inv_{int(vx*100)}.sp"
+        open(path, "w").write(sp)
+        hdr, d = run_xyce(path)
+        col_vdd = hdr.index("V(VDD)")
+        col_vy  = hdr.index("V(Y)")
+        col_i   = hdr.index("I(VY)")
+        for row in range(d.shape[0]):
+            samples.append((float(d[row, col_vdd]), vx,
+                            float(d[row, col_vy]),
+                            float(d[row, col_i])))
+    return np.array(samples)
 
 
 # ---- Emit the VAMS module ----
@@ -341,16 +388,17 @@ def main():
     # Quick sanity stats
     for name, arr in [("pull-up", pu), ("pull-down", pd),
                       ("keeper", kp), ("inverter", inv)]:
-        print(f"  {name}: shape {arr.shape}   "
-              f"min={arr.min():.3e}  max={arr.max():.3e}")
+        print(f"  {name}: scatter shape {arr.shape}   "
+              f"|I|max={np.abs(arr[:, -1]).max():.3e}")
 
     np.savez("/tmp/th22_char/tables.npz",
              pu=pu, pd=pd, kp=kp, inv=inv,
-             vdd_list=np.array(VDD_LIST),
-             v_out=V_OUT, v_gate=V_GATE)
-    print("\nSaved /tmp/th22_char/tables.npz (4D: VDD × V_OUT × ...)")
-    # th22_tbl.va emission disabled — tables are now 4D, old emit_vams
-    # is 3D-only. Re-enable with a multi-VDD template if/when needed.
+             vdd_list=np.array(VDD_LIST))
+    print("\nSaved /tmp/th22_char/tables.npz (scatter; cols depend on network)")
+    # Column layout:
+    #   pu/pd: (vdd, vx, va, vb, i)
+    #   kp:    (vdd, vx, vy, i)
+    #   inv:   (vdd, vx, vy, i)  (note different param vs kp — V_Y is drain)
 
 
 if __name__ == "__main__":

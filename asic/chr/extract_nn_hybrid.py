@@ -135,44 +135,28 @@ class MLP:
 # Build training sets from tables.
 # ----------------------------------------------------------------------
 def build_drive_dataset(pu, pd, n_in, tables):
-    """Combined pull-up + pull-down drive current, VDD-swept.
+    """Combined pull-up + pull-down drive current from PWL scatter data.
 
-    Table layout: 4D+ with leading VDD dimension, i.e.
-      pu[iv, ix, i0, i1, ..., i_{n-1}]
-    Feature vector is (VDD, V_X, V_a, V_b, ...) so the NN learns the
-    full 4+-D operating space including supply variation.
+    Input shape: pu/pd are (N_samples, 3+n_in) with columns
+      (VDD, V_X, V_a, V_b, ..., I).
+    Feature vector: (VDD, V_X, V_a, V_b, ...) → drive_current.
+    Since pu and pd simulations are independent (different sample
+    times), we concatenate their samples rather than summing.
     """
-    X_list, Y_list = [], []
-    vdd_list = tables["vdd_list"]
-    v_out = tables["v_out"]
-    v_gate = tables["v_gate"]
-    NV = len(vdd_list)
-    NX = len(v_out)
-    NG = len(v_gate)
-    for iv in range(NV):
-        for ix in range(NX):
-            for idxs in itertools.product(range(NG), repeat=n_in):
-                gate_vs = [v_gate[k] for k in idxs]
-                X_list.append([vdd_list[iv], v_out[ix]] + gate_vs)
-                Y_list.append([pu[(iv, ix) + idxs] + pd[(iv, ix) + idxs]])
-    return np.array(X_list), np.array(Y_list)
+    if pu.ndim == 2:
+        # Scatter format: last col is current, first 2+n_in are features.
+        X_list = np.concatenate([pu[:, :2+n_in], pd[:, :2+n_in]], axis=0)
+        Y_list = np.concatenate([pu[:, -1:], pd[:, -1:]], axis=0)
+        return X_list, Y_list
+    # Legacy grid fallback (no longer used, but kept for compat).
+    raise ValueError("Expected scatter format (N,3+n_in); got shape " + str(pu.shape))
 
 
 def build_inv_dataset(inv, tables):
-    """Inverter I_inv(VDD, V_X, V_Y). 3D table: (iv, iy, ix)."""
-    X_list, Y_list = [], []
-    vdd_list = tables["vdd_list"]
-    v_out = tables["v_out"]
-    NV = len(vdd_list)
-    NX = len(v_out)
-    for iv in range(NV):
-        for ix in range(NX):
-            for iy in range(NX):
-                # inv[iv, iy, ix] = I(VY) at VDD[iv], V_Y=V_OUT[iy], V_X=V_OUT[ix]
-                # NN input: (VDD, V_X, V_Y)
-                X_list.append([vdd_list[iv], v_out[ix], v_out[iy]])
-                Y_list.append([inv[iv, iy, ix]])
-    return np.array(X_list), np.array(Y_list)
+    """Inverter scatter: columns (VDD, V_X, V_Y, I)."""
+    if inv.ndim == 2:
+        return inv[:, :3], inv[:, -1:]
+    raise ValueError("Expected scatter format (N,4); got shape " + str(inv.shape))
 
 
 # ----------------------------------------------------------------------
