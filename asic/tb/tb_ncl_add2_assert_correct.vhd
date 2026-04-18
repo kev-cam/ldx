@@ -61,7 +61,8 @@ architecture sim of tb_ncl_add2_assert_correct is
   -- DATA-phase gate: when false (during NULL) correction is disabled.
   signal data_phase : boolean := false;
 
-  -- Expected per-bit reference values (std_logic), computed from test_a/b/ci.
+  -- Expected per-bit reference values (std_logic), NCL-hysteresis-aware.
+  -- Start at '0' — matches the post-reset state of each cell at t=0.
   signal ref_coH0, ref_coL0, ref_sH0, ref_sL0 : std_logic := '0';
   signal ref_coH1, ref_coL1, ref_sH1, ref_sL1 : std_logic := '0';
   signal ref_cout_final : std_logic := '0';
@@ -69,6 +70,33 @@ architecture sim of tb_ncl_add2_assert_correct is
   function to_rail (b : integer) return std_logic is
   begin
     if b = 1 then return '1'; else return '0'; end if;
+  end function;
+
+  -- NCL TH23 with hysteresis: fires on majority, resets on all LOW,
+  -- else holds previous output.
+  function th23_ncl (a, b, c, prev : std_logic) return std_logic is
+  begin
+    if (a = '1' and b = '1') or (a = '1' and c = '1') or (b = '1' and c = '1') then
+      return '1';
+    elsif a = '0' and b = '0' and c = '0' then
+      return '0';
+    else
+      return prev;
+    end if;
+  end function;
+
+  -- NCL TH34W2 with hysteresis: fires on (A·B)|(A·C)|(A·D)|(B·C·D),
+  -- resets on all LOW, else holds.
+  function th34w2_ncl (a, b, c, d, prev : std_logic) return std_logic is
+  begin
+    if (a = '1' and b = '1') or (a = '1' and c = '1') or (a = '1' and d = '1')
+       or (b = '1' and c = '1' and d = '1') then
+      return '1';
+    elsif a = '0' and b = '0' and c = '0' and d = '0' then
+      return '0';
+    else
+      return prev;
+    end if;
   end function;
 
   function rail_ok (v : real; expect : std_logic) return boolean is
@@ -98,31 +126,51 @@ begin
   VSS <= ZERO_L3DA;
 
   -- ----------------------------------------------------------------
-  -- Reference computation: first-principles per-bit expected outputs
+  -- Hysteresis-aware reference. NCL 4-phase: during NULL all cells
+  -- reset to '0'; during DATA they compute th*_ncl from previous state.
+  -- `data_phase` signal tells us which phase we're in — when it drops
+  -- (NULL) we clear all ref_* to 0.
   -- ----------------------------------------------------------------
-  ref_proc : process (test_a, test_b, test_ci)
+  ref_proc : process (test_a, test_b, test_ci, data_phase)
     variable aH0b, aL0b, bH0b, bL0b : std_logic;
     variable aH1b, aL1b, bH1b, bL1b : std_logic;
     variable ciHb, ciLb : std_logic;
+    variable ciH1b, ciL1b : std_logic;
   begin
+    if not data_phase then
+      ref_coH0 <= '0'; ref_coL0 <= '0';
+      ref_sH0  <= '0'; ref_sL0  <= '0';
+      ref_coH1 <= '0'; ref_coL1 <= '0';
+      ref_sH1  <= '0'; ref_sL1  <= '0';
+      ref_cout_final <= '0';
+    else
     aH0b := to_rail((test_a / 1) mod 2);  aL0b := to_rail(1 - ((test_a / 1) mod 2));
     aH1b := to_rail((test_a / 2) mod 2);  aL1b := to_rail(1 - ((test_a / 2) mod 2));
     bH0b := to_rail((test_b / 1) mod 2);  bL0b := to_rail(1 - ((test_b / 1) mod 2));
     bH1b := to_rail((test_b / 2) mod 2);  bL1b := to_rail(1 - ((test_b / 2) mod 2));
     ciHb := to_rail(test_ci);             ciLb := to_rail(1 - test_ci);
 
-    ref_coH0 <= th23(aH0b, bH0b, ciHb);
-    ref_coL0 <= th23(aL0b, bL0b, ciLb);
-    ref_sH0  <= th34w2(th23(aL0b, bL0b, ciLb), aH0b, bH0b, ciHb);
-    ref_sL0  <= th34w2(th23(aH0b, bH0b, ciHb), aL0b, bL0b, ciLb);
+    ref_coH0 <= th23_ncl(aH0b, bH0b, ciHb, ref_coH0);
+    ref_coL0 <= th23_ncl(aL0b, bL0b, ciLb, ref_coL0);
+    -- For sum cells, the "A" input is the own-bit carry-out rail.
+    -- Use the next-reference value so the sum reference stays consistent
+    -- with what the cell would see at steady state.
+    ref_sH0  <= th34w2_ncl(th23_ncl(aL0b, bL0b, ciLb, ref_coL0),
+                           aH0b, bH0b, ciHb, ref_sH0);
+    ref_sL0  <= th34w2_ncl(th23_ncl(aH0b, bH0b, ciHb, ref_coH0),
+                           aL0b, bL0b, ciLb, ref_sL0);
 
-    ref_coH1 <= th23(aH1b, bH1b, th23(aH0b, bH0b, ciHb));
-    ref_coL1 <= th23(aL1b, bL1b, th23(aL0b, bL0b, ciLb));
-    ref_sH1  <= th34w2(th23(aL1b, bL1b, th23(aL0b, bL0b, ciLb)),
-                       aH1b, bH1b, th23(aH0b, bH0b, ciHb));
-    ref_sL1  <= th34w2(th23(aH1b, bH1b, th23(aH0b, bH0b, ciHb)),
-                       aL1b, bL1b, th23(aL0b, bL0b, ciLb));
-    ref_cout_final <= th23(aH1b, bH1b, th23(aH0b, bH0b, ciHb));
+    ciH1b := th23_ncl(aH0b, bH0b, ciHb, ref_coH0);
+    ciL1b := th23_ncl(aL0b, bL0b, ciLb, ref_coL0);
+
+    ref_coH1 <= th23_ncl(aH1b, bH1b, ciH1b, ref_coH1);
+    ref_coL1 <= th23_ncl(aL1b, bL1b, ciL1b, ref_coL1);
+    ref_sH1  <= th34w2_ncl(th23_ncl(aL1b, bL1b, ciL1b, ref_coL1),
+                           aH1b, bH1b, ciH1b, ref_sH1);
+    ref_sL1  <= th34w2_ncl(th23_ncl(aH1b, bH1b, ciH1b, ref_coH1),
+                           aL1b, bL1b, ciL1b, ref_sL1);
+    ref_cout_final <= th23_ncl(aH1b, bH1b, ciH1b, ref_coH1);
+    end if;
   end process;
 
   -- ----------------------------------------------------------------
