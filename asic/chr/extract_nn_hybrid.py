@@ -51,6 +51,12 @@ GATES = {
         "cache": "/tmp/th23_char/tables.npz",
         "char_script": "characterize_th23_subnets.py",
     },
+    "th34w2": {
+        "n_in": 4,
+        "ports": ("A", "B", "C", "D"),
+        "cache": "/tmp/th34w2_char/tables.npz",
+        "char_script": "characterize_th34w2_subnets.py",
+    },
 }
 
 
