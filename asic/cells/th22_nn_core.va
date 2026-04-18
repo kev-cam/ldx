@@ -1,0 +1,68 @@
+// th22_nn_core.va — pure NN core, minimum analog footprint.
+// Exports v_pred on node VPRED_TAP and g_pred on node GPRED_TAP.
+// Forward pass runs every Newton iteration with instantaneous V() and
+// ddt() primitives (no @(timer), no tapped arrays) so PyMS VAE captures it.
+
+`include "disciplines.vams"
+`include "constants.vams"
+
+module th22_nn_core(A, B, VDD, VSS, VPRED_TAP, GPRED_TAP);
+  input  A, B, VDD, VSS;
+  output VPRED_TAP, GPRED_TAP;
+  electrical A, B, VDD, VSS, VPRED_TAP, GPRED_TAP;
+
+  parameter real g_floor = 1e-9;
+
+  real z1[0:15];
+  real h[0:15];
+  real y[0:1];
+  real v_pred, g_pred, vdd_now;
+
+  analog begin
+    z1_0 = +1.640498e-01*V(A, VSS) + +6.517589e-02*V(B, VSS) + -8.207176e-02*V(VDD, VSS) + +3.524029e-01*V(Y, VSS) + (+2.416934e-02);
+    h_0 = (z1_0 > 0.0 ? z1_0 : 0.0100 * z1_0);
+    z1_1 = +3.061642e-01*V(A, VSS) + -1.303527e-02*V(B, VSS) + +5.127911e-01*V(VDD, VSS) + +5.489458e-01*V(Y, VSS) + (-2.008600e-02);
+    h_1 = (z1_1 > 0.0 ? z1_1 : 0.0100 * z1_1);
+    z1_2 = +1.751734e-01*V(A, VSS) + -3.479246e-01*V(B, VSS) + +3.003007e-01*V(VDD, VSS) + -1.427174e-01*V(Y, VSS) + (+1.526349e-03);
+    h_2 = (z1_2 > 0.0 ? z1_2 : 0.0100 * z1_2);
+    z1_3 = -3.893531e-01*V(A, VSS) + -9.660221e-02*V(B, VSS) + +1.189152e-01*V(VDD, VSS) + -2.420502e-01*V(Y, VSS) + (-3.784837e-02);
+    h_3 = (z1_3 > 0.0 ? z1_3 : 0.0100 * z1_3);
+    z1_4 = +1.947501e-01*V(A, VSS) + -6.871755e-02*V(B, VSS) + -2.310546e-01*V(VDD, VSS) + +1.452122e-01*V(Y, VSS) + (-6.107123e-02);
+    h_4 = (z1_4 > 0.0 ? z1_4 : 0.0100 * z1_4);
+    z1_5 = +1.338925e-01*V(A, VSS) + -8.166268e-02*V(B, VSS) + -4.948703e-01*V(VDD, VSS) + -1.496216e-01*V(Y, VSS) + (-9.211168e-05);
+    h_5 = (z1_5 > 0.0 ? z1_5 : 0.0100 * z1_5);
+    z1_6 = -1.544470e-01*V(A, VSS) + +2.496450e-01*V(B, VSS) + +4.527495e-02*V(VDD, VSS) + +2.827946e-01*V(Y, VSS) + (-1.476997e-02);
+    h_6 = (z1_6 > 0.0 ? z1_6 : 0.0100 * z1_6);
+    z1_7 = +1.835786e-01*V(A, VSS) + +2.763716e-01*V(B, VSS) + +8.375861e-02*V(VDD, VSS) + -3.599236e-01*V(Y, VSS) + (+2.061991e-02);
+    h_7 = (z1_7 > 0.0 ? z1_7 : 0.0100 * z1_7);
+    z1_8 = +1.102794e-01*V(A, VSS) + -8.126248e-01*V(B, VSS) + -3.687229e-01*V(VDD, VSS) + +2.765895e-01*V(Y, VSS) + (-9.322187e-05);
+    h_8 = (z1_8 > 0.0 ? z1_8 : 0.0100 * z1_8);
+    z1_9 = +8.662342e-02*V(A, VSS) + -5.689810e-01*V(B, VSS) + -2.036132e-01*V(VDD, VSS) + -1.083739e-02*V(Y, VSS) + (+2.550152e-04);
+    h_9 = (z1_9 > 0.0 ? z1_9 : 0.0100 * z1_9);
+    z1_10 = +9.385671e-03*V(A, VSS) + -5.117022e-02*V(B, VSS) + -2.235045e-02*V(VDD, VSS) + -3.720342e-01*V(Y, VSS) + (-1.396455e-04);
+    h_10 = (z1_10 > 0.0 ? z1_10 : 0.0100 * z1_10);
+    z1_11 = +1.632024e-01*V(A, VSS) + -1.271116e-01*V(B, VSS) + -2.830516e-01*V(VDD, VSS) + -9.601503e-02*V(Y, VSS) + (+6.521174e-05);
+    h_11 = (z1_11 > 0.0 ? z1_11 : 0.0100 * z1_11);
+    z1_12 = -2.205658e-01*V(A, VSS) + +5.091900e-02*V(B, VSS) + -4.386064e-02*V(VDD, VSS) + +1.750626e-02*V(Y, VSS) + (-1.077879e-02);
+    h_12 = (z1_12 > 0.0 ? z1_12 : 0.0100 * z1_12);
+    z1_13 = +9.338558e-02*V(A, VSS) + +1.494066e-01*V(B, VSS) + -5.919944e-02*V(VDD, VSS) + +4.508334e-01*V(Y, VSS) + (-5.106214e-02);
+    h_13 = (z1_13 > 0.0 ? z1_13 : 0.0100 * z1_13);
+    z1_14 = -1.850748e-01*V(A, VSS) + +6.516352e-01*V(B, VSS) + +3.056404e-02*V(VDD, VSS) + -3.427931e-01*V(Y, VSS) + (+4.133415e-04);
+    h_14 = (z1_14 > 0.0 ? z1_14 : 0.0100 * z1_14);
+    z1_15 = +1.806922e-01*V(A, VSS) + -3.349708e-01*V(B, VSS) + -1.528756e-01*V(VDD, VSS) + -3.294455e-01*V(Y, VSS) + (-2.794488e-03);
+    h_15 = (z1_15 > 0.0 ? z1_15 : 0.0100 * z1_15);
+
+    y_0 = +3.303127e-01*h_0 + +4.301131e-01*h_1 + -6.315818e-01*h_2 + +3.256028e-01*h_3 + -1.832183e-01*h_4 + +7.592735e-02*h_5 + +1.078891e-01*h_6 + -1.836477e-01*h_7 + +2.345050e-01*h_8 + -4.899084e-01*h_9 + +2.615113e-01*h_10 + -1.920434e-01*h_11 + +1.242882e-01*h_12 + +5.373056e-01*h_13 + -2.453381e-01*h_14 + +3.004492e-01*h_15 + (-3.391437e-02);
+    y_1 = -1.459713e-04*h_0 + +1.228790e-04*h_1 + -4.522785e-05*h_2 + -1.156852e-04*h_3 + +2.271983e-04*h_4 + +2.688455e-04*h_5 + -3.411710e-04*h_6 + -7.914425e-05*h_7 + +5.591026e-05*h_8 + -3.602060e-04*h_9 + +2.036651e-04*h_10 + -6.302004e-07*h_11 + +1.473149e-04*h_12 + +1.118917e-04*h_13 + +1.116484e-04*h_14 + -6.824787e-04*h_15 + (-2.474572e-05);
+
+    v_pred  = y[0];
+    vdd_now = V(VDD, VSS);
+    g_pred  = g_floor + (y[1] > 0 ? y[1] : 0);
+    if (v_pred > vdd_now) v_pred = vdd_now;
+    if (v_pred < 0)       v_pred = 0;
+
+    // Only analog footprint: two ideal V sources exporting predictions.
+    V(VPRED_TAP, VSS) <+ v_pred;
+    V(GPRED_TAP, VSS) <+ g_pred;
+  end
+endmodule

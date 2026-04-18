@@ -599,29 +599,50 @@ def build_vhdl_event(cell_name, spec, nn, n_hid):
         return f"  constant {name} : real_vector(0 to {len(v)-1}) := ({init});"
 
     # Hidden-layer and output-layer expressions. W is a flat real_vector with
-    # W(r, c) = W(r*COLS + c) row-major.
+    # W(r, c) = W(r*COLS + c) row-major. Deep indent (10 spaces) because
+    # these lines land inside loop+if+for inside the main process.
     n_x = len(x_refs)
+    NN_INDENT = "          "
     hidden_eval = []
     for j in range(n_hid):
         terms = " + ".join(
             f"W1({i * n_hid + j})*{x_refs[i]}"
             for i in range(n_x)
         )
-        hidden_eval.append(f"    z1({j}) := {terms} + b1({j});")
+        hidden_eval.append(f"{NN_INDENT}z1({j}) := {terms} + b1({j});")
         hidden_eval.append(
-            f"    if z1({j}) > 0.0 then h({j}) := z1({j}); "
+            f"{NN_INDENT}if z1({j}) > 0.0 then h({j}) := z1({j}); "
             f"else h({j}) := {nn.LEAKY_ALPHA:.4f} * z1({j}); end if;"
         )
     out_eval = []
     for k in range(2):
         terms = " + ".join(f"W2({j * 2 + k})*h({j})" for j in range(n_hid))
-        out_eval.append(f"    y({k}) := {terms} + b2({k});")
+        out_eval.append(f"{NN_INDENT}y({k}) := {terms} + b2({k});")
 
-    # Sensitivity list: inputs + VDD + Y (own output). The Y entry lets the
-    # simulator's event queue propagate y-fixed-point iterations naturally —
-    # after we emit a new Thevenin driver, Y resolves and re-triggers us
-    # until convergence. Cleaner than doing a loop inside the process.
-    sens = ", ".join(inputs + ["VDD", "y_drv"])
+    # Zone tracking: one integer per input. Zone 0 = LOW (below Vtn, NMOS off,
+    # PMOS may be on), 1 = ACTIVE (transistors conducting, edge in progress),
+    # 2 = HIGH (above VDD-|Vtp|, NMOS may be on, PMOS off). We re-run the
+    # forward pass only when an input's zone changes — between zones the
+    # network's output is effectively latched by the keeper / hysteresis
+    # and the output driver is re-asserted unchanged. This mirrors the
+    # hybrid_evt cell (th22_hybrid_evt.vhd) and matches NCL semantics where
+    # inputs switch cleanly between rails.
+    zone_var_names = [f"z_{n.lower()}" for n in inputs]
+    zone_new_names = [f"{v}_new" for v in zone_var_names]
+    zone_decls = (
+        "    variable " + ", ".join(zone_var_names) + " : integer := 0;\n"
+        "    variable " + ", ".join(zone_new_names) + " : integer;"
+    )
+    zone_compute = "\n".join(
+        f"    {new} := zone({inp}.voltage, vdd_now);"
+        for inp, new in zip(inputs, zone_new_names)
+    )
+    zone_change_cond = " or ".join(
+        f"{new} /= {cur}" for new, cur in zip(zone_new_names, zone_var_names)
+    )
+    zone_commit = "\n".join(
+        f"      {cur} := {new};" for cur, new in zip(zone_var_names, zone_new_names)
+    )
 
     # State memory — y_prev holds previous NN output for hysteresis feedback.
     rate_decls = "    variable y_prev : real := 0.0;"
@@ -665,6 +686,21 @@ architecture nn_event of {cell_name}_nn is
   constant G_FLOOR  : real := 1.0e-9;       -- supply conductance floor
   constant R_PWR_HI : real := 1.0e9;        -- supply R ceiling (safety)
 
+  -- SG13G2 PSP103 transistor thresholds. Pull-down (NMOS) begins conducting
+  -- at V_gate > Vtn; pull-up (PMOS) at V_gate < VDD - |Vtp|. The NN
+  -- evaluates only when an input crosses one of these thresholds.
+  constant VTN     : real := 0.40;
+  constant VTP_ABS : real := 0.35;
+
+  -- Zone encoding: 0=LOW (< Vtn), 1=ACTIVE (transistors mid-switch), 2=HIGH.
+  function zone(v, vdd : real) return integer is
+  begin
+    if v < VTN then return 0;
+    elsif v > vdd - VTP_ABS then return 2;
+    else return 1;
+    end if;
+  end function;
+
 {emit_matrix(nn.W1, "W1")}
 {emit_vector(nn.b1, "b1")}
 {emit_matrix(nn.W2, "W2")}
@@ -673,40 +709,61 @@ architecture nn_event of {cell_name}_nn is
   signal v_pred : real := 0.0;
   signal g_pred : real := G_FLOOR;
 begin
-  -- NN forward pass: wakes on any input/supply event.
-  nn_proc : process({sens})
+  -- NN forward pass — event-driven wake-up on rail departure. The process
+  -- holds state in `y_prev` across wake-ups and evaluates only when one of
+  -- the inputs enters / leaves its ACTIVE zone. Matches the hybrid_evt
+  -- cell; drastically reduces simulator work on long NCL hold phases.
+  nn_proc : process
 {rate_decls}
+{zone_decls}
     variable z1, h : real_vector(0 to {n_hid - 1});
     variable y     : real_vector(0 to 1);
     variable vp, gp, vdd_now : real;
   begin
 {chr(10).join(rate_compute)}
 
-    -- Iterate the NN forward pass with V(out) self-feedback until v_pred
-    -- converges. Mirrors Newton iteration in the analog solver: hysteresis
-    -- and self-consistency require y_prev to reach its fixed point. Event-
-    -- driven sim wakes us once per input change, so we iterate here.
-    for iter in 0 to 31 loop
-      -- Hidden layer (leaky-ReLU)
+    -- Prime the driver at t=0 so downstream nets see a defined value
+    -- before the first input edge.
+    v_pred <= 0.0;
+    g_pred <= G_FLOOR;
+
+    loop
+      wait on {", ".join(inputs + ["VDD"])};
+
+      vdd_now := VDD.voltage;
+{zone_compute}
+
+      -- Skip NN forward pass if no input's zone changed — the keeper /
+      -- hysteresis built into the NN's fixed point is already at its
+      -- steady value for the current zone configuration.
+      if {zone_change_cond} then
+{zone_commit}
+
+        -- Fixed-point iteration of the NN forward pass with V(out) self-
+        -- feedback. Inside one wake-up we need to converge y_prev because
+        -- the process loop is what schedules the next wait — no implicit
+        -- re-trigger like the old `process(..., y_drv)` form.
+        for iter in 0 to 31 loop
+          -- Hidden layer (leaky-ReLU)
 {chr(10).join(hidden_eval)}
-      -- Output layer
+          -- Output layer
 {chr(10).join(out_eval)}
 
-      vp := y(0);
-      vdd_now := VDD.voltage;
-      gp := G_FLOOR;
-      if y(1) > 0.0 then gp := gp + y(1); end if;
-      if vp > vdd_now    then vp := vdd_now;      end if;
-      if vp < VSS.voltage then vp := VSS.voltage; end if;
+          vp := y(0);
+          gp := G_FLOOR;
+          if y(1) > 0.0 then gp := gp + y(1); end if;
+          if vp > vdd_now    then vp := vdd_now;      end if;
+          if vp < VSS.voltage then vp := VSS.voltage; end if;
 
-      -- Convergence check
-      exit when abs(vp - y_prev) < 1.0e-4;
-      y_prev := vp;
+          exit when abs(vp - y_prev) < 1.0e-4;
+          y_prev := vp;
+        end loop;
+
+        v_pred <= vp;
+        g_pred <= gp;
+        y_prev := vp;
+      end if;
     end loop;
-
-    v_pred <= vp;
-    g_pred <= gp;
-    y_prev := vp;   -- latch final value for next wake-up
   end process;
 
   -- Emit Thevenin driver on output net {out_port}: voltage = v_pred,
