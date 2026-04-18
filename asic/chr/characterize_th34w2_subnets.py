@@ -24,10 +24,10 @@ import numpy as np
 XYCE = "/usr/local/src/Xyce-8/xyce-build/src/Xyce"
 PLUGIN = "/usr/local/src/kestrel/sim/psp103_sg13g2.so"
 MODELS = "/tmp/sg13g2_models.lib"
-VDD = 1.2
 
-V_OUT = np.linspace(0.0, VDD, 13)
-V_GATE = np.linspace(0.0, VDD, 5)
+VDD_LIST = [0.9, 1.05, 1.2, 1.35, 1.5]
+V_OUT = np.linspace(0.0, 1.5, 13)
+V_GATE = np.linspace(0.0, 1.5, 5)
 
 WORK = "/tmp/th34w2_char"
 os.makedirs(WORK, exist_ok=True)
@@ -46,18 +46,18 @@ def run_xyce(sp_path):
 
 
 def sweep_pullup():
-    """4-PMOS series stack VDD→X."""
+    """4-PMOS series stack VDD→X, VDD-swept."""
     NG = len(V_GATE)
-    data = np.zeros((len(V_OUT), NG, NG, NG, NG))
-    n_total = NG ** 4
-    done = 0
-    for idd, vd in enumerate(V_GATE):
-        for ic, vc in enumerate(V_GATE):
-            for ib, vb in enumerate(V_GATE):
-                for ia, va in enumerate(V_GATE):
-                    sp = f"""* pullup TH34W2 A={va} B={vb} C={vc} D={vd}
+    data = np.zeros((len(VDD_LIST), len(V_OUT), NG, NG, NG, NG))
+    for iv, vdd_v in enumerate(VDD_LIST):
+        print(f"  pu VDD={vdd_v:.2f}")
+        for idv, vd in enumerate(V_GATE):
+            for ic, vc in enumerate(V_GATE):
+                for ib, vb in enumerate(V_GATE):
+                    for ia, va in enumerate(V_GATE):
+                        sp = f"""* pullup TH34W2 VDD={vdd_v} A={va} B={vb} C={vc} D={vd}
 .include "{MODELS}"
-VVDD VDD 0 {VDD}
+VVDD VDD 0 {vdd_v}
 VA   A   0 {va}
 VB   B   0 {vb}
 VC   C   0 {vc}
@@ -67,33 +67,30 @@ MPA  P1 A VDD VDD sg13g2_pmos W=1.2u L=0.13u
 MPB  P2 B P1  VDD sg13g2_pmos W=1.2u L=0.13u
 MPC  P3 C P2  VDD sg13g2_pmos W=1.2u L=0.13u
 MPD  X  D P3  VDD sg13g2_pmos W=1.2u L=0.13u
-.dc VX 0 {VDD} {V_OUT[1]-V_OUT[0]:.3f}
+.dc VX 0 {V_OUT[-1]} {V_OUT[1]-V_OUT[0]:.3f}
 .print dc format=csv v(X) i(VX)
 .end
 """
-                    path = f"{WORK}/pu_{ia}_{ib}_{ic}_{idd}.sp"
-                    open(path, "w").write(sp)
-                    hdr, d = run_xyce(path)
-                    col_i = hdr.index("I(VX)")
-                    for ix in range(len(V_OUT)):
-                        data[ix, ia, ib, ic, idd] = float(d[ix, col_i])
-                    done += 1
-                    if done % 50 == 0:
-                        print(f"  pu: {done}/{n_total}")
+                        path = f"{WORK}/pu_{iv}_{ia}_{ib}_{ic}_{idv}.sp"
+                        open(path, "w").write(sp)
+                        hdr, d = run_xyce(path)
+                        col_i = hdr.index("I(VX)")
+                        for ix in range(len(V_OUT)):
+                            data[iv, ix, ia, ib, ic, idv] = float(d[ix, col_i])
     return data
 
 
 def sweep_pulldown():
-    """4-branch weighted pull-down: A·B || A·C || A·D || B·C·D."""
+    """4-branch weighted pull-down: A·B || A·C || A·D || B·C·D, VDD-swept."""
     NG = len(V_GATE)
-    data = np.zeros((len(V_OUT), NG, NG, NG, NG))
-    n_total = NG ** 4
-    done = 0
-    for idd, vd in enumerate(V_GATE):
-        for ic, vc in enumerate(V_GATE):
-            for ib, vb in enumerate(V_GATE):
-                for ia, va in enumerate(V_GATE):
-                    sp = f"""* pulldown TH34W2 A={va} B={vb} C={vc} D={vd}
+    data = np.zeros((len(VDD_LIST), len(V_OUT), NG, NG, NG, NG))
+    for iv, vdd_v in enumerate(VDD_LIST):
+        print(f"  pd VDD={vdd_v:.2f}")
+        for idv, vd in enumerate(V_GATE):
+            for ic, vc in enumerate(V_GATE):
+                for ib, vb in enumerate(V_GATE):
+                    for ia, va in enumerate(V_GATE):
+                        sp = f"""* pulldown TH34W2 VDD={vdd_v} A={va} B={vb} C={vc} D={vd}
 .include "{MODELS}"
 VVSS VSS 0 0
 VA   A   0 {va}
@@ -110,19 +107,16 @@ MNAD2 X  D Q3  VSS sg13g2_nmos W=0.7u L=0.13u
 MNBCD1 Q4 B VSS VSS sg13g2_nmos W=0.7u L=0.13u
 MNBCD2 Q5 C Q4  VSS sg13g2_nmos W=0.7u L=0.13u
 MNBCD3 X  D Q5  VSS sg13g2_nmos W=0.7u L=0.13u
-.dc VX 0 {VDD} {V_OUT[1]-V_OUT[0]:.3f}
+.dc VX 0 {V_OUT[-1]} {V_OUT[1]-V_OUT[0]:.3f}
 .print dc format=csv v(X) i(VX)
 .end
 """
-                    path = f"{WORK}/pd_{ia}_{ib}_{ic}_{idd}.sp"
-                    open(path, "w").write(sp)
-                    hdr, d = run_xyce(path)
-                    col_i = hdr.index("I(VX)")
-                    for ix in range(len(V_OUT)):
-                        data[ix, ia, ib, ic, idd] = float(d[ix, col_i])
-                    done += 1
-                    if done % 50 == 0:
-                        print(f"  pd: {done}/{n_total}")
+                        path = f"{WORK}/pd_{iv}_{ia}_{ib}_{ic}_{idv}.sp"
+                        open(path, "w").write(sp)
+                        hdr, d = run_xyce(path)
+                        col_i = hdr.index("I(VX)")
+                        for ix in range(len(V_OUT)):
+                            data[iv, ix, ia, ib, ic, idv] = float(d[ix, col_i])
     return data
 
 
@@ -136,7 +130,9 @@ def main():
     print(f"  shape {pd.shape}  |I|max={np.abs(pd).max():.2e} A")
 
     out = "/tmp/th34w2_char/tables.npz"
-    np.savez(out, pu=pu, pd=pd)
+    np.savez(out, pu=pu, pd=pd,
+             vdd_list=np.array(VDD_LIST),
+             v_out=V_OUT, v_gate=V_GATE)
     print(f"Saved {out}")
 
 

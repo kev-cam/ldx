@@ -52,25 +52,61 @@ architecture evt of th23_nn_hybrid is
     end if;
   end function;
 
-  constant drive_W1 : real_vector(0 to 47) := (
-    +2.814361e-01, -7.115138e-01, -3.273698e-01, +3.361745e-01, -1.698847e-01, -6.348729e+00,
-    +3.394914e-02, +3.981733e+00, +2.027962e-01, -2.885600e-01, +2.284498e-01, +3.981498e+00,
-    +4.220779e-01, +5.763885e-01, -9.206131e-01, +3.449482e+00, -4.034559e-01, +1.490504e+00,
-    -5.698980e-01, -1.186893e+00, -3.871732e+00, -7.894979e-01, -3.754086e+00, -1.199420e+00,
-    +3.069578e+00, +1.117614e-01, -8.455375e-01, +1.417178e+00, +4.506234e-02, +2.096417e+00,
-    -4.583005e-01, -1.026889e+00, +8.951445e-02, -7.113571e-01, +6.564551e-01, +2.372809e-03,
-    +3.422759e+00, +4.648252e-01, -8.867683e-01, +1.412559e+00, +6.666821e-02, +2.154575e+00,
-    -3.668213e-01, -1.026332e+00, +9.348754e-02, -7.575436e-01, +6.539307e-01, +9.837362e-02
+  constant drive_W1 : real_vector(0 to 199) := (
+    -1.040148e-01, +3.918514e-01, -9.943022e-03, -2.708530e-01, +4.404804e-02, -3.038070e-01,
+    -7.614673e-01, -5.193637e-02, -2.142273e-01, +1.981115e-03, +3.797295e-01, -4.656803e-03,
+    -2.574271e-03, -6.011055e-02, +4.273753e-01, +4.456421e-01, +1.011273e-01, +1.652918e-02,
+    -1.152843e-01, -3.808022e-01, -5.389740e-01, -6.662895e-02, -7.177471e-02, +9.688499e-03,
+    +2.734652e+00, -5.782106e-02, -1.044464e-01, -3.922563e-03, -4.199374e-02, +2.222310e-01,
+    -5.157909e-01, +1.115393e-02, -3.202878e-01, -2.440690e-01, -1.055756e-03, -3.330479e-01,
+    +2.094438e-01, -1.937984e-01, -1.216676e-03, -1.057354e-01, -2.187370e-01, -1.530988e+00,
+    -4.275949e+00, +1.294029e-02, +3.732655e+00, -4.809164e-01, +3.303981e+00, +4.015597e-01,
+    -1.488419e+00, +3.875734e-02, +1.753146e+00, -5.459566e+00, +1.230564e-02, -7.931447e-02,
+    -3.325722e-01, +5.605110e+00, -3.840479e-01, +1.810998e+00, +1.134951e+00, -1.867893e-01,
+    +1.188158e-01, -1.287400e-01, +1.314081e-01, -3.626601e+00, -2.039492e-01, -6.353717e-02,
+    -8.584796e-05, -1.141342e-01, +6.811723e-02, -5.483106e-01, +1.057533e-01, -2.723410e+00,
+    -1.351487e-01, -3.297830e-02, +4.177543e+00, +1.185449e-01, +5.113149e-01, +2.295831e-01,
+    -2.499676e-01, +9.224928e-02, +7.886813e-01, -1.800867e+00, +3.490021e-01, -4.492546e-02,
+    -2.536417e+00, -3.490004e-01, -1.322117e+00, +4.659055e-01, +7.055700e+00, +1.948014e+00,
+    -9.195516e-01, +1.991703e+00, -8.723865e-02, -8.530098e-02, -1.410617e-02, +4.670747e+00,
+    -4.600675e+00, -1.265298e+00, -6.594461e+00, -5.965036e-01, +2.787900e-02, -2.608940e-01,
+    +3.455723e-01, +1.980281e+00, -1.264002e+00, -1.912922e-01, +1.039139e-01, +2.245827e+00,
+    +6.961259e-01, -2.243109e+00, -6.382867e-01, +3.478940e-01, -3.136118e-01, -2.709704e-02,
+    -1.652772e+00, -2.919208e-01, +1.216404e+00, -4.465155e+00, +1.797371e+00, +2.362867e+00,
+    +9.220288e-01, -1.164115e+00, +2.403690e+00, -6.005410e-01, +3.031335e-01, +1.067995e-01,
+    -1.154955e+00, +6.531125e-01, -3.081984e-01, +4.515918e+00, +5.960242e-02, +2.254935e+00,
+    +8.200653e-03, -7.096994e+00, +3.436056e+00, -1.549297e+00, -1.360092e-01, -1.304491e+00,
+    -4.271636e-01, -2.901898e-01, +3.494096e-01, -1.613725e-01, +2.154704e+00, +2.208781e+00,
+    -1.400822e+00, -3.838741e-01, +3.262214e+00, -2.182504e-02, +9.022889e-01, +2.660702e+00,
+    -9.614343e-01, +1.312197e+00, -1.767815e-01, +1.917891e-03, +6.220996e-02, -6.155863e-02,
+    -8.431141e+00, -6.323244e-03, +2.687317e+00, -4.788671e-02, -5.988140e+00, +1.892559e+00,
+    +2.912258e+00, -4.411755e-01, -3.309566e+00, -1.980535e-01, -1.374948e+00, +2.688190e+00,
+    -1.463587e-01, -1.757018e-01, -1.044542e+00, +4.952191e-01, -1.543548e-01, -7.247217e-02,
+    -3.985971e+00, +4.053056e-01, +2.276313e+00, -9.973557e-01, -5.029609e-01, -1.920752e-03,
+    -1.875124e-01, -1.471013e-01, +1.732406e+00, +2.087625e-01, -1.584443e+00, +4.326050e-03,
+    +2.697408e+00, +2.611475e+00, +5.340609e-01, -4.399416e-02, -3.732770e+00, +2.215306e+00,
+    +2.531970e-01, -4.412385e-02, -2.290448e+00, +1.404515e-01, +9.034666e-01, +4.359038e+00,
+    -2.305764e-01, +2.526166e+00
   );
-  constant drive_b1 : real_vector(0 to 11) := (
-    -6.628380e+00, +8.576202e-01, +8.524932e-01, -5.635535e+00, -1.517041e-02, -4.796399e+00,
-    -1.571050e-02, +1.708960e+00, +1.909330e+00, +7.379428e-01, +2.107586e+00, +1.695559e+00
+  constant drive_b1 : real_vector(0 to 39) := (
+    +2.496200e+00, +1.627735e+00, -6.183122e+00, -2.480058e-03, +5.731012e+00, -4.331626e-03,
+    -1.838038e+00, -5.665422e+00, -5.039697e+00, -8.079147e+00, +1.717368e+00, -5.252832e+00,
+    -2.862473e-02, +5.059774e+00, +5.445795e-01, +1.799706e+00, +6.219334e-01, +2.229207e+00,
+    +5.499910e+00, +4.012046e-03, -1.404840e-02, +2.590153e-03, -5.307507e+00, -4.014870e+00,
+    -1.984829e+00, -1.182506e-03, -6.255683e+00, -4.612610e+00, -2.294687e+00, -1.921555e+00,
+    +1.818648e+00, -3.199879e+00, -2.524478e-02, -9.688498e-04, +4.096499e+00, -8.898637e-02,
+    +5.688545e+00, -6.715147e-01, -4.023900e+00, -5.850648e+00
   );
-  constant drive_W2 : real_vector(0 to 11) := (
-    -7.737378e-05, +1.232765e-05, +1.620308e-05, -6.291954e-05, +1.276377e-06, +8.578328e-05,
-    -5.068867e-07, +4.337685e-05, -4.222463e-05, +1.433710e-05, +4.321712e-05, -4.136365e-05
+  constant drive_W2 : real_vector(0 to 39) := (
+    -4.944080e-05, +2.274092e-05, +7.736298e-05, +2.774341e-06, +3.171158e-05, +4.805452e-06,
+    -4.241876e-05, -5.785227e-05, +5.204359e-05, -8.113405e-05, +1.365048e-05, +7.587081e-05,
+    -4.856122e-06, -5.948938e-05, +2.756538e-05, -4.536327e-05, -3.830198e-05, +1.778416e-05,
+    -5.384392e-05, -4.206482e-06, -1.477483e-06, -2.735301e-06, -5.189491e-05, +5.391563e-05,
+    +4.060067e-05, +1.327882e-06, -4.858754e-05, -3.004416e-05, -1.105579e-05, -3.612919e-05,
+    +4.214934e-05, +4.104826e-05, +1.127250e-06, +1.079774e-06, +3.128026e-05, -3.882547e-06,
+    +5.612370e-05, +4.247661e-05, -3.403748e-05, -5.126001e-05
   );
-  constant drive_b2 : real_vector(0 to 0) := (0 => -2.879916e-06);
+  constant drive_b2 : real_vector(0 to 0) := (0 => -9.240280e-06);
 
   signal v_y_sig : real := 0.0;
 
@@ -84,7 +120,7 @@ begin
     variable v_y              : real := 0.0;
     variable i_drive, i_keep  : real;
     variable i_supply         : real;
-    variable z_drive, h_drive : real_vector(0 to 11);
+    variable z_drive, h_drive : real_vector(0 to 39);
     variable y_drive          : real;
   begin
     Y_drv   <= (voltage => 0.0, resistance => R_OUT, flags => AFL_KNOWN);
@@ -111,31 +147,87 @@ begin
         -- Then apply digital inverter rule for V(Y). A few iterations
         -- suffice because the NN surface is approximately monotonic in V_X.
         for iter in 0 to 7 loop
-        z_drive(0) := drive_W1(0)*V_X_v + drive_W1(12)*A.voltage + drive_W1(24)*B.voltage + drive_W1(36)*C.voltage + drive_b1(0);
+        z_drive(0) := drive_W1(0)*vdd_v + drive_W1(40)*V_X_v + drive_W1(80)*A.voltage + drive_W1(120)*B.voltage + drive_W1(160)*C.voltage + drive_b1(0);
         if z_drive(0) > 0.0 then h_drive(0) := z_drive(0); else h_drive(0) := 0.01 * z_drive(0); end if;
-        z_drive(1) := drive_W1(1)*V_X_v + drive_W1(13)*A.voltage + drive_W1(25)*B.voltage + drive_W1(37)*C.voltage + drive_b1(1);
+        z_drive(1) := drive_W1(1)*vdd_v + drive_W1(41)*V_X_v + drive_W1(81)*A.voltage + drive_W1(121)*B.voltage + drive_W1(161)*C.voltage + drive_b1(1);
         if z_drive(1) > 0.0 then h_drive(1) := z_drive(1); else h_drive(1) := 0.01 * z_drive(1); end if;
-        z_drive(2) := drive_W1(2)*V_X_v + drive_W1(14)*A.voltage + drive_W1(26)*B.voltage + drive_W1(38)*C.voltage + drive_b1(2);
+        z_drive(2) := drive_W1(2)*vdd_v + drive_W1(42)*V_X_v + drive_W1(82)*A.voltage + drive_W1(122)*B.voltage + drive_W1(162)*C.voltage + drive_b1(2);
         if z_drive(2) > 0.0 then h_drive(2) := z_drive(2); else h_drive(2) := 0.01 * z_drive(2); end if;
-        z_drive(3) := drive_W1(3)*V_X_v + drive_W1(15)*A.voltage + drive_W1(27)*B.voltage + drive_W1(39)*C.voltage + drive_b1(3);
+        z_drive(3) := drive_W1(3)*vdd_v + drive_W1(43)*V_X_v + drive_W1(83)*A.voltage + drive_W1(123)*B.voltage + drive_W1(163)*C.voltage + drive_b1(3);
         if z_drive(3) > 0.0 then h_drive(3) := z_drive(3); else h_drive(3) := 0.01 * z_drive(3); end if;
-        z_drive(4) := drive_W1(4)*V_X_v + drive_W1(16)*A.voltage + drive_W1(28)*B.voltage + drive_W1(40)*C.voltage + drive_b1(4);
+        z_drive(4) := drive_W1(4)*vdd_v + drive_W1(44)*V_X_v + drive_W1(84)*A.voltage + drive_W1(124)*B.voltage + drive_W1(164)*C.voltage + drive_b1(4);
         if z_drive(4) > 0.0 then h_drive(4) := z_drive(4); else h_drive(4) := 0.01 * z_drive(4); end if;
-        z_drive(5) := drive_W1(5)*V_X_v + drive_W1(17)*A.voltage + drive_W1(29)*B.voltage + drive_W1(41)*C.voltage + drive_b1(5);
+        z_drive(5) := drive_W1(5)*vdd_v + drive_W1(45)*V_X_v + drive_W1(85)*A.voltage + drive_W1(125)*B.voltage + drive_W1(165)*C.voltage + drive_b1(5);
         if z_drive(5) > 0.0 then h_drive(5) := z_drive(5); else h_drive(5) := 0.01 * z_drive(5); end if;
-        z_drive(6) := drive_W1(6)*V_X_v + drive_W1(18)*A.voltage + drive_W1(30)*B.voltage + drive_W1(42)*C.voltage + drive_b1(6);
+        z_drive(6) := drive_W1(6)*vdd_v + drive_W1(46)*V_X_v + drive_W1(86)*A.voltage + drive_W1(126)*B.voltage + drive_W1(166)*C.voltage + drive_b1(6);
         if z_drive(6) > 0.0 then h_drive(6) := z_drive(6); else h_drive(6) := 0.01 * z_drive(6); end if;
-        z_drive(7) := drive_W1(7)*V_X_v + drive_W1(19)*A.voltage + drive_W1(31)*B.voltage + drive_W1(43)*C.voltage + drive_b1(7);
+        z_drive(7) := drive_W1(7)*vdd_v + drive_W1(47)*V_X_v + drive_W1(87)*A.voltage + drive_W1(127)*B.voltage + drive_W1(167)*C.voltage + drive_b1(7);
         if z_drive(7) > 0.0 then h_drive(7) := z_drive(7); else h_drive(7) := 0.01 * z_drive(7); end if;
-        z_drive(8) := drive_W1(8)*V_X_v + drive_W1(20)*A.voltage + drive_W1(32)*B.voltage + drive_W1(44)*C.voltage + drive_b1(8);
+        z_drive(8) := drive_W1(8)*vdd_v + drive_W1(48)*V_X_v + drive_W1(88)*A.voltage + drive_W1(128)*B.voltage + drive_W1(168)*C.voltage + drive_b1(8);
         if z_drive(8) > 0.0 then h_drive(8) := z_drive(8); else h_drive(8) := 0.01 * z_drive(8); end if;
-        z_drive(9) := drive_W1(9)*V_X_v + drive_W1(21)*A.voltage + drive_W1(33)*B.voltage + drive_W1(45)*C.voltage + drive_b1(9);
+        z_drive(9) := drive_W1(9)*vdd_v + drive_W1(49)*V_X_v + drive_W1(89)*A.voltage + drive_W1(129)*B.voltage + drive_W1(169)*C.voltage + drive_b1(9);
         if z_drive(9) > 0.0 then h_drive(9) := z_drive(9); else h_drive(9) := 0.01 * z_drive(9); end if;
-        z_drive(10) := drive_W1(10)*V_X_v + drive_W1(22)*A.voltage + drive_W1(34)*B.voltage + drive_W1(46)*C.voltage + drive_b1(10);
+        z_drive(10) := drive_W1(10)*vdd_v + drive_W1(50)*V_X_v + drive_W1(90)*A.voltage + drive_W1(130)*B.voltage + drive_W1(170)*C.voltage + drive_b1(10);
         if z_drive(10) > 0.0 then h_drive(10) := z_drive(10); else h_drive(10) := 0.01 * z_drive(10); end if;
-        z_drive(11) := drive_W1(11)*V_X_v + drive_W1(23)*A.voltage + drive_W1(35)*B.voltage + drive_W1(47)*C.voltage + drive_b1(11);
+        z_drive(11) := drive_W1(11)*vdd_v + drive_W1(51)*V_X_v + drive_W1(91)*A.voltage + drive_W1(131)*B.voltage + drive_W1(171)*C.voltage + drive_b1(11);
         if z_drive(11) > 0.0 then h_drive(11) := z_drive(11); else h_drive(11) := 0.01 * z_drive(11); end if;
-        y_drive := drive_W2(0)*h_drive(0) + drive_W2(1)*h_drive(1) + drive_W2(2)*h_drive(2) + drive_W2(3)*h_drive(3) + drive_W2(4)*h_drive(4) + drive_W2(5)*h_drive(5) + drive_W2(6)*h_drive(6) + drive_W2(7)*h_drive(7) + drive_W2(8)*h_drive(8) + drive_W2(9)*h_drive(9) + drive_W2(10)*h_drive(10) + drive_W2(11)*h_drive(11) + drive_b2(0);
+        z_drive(12) := drive_W1(12)*vdd_v + drive_W1(52)*V_X_v + drive_W1(92)*A.voltage + drive_W1(132)*B.voltage + drive_W1(172)*C.voltage + drive_b1(12);
+        if z_drive(12) > 0.0 then h_drive(12) := z_drive(12); else h_drive(12) := 0.01 * z_drive(12); end if;
+        z_drive(13) := drive_W1(13)*vdd_v + drive_W1(53)*V_X_v + drive_W1(93)*A.voltage + drive_W1(133)*B.voltage + drive_W1(173)*C.voltage + drive_b1(13);
+        if z_drive(13) > 0.0 then h_drive(13) := z_drive(13); else h_drive(13) := 0.01 * z_drive(13); end if;
+        z_drive(14) := drive_W1(14)*vdd_v + drive_W1(54)*V_X_v + drive_W1(94)*A.voltage + drive_W1(134)*B.voltage + drive_W1(174)*C.voltage + drive_b1(14);
+        if z_drive(14) > 0.0 then h_drive(14) := z_drive(14); else h_drive(14) := 0.01 * z_drive(14); end if;
+        z_drive(15) := drive_W1(15)*vdd_v + drive_W1(55)*V_X_v + drive_W1(95)*A.voltage + drive_W1(135)*B.voltage + drive_W1(175)*C.voltage + drive_b1(15);
+        if z_drive(15) > 0.0 then h_drive(15) := z_drive(15); else h_drive(15) := 0.01 * z_drive(15); end if;
+        z_drive(16) := drive_W1(16)*vdd_v + drive_W1(56)*V_X_v + drive_W1(96)*A.voltage + drive_W1(136)*B.voltage + drive_W1(176)*C.voltage + drive_b1(16);
+        if z_drive(16) > 0.0 then h_drive(16) := z_drive(16); else h_drive(16) := 0.01 * z_drive(16); end if;
+        z_drive(17) := drive_W1(17)*vdd_v + drive_W1(57)*V_X_v + drive_W1(97)*A.voltage + drive_W1(137)*B.voltage + drive_W1(177)*C.voltage + drive_b1(17);
+        if z_drive(17) > 0.0 then h_drive(17) := z_drive(17); else h_drive(17) := 0.01 * z_drive(17); end if;
+        z_drive(18) := drive_W1(18)*vdd_v + drive_W1(58)*V_X_v + drive_W1(98)*A.voltage + drive_W1(138)*B.voltage + drive_W1(178)*C.voltage + drive_b1(18);
+        if z_drive(18) > 0.0 then h_drive(18) := z_drive(18); else h_drive(18) := 0.01 * z_drive(18); end if;
+        z_drive(19) := drive_W1(19)*vdd_v + drive_W1(59)*V_X_v + drive_W1(99)*A.voltage + drive_W1(139)*B.voltage + drive_W1(179)*C.voltage + drive_b1(19);
+        if z_drive(19) > 0.0 then h_drive(19) := z_drive(19); else h_drive(19) := 0.01 * z_drive(19); end if;
+        z_drive(20) := drive_W1(20)*vdd_v + drive_W1(60)*V_X_v + drive_W1(100)*A.voltage + drive_W1(140)*B.voltage + drive_W1(180)*C.voltage + drive_b1(20);
+        if z_drive(20) > 0.0 then h_drive(20) := z_drive(20); else h_drive(20) := 0.01 * z_drive(20); end if;
+        z_drive(21) := drive_W1(21)*vdd_v + drive_W1(61)*V_X_v + drive_W1(101)*A.voltage + drive_W1(141)*B.voltage + drive_W1(181)*C.voltage + drive_b1(21);
+        if z_drive(21) > 0.0 then h_drive(21) := z_drive(21); else h_drive(21) := 0.01 * z_drive(21); end if;
+        z_drive(22) := drive_W1(22)*vdd_v + drive_W1(62)*V_X_v + drive_W1(102)*A.voltage + drive_W1(142)*B.voltage + drive_W1(182)*C.voltage + drive_b1(22);
+        if z_drive(22) > 0.0 then h_drive(22) := z_drive(22); else h_drive(22) := 0.01 * z_drive(22); end if;
+        z_drive(23) := drive_W1(23)*vdd_v + drive_W1(63)*V_X_v + drive_W1(103)*A.voltage + drive_W1(143)*B.voltage + drive_W1(183)*C.voltage + drive_b1(23);
+        if z_drive(23) > 0.0 then h_drive(23) := z_drive(23); else h_drive(23) := 0.01 * z_drive(23); end if;
+        z_drive(24) := drive_W1(24)*vdd_v + drive_W1(64)*V_X_v + drive_W1(104)*A.voltage + drive_W1(144)*B.voltage + drive_W1(184)*C.voltage + drive_b1(24);
+        if z_drive(24) > 0.0 then h_drive(24) := z_drive(24); else h_drive(24) := 0.01 * z_drive(24); end if;
+        z_drive(25) := drive_W1(25)*vdd_v + drive_W1(65)*V_X_v + drive_W1(105)*A.voltage + drive_W1(145)*B.voltage + drive_W1(185)*C.voltage + drive_b1(25);
+        if z_drive(25) > 0.0 then h_drive(25) := z_drive(25); else h_drive(25) := 0.01 * z_drive(25); end if;
+        z_drive(26) := drive_W1(26)*vdd_v + drive_W1(66)*V_X_v + drive_W1(106)*A.voltage + drive_W1(146)*B.voltage + drive_W1(186)*C.voltage + drive_b1(26);
+        if z_drive(26) > 0.0 then h_drive(26) := z_drive(26); else h_drive(26) := 0.01 * z_drive(26); end if;
+        z_drive(27) := drive_W1(27)*vdd_v + drive_W1(67)*V_X_v + drive_W1(107)*A.voltage + drive_W1(147)*B.voltage + drive_W1(187)*C.voltage + drive_b1(27);
+        if z_drive(27) > 0.0 then h_drive(27) := z_drive(27); else h_drive(27) := 0.01 * z_drive(27); end if;
+        z_drive(28) := drive_W1(28)*vdd_v + drive_W1(68)*V_X_v + drive_W1(108)*A.voltage + drive_W1(148)*B.voltage + drive_W1(188)*C.voltage + drive_b1(28);
+        if z_drive(28) > 0.0 then h_drive(28) := z_drive(28); else h_drive(28) := 0.01 * z_drive(28); end if;
+        z_drive(29) := drive_W1(29)*vdd_v + drive_W1(69)*V_X_v + drive_W1(109)*A.voltage + drive_W1(149)*B.voltage + drive_W1(189)*C.voltage + drive_b1(29);
+        if z_drive(29) > 0.0 then h_drive(29) := z_drive(29); else h_drive(29) := 0.01 * z_drive(29); end if;
+        z_drive(30) := drive_W1(30)*vdd_v + drive_W1(70)*V_X_v + drive_W1(110)*A.voltage + drive_W1(150)*B.voltage + drive_W1(190)*C.voltage + drive_b1(30);
+        if z_drive(30) > 0.0 then h_drive(30) := z_drive(30); else h_drive(30) := 0.01 * z_drive(30); end if;
+        z_drive(31) := drive_W1(31)*vdd_v + drive_W1(71)*V_X_v + drive_W1(111)*A.voltage + drive_W1(151)*B.voltage + drive_W1(191)*C.voltage + drive_b1(31);
+        if z_drive(31) > 0.0 then h_drive(31) := z_drive(31); else h_drive(31) := 0.01 * z_drive(31); end if;
+        z_drive(32) := drive_W1(32)*vdd_v + drive_W1(72)*V_X_v + drive_W1(112)*A.voltage + drive_W1(152)*B.voltage + drive_W1(192)*C.voltage + drive_b1(32);
+        if z_drive(32) > 0.0 then h_drive(32) := z_drive(32); else h_drive(32) := 0.01 * z_drive(32); end if;
+        z_drive(33) := drive_W1(33)*vdd_v + drive_W1(73)*V_X_v + drive_W1(113)*A.voltage + drive_W1(153)*B.voltage + drive_W1(193)*C.voltage + drive_b1(33);
+        if z_drive(33) > 0.0 then h_drive(33) := z_drive(33); else h_drive(33) := 0.01 * z_drive(33); end if;
+        z_drive(34) := drive_W1(34)*vdd_v + drive_W1(74)*V_X_v + drive_W1(114)*A.voltage + drive_W1(154)*B.voltage + drive_W1(194)*C.voltage + drive_b1(34);
+        if z_drive(34) > 0.0 then h_drive(34) := z_drive(34); else h_drive(34) := 0.01 * z_drive(34); end if;
+        z_drive(35) := drive_W1(35)*vdd_v + drive_W1(75)*V_X_v + drive_W1(115)*A.voltage + drive_W1(155)*B.voltage + drive_W1(195)*C.voltage + drive_b1(35);
+        if z_drive(35) > 0.0 then h_drive(35) := z_drive(35); else h_drive(35) := 0.01 * z_drive(35); end if;
+        z_drive(36) := drive_W1(36)*vdd_v + drive_W1(76)*V_X_v + drive_W1(116)*A.voltage + drive_W1(156)*B.voltage + drive_W1(196)*C.voltage + drive_b1(36);
+        if z_drive(36) > 0.0 then h_drive(36) := z_drive(36); else h_drive(36) := 0.01 * z_drive(36); end if;
+        z_drive(37) := drive_W1(37)*vdd_v + drive_W1(77)*V_X_v + drive_W1(117)*A.voltage + drive_W1(157)*B.voltage + drive_W1(197)*C.voltage + drive_b1(37);
+        if z_drive(37) > 0.0 then h_drive(37) := z_drive(37); else h_drive(37) := 0.01 * z_drive(37); end if;
+        z_drive(38) := drive_W1(38)*vdd_v + drive_W1(78)*V_X_v + drive_W1(118)*A.voltage + drive_W1(158)*B.voltage + drive_W1(198)*C.voltage + drive_b1(38);
+        if z_drive(38) > 0.0 then h_drive(38) := z_drive(38); else h_drive(38) := 0.01 * z_drive(38); end if;
+        z_drive(39) := drive_W1(39)*vdd_v + drive_W1(79)*V_X_v + drive_W1(119)*A.voltage + drive_W1(159)*B.voltage + drive_W1(199)*C.voltage + drive_b1(39);
+        if z_drive(39) > 0.0 then h_drive(39) := z_drive(39); else h_drive(39) := 0.01 * z_drive(39); end if;
+        y_drive := drive_W2(0)*h_drive(0) + drive_W2(1)*h_drive(1) + drive_W2(2)*h_drive(2) + drive_W2(3)*h_drive(3) + drive_W2(4)*h_drive(4) + drive_W2(5)*h_drive(5) + drive_W2(6)*h_drive(6) + drive_W2(7)*h_drive(7) + drive_W2(8)*h_drive(8) + drive_W2(9)*h_drive(9) + drive_W2(10)*h_drive(10) + drive_W2(11)*h_drive(11) + drive_W2(12)*h_drive(12) + drive_W2(13)*h_drive(13) + drive_W2(14)*h_drive(14) + drive_W2(15)*h_drive(15) + drive_W2(16)*h_drive(16) + drive_W2(17)*h_drive(17) + drive_W2(18)*h_drive(18) + drive_W2(19)*h_drive(19) + drive_W2(20)*h_drive(20) + drive_W2(21)*h_drive(21) + drive_W2(22)*h_drive(22) + drive_W2(23)*h_drive(23) + drive_W2(24)*h_drive(24) + drive_W2(25)*h_drive(25) + drive_W2(26)*h_drive(26) + drive_W2(27)*h_drive(27) + drive_W2(28)*h_drive(28) + drive_W2(29)*h_drive(29) + drive_W2(30)*h_drive(30) + drive_W2(31)*h_drive(31) + drive_W2(32)*h_drive(32) + drive_W2(33)*h_drive(33) + drive_W2(34)*h_drive(34) + drive_W2(35)*h_drive(35) + drive_W2(36)*h_drive(36) + drive_W2(37)*h_drive(37) + drive_W2(38)*h_drive(38) + drive_W2(39)*h_drive(39) + drive_b2(0);
           i_drive := y_drive;
           i_keep  := (vdd_v - v_y - V_X_v) / R_KEEP;
 

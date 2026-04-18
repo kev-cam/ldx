@@ -27,10 +27,16 @@ import numpy as np
 XYCE = "/usr/local/src/Xyce-8/xyce-build/src/Xyce"
 PLUGIN = "/usr/local/src/kestrel/sim/psp103_sg13g2.so"
 MODELS = "/tmp/sg13g2_models.lib"
-VDD = 1.2
 
-V_OUT = np.linspace(0.0, VDD, 13)            # output-node sweep (13 pts)
-V_GATE = np.linspace(0.0, VDD, 5)             # gate input sweep (5 pts)
+# SG13G2 nominal VDD is 1.2V; spec'd operating range ±25%. Sweep 5
+# points covering 0.9..1.5V so NN/IV-table cells can scale predictions
+# across supply variation (previously single-VDD characterisation
+# caused NN cells to fail at VDD < 1.0V — see commit b798105).
+VDD_LIST = [0.9, 1.05, 1.2, 1.35, 1.5]
+VDD = VDD_LIST[2]   # legacy alias; kept for code that still reads VDD
+
+V_OUT = np.linspace(0.0, 1.5, 13)            # output-node sweep (absolute)
+V_GATE = np.linspace(0.0, 1.5, 5)            # gate input sweep (absolute)
 
 WORK = "/tmp/th22_char"
 os.makedirs(WORK, exist_ok=True)
@@ -49,41 +55,42 @@ def run_xyce(sp_path):
 
 
 def sweep_pullup():
-    """I_pu(V_X, V_A, V_B): MPA & MPB PMOS in series VDD→X."""
-    data = np.zeros((len(V_OUT), len(V_GATE), len(V_GATE)))
-    for ib, vb in enumerate(V_GATE):
-        for ia, va in enumerate(V_GATE):
-            sp = f"""* pullup characterization A={va} B={vb}
+    """I_pu(VDD, V_X, V_A, V_B): MPA & MPB PMOS in series VDD→X.
+    4-D table over [VDD, V_X, V_A, V_B]."""
+    data = np.zeros((len(VDD_LIST), len(V_OUT), len(V_GATE), len(V_GATE)))
+    for iv, vd in enumerate(VDD_LIST):
+        print(f"  pu VDD={vd:.2f}")
+        for ib, vb in enumerate(V_GATE):
+            for ia, va in enumerate(V_GATE):
+                sp = f"""* pullup characterization VDD={vd} A={va} B={vb}
 .include "{MODELS}"
-VVDD VDD 0 {VDD}
+VVDD VDD 0 {vd}
 VA   A   0 {va}
 VB   B   0 {vb}
 VX   X   0 0
 MPA  N1 A VDD VDD sg13g2_pmos w=0.7u  l=0.13u
 MPB  X  B N1  VDD sg13g2_pmos w=0.7u  l=0.13u
-.dc VX 0 {VDD} {V_OUT[1]-V_OUT[0]:.3f}
+.dc VX 0 {V_OUT[-1]} {V_OUT[1]-V_OUT[0]:.3f}
 .print dc format=csv v(X) i(VX)
 .end
 """
-            path = f"{WORK}/pu_{ia}_{ib}.sp"
-            open(path, "w").write(sp)
-            hdr, d = run_xyce(path)
-            # i(VX) is current flowing from + (X) to - (0) through VX source,
-            # i.e. current *leaving* X. So current *into* X from the pull-up
-            # network equals +i(VX).
-            col_i = hdr.index("I(VX)")
-            # Sanity: len(d) should be len(V_OUT)
-            for ix, vx in enumerate(V_OUT):
-                data[ix, ia, ib] = float(d[ix, col_i])
+                path = f"{WORK}/pu_{iv}_{ia}_{ib}.sp"
+                open(path, "w").write(sp)
+                hdr, d = run_xyce(path)
+                col_i = hdr.index("I(VX)")
+                for ix in range(len(V_OUT)):
+                    data[iv, ix, ia, ib] = float(d[ix, col_i])
     return data
 
 
 def sweep_pulldown():
-    """I_pd(V_X, V_A, V_B): MNA & MNB NMOS in series X→VSS."""
-    data = np.zeros((len(V_OUT), len(V_GATE), len(V_GATE)))
-    for ib, vb in enumerate(V_GATE):
-        for ia, va in enumerate(V_GATE):
-            sp = f"""* pulldown characterization A={va} B={vb}
+    """I_pd(VDD, V_X, V_A, V_B): MNA & MNB NMOS in series X→VSS."""
+    data = np.zeros((len(VDD_LIST), len(V_OUT), len(V_GATE), len(V_GATE)))
+    for iv, vd in enumerate(VDD_LIST):
+        print(f"  pd VDD={vd:.2f}")
+        for ib, vb in enumerate(V_GATE):
+            for ia, va in enumerate(V_GATE):
+                sp = f"""* pulldown characterization VDD={vd} A={va} B={vb}
 .include "{MODELS}"
 VVSS VSS 0 0
 VA   A   0 {va}
@@ -91,71 +98,70 @@ VB   B   0 {vb}
 VX   X   0 0
 MNA  N2 A VSS VSS sg13g2_nmos w=0.35u l=0.13u
 MNB  X  B N2  VSS sg13g2_nmos w=0.35u l=0.13u
-.dc VX 0 {VDD} {V_OUT[1]-V_OUT[0]:.3f}
+.dc VX 0 {V_OUT[-1]} {V_OUT[1]-V_OUT[0]:.3f}
 .print dc format=csv v(X) i(VX)
 .end
 """
-            path = f"{WORK}/pd_{ia}_{ib}.sp"
-            open(path, "w").write(sp)
-            hdr, d = run_xyce(path)
-            col_i = hdr.index("I(VX)")
-            # For pull-down: current leaving X to ground through VX is
-            # positive when X discharges; that's the pull-down delivering
-            # current OUT of X toward VSS. Convention for our VA: I(X, VSS)
-            # positive = X sourcing to VSS. So store +i(VX).
-            for ix, vx in enumerate(V_OUT):
-                data[ix, ia, ib] = float(d[ix, col_i])
+                path = f"{WORK}/pd_{iv}_{ia}_{ib}.sp"
+                open(path, "w").write(sp)
+                hdr, d = run_xyce(path)
+                col_i = hdr.index("I(VX)")
+                for ix in range(len(V_OUT)):
+                    data[iv, ix, ia, ib] = float(d[ix, col_i])
     return data
 
 
 def sweep_keeper():
-    """I_kp(V_X, V_Y): weak inverter MPK/MNK with gate=Y, output=X.
-    Net current into X from the keeper at each operating point."""
-    data = np.zeros((len(V_OUT), len(V_OUT)))
-    for iy, vy in enumerate(V_OUT):
-        sp = f"""* keeper characterization Y={vy}
+    """I_kp(VDD, V_X, V_Y): weak inverter MPK/MNK — VDD-swept."""
+    data = np.zeros((len(VDD_LIST), len(V_OUT), len(V_OUT)))
+    for iv, vd in enumerate(VDD_LIST):
+        print(f"  kp VDD={vd:.2f}")
+        for iy, vy in enumerate(V_OUT):
+            sp = f"""* keeper VDD={vd} Y={vy}
 .include "{MODELS}"
-VVDD VDD 0 {VDD}
+VVDD VDD 0 {vd}
 VVSS VSS 0 0
 VY   Y   0 {vy}
 VX   X   0 0
 MPK  X  Y VDD VDD sg13g2_pmos w=0.35u l=1.0u
 MNK  X  Y VSS VSS sg13g2_nmos w=0.15u l=1.0u
-.dc VX 0 {VDD} {V_OUT[1]-V_OUT[0]:.3f}
+.dc VX 0 {V_OUT[-1]} {V_OUT[1]-V_OUT[0]:.3f}
 .print dc format=csv v(X) i(VX)
 .end
 """
-        path = f"{WORK}/kp_{iy}.sp"
-        open(path, "w").write(sp)
-        hdr, d = run_xyce(path)
-        col_i = hdr.index("I(VX)")
-        for ix, vx in enumerate(V_OUT):
-            data[ix, iy] = float(d[ix, col_i])
+            path = f"{WORK}/kp_{iv}_{iy}.sp"
+            open(path, "w").write(sp)
+            hdr, d = run_xyce(path)
+            col_i = hdr.index("I(VX)")
+            for ix in range(len(V_OUT)):
+                data[iv, ix, iy] = float(d[ix, col_i])
     return data
 
 
 def sweep_inverter():
-    """I_inv(V_Y, V_X): MPY/MNY output inverter, gate=X, output=Y."""
-    data = np.zeros((len(V_OUT), len(V_OUT)))
-    for ix, vx in enumerate(V_OUT):
-        sp = f"""* inverter characterization X={vx}
+    """I_inv(VDD, V_Y, V_X): MPY/MNY output inverter — VDD-swept."""
+    data = np.zeros((len(VDD_LIST), len(V_OUT), len(V_OUT)))
+    for iv, vd in enumerate(VDD_LIST):
+        print(f"  inv VDD={vd:.2f}")
+        for ix, vx in enumerate(V_OUT):
+            sp = f"""* inverter VDD={vd} X={vx}
 .include "{MODELS}"
-VVDD VDD 0 {VDD}
+VVDD VDD 0 {vd}
 VVSS VSS 0 0
 VX   X   0 {vx}
 VY   Y   0 0
 MPY  Y  X VDD VDD sg13g2_pmos w=0.7u  l=0.13u
 MNY  Y  X VSS VSS sg13g2_nmos w=0.35u l=0.13u
-.dc VY 0 {VDD} {V_OUT[1]-V_OUT[0]:.3f}
+.dc VY 0 {V_OUT[-1]} {V_OUT[1]-V_OUT[0]:.3f}
 .print dc format=csv v(Y) i(VY)
 .end
 """
-        path = f"{WORK}/inv_{ix}.sp"
-        open(path, "w").write(sp)
-        hdr, d = run_xyce(path)
-        col_i = hdr.index("I(VY)")
-        for iy, vy in enumerate(V_OUT):
-            data[iy, ix] = float(d[iy, col_i])
+            path = f"{WORK}/inv_{iv}_{ix}.sp"
+            open(path, "w").write(sp)
+            hdr, d = run_xyce(path)
+            col_i = hdr.index("I(VY)")
+            for iy in range(len(V_OUT)):
+                data[iv, iy, ix] = float(d[iy, col_i])
     return data
 
 
@@ -338,11 +344,13 @@ def main():
         print(f"  {name}: shape {arr.shape}   "
               f"min={arr.min():.3e}  max={arr.max():.3e}")
 
-    np.savez("/tmp/th22_char/tables.npz", pu=pu, pd=pd, kp=kp, inv=inv)
-
-    out = "/usr/local/src/ldx/asic/cells/th22_tbl.va"
-    emit_vams(pu, pd, kp, inv, out)
-    print(f"\nWrote {out}")
+    np.savez("/tmp/th22_char/tables.npz",
+             pu=pu, pd=pd, kp=kp, inv=inv,
+             vdd_list=np.array(VDD_LIST),
+             v_out=V_OUT, v_gate=V_GATE)
+    print("\nSaved /tmp/th22_char/tables.npz (4D: VDD × V_OUT × ...)")
+    # th22_tbl.va emission disabled — tables are now 4D, old emit_vams
+    # is 3D-only. Re-enable with a multi-VDD template if/when needed.
 
 
 if __name__ == "__main__":

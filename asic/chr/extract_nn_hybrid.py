@@ -134,39 +134,44 @@ class MLP:
 # ----------------------------------------------------------------------
 # Build training sets from tables.
 # ----------------------------------------------------------------------
-def build_drive_dataset(pu, pd, n_in):
-    """Combined pull-up + pull-down current into X for an n_in-input gate.
+def build_drive_dataset(pu, pd, n_in, tables):
+    """Combined pull-up + pull-down drive current, VDD-swept.
 
-    Positive = net current flowing into X (pulls X up);
-    Negative = net current flowing out of X toward VSS (pulls X down).
-
-    Table layout: pu[ix, i0, i1, ..., i_{n-1}] where ix indexes V_X and
-    i_k indexes V_GATE[input_k]. Sums PU + PD to give net drive current,
-    which the VA's `I(X, VSS) <+ -(i_drive)` stamps.
+    Table layout: 4D+ with leading VDD dimension, i.e.
+      pu[iv, ix, i0, i1, ..., i_{n-1}]
+    Feature vector is (VDD, V_X, V_a, V_b, ...) so the NN learns the
+    full 4+-D operating space including supply variation.
     """
     X_list, Y_list = [], []
-    NX = pu.shape[0]
-    NG = pu.shape[1]  # all gate dims are same size
-    for ix in range(NX):
-        for idxs in itertools.product(range(NG), repeat=n_in):
-            gate_vs = [V_GATE[k] for k in idxs]
-            X_list.append([V_OUT[ix]] + gate_vs)
-            # Index pu / pd with (ix, *idxs)
-            Y_list.append([pu[(ix,) + idxs] + pd[(ix,) + idxs]])
+    vdd_list = tables["vdd_list"]
+    v_out = tables["v_out"]
+    v_gate = tables["v_gate"]
+    NV = len(vdd_list)
+    NX = len(v_out)
+    NG = len(v_gate)
+    for iv in range(NV):
+        for ix in range(NX):
+            for idxs in itertools.product(range(NG), repeat=n_in):
+                gate_vs = [v_gate[k] for k in idxs]
+                X_list.append([vdd_list[iv], v_out[ix]] + gate_vs)
+                Y_list.append([pu[(iv, ix) + idxs] + pd[(iv, ix) + idxs]])
     return np.array(X_list), np.array(Y_list)
 
 
-def build_inv_dataset(inv):
-    """Inverter current out of Y as a function of (V_X=gate, V_Y=drain)."""
+def build_inv_dataset(inv, tables):
+    """Inverter I_inv(VDD, V_X, V_Y). 3D table: (iv, iy, ix)."""
     X_list, Y_list = [], []
-    NX = inv.shape[0]
-    for ix in range(NX):
-        for iy in range(NX):
-            # inv[iy, ix] = I(VY) at V_Y=V_OUT[iy], V_X=V_OUT[ix]
-            # See characterize_th22_subnets.py:137-159 — inner loop sweeps V_Y,
-            # outer fixes V_X. Store ordered so NN input is (V_X, V_Y).
-            X_list.append([V_OUT[ix], V_OUT[iy]])
-            Y_list.append([inv[iy, ix]])
+    vdd_list = tables["vdd_list"]
+    v_out = tables["v_out"]
+    NV = len(vdd_list)
+    NX = len(v_out)
+    for iv in range(NV):
+        for ix in range(NX):
+            for iy in range(NX):
+                # inv[iv, iy, ix] = I(VY) at VDD[iv], V_Y=V_OUT[iy], V_X=V_OUT[ix]
+                # NN input: (VDD, V_X, V_Y)
+                X_list.append([vdd_list[iv], v_out[ix], v_out[iy]])
+                Y_list.append([inv[iv, iy, ix]])
     return np.array(X_list), np.array(Y_list)
 
 
@@ -223,9 +228,11 @@ def nn_forward_vhdl(n_in, n_hid, xs, weight_prefix, indent=8):
 def emit_vhdl(gate, drive_nn, inv_nn, n_hid, out_path):
     ports = GATES[gate]["ports"]
     n_in = GATES[gate]["n_in"]
-    drive_xs = ["V_X_v"] + [f"{p}.voltage" for p in ports]
+    # NN inputs: (VDD, V_X, V_a, V_b, ...) — VDD baked in so predictions
+    # scale correctly across supply variation.
+    drive_xs = ["vdd_v", "V_X_v"] + [f"{p}.voltage" for p in ports]
     drive_fwd = nn_forward_vhdl(
-        1 + n_in, n_hid, drive_xs, "drive", indent=8,
+        2 + n_in, n_hid, drive_xs, "drive", indent=8,
     )
     # Port list entries
     port_decls = ";\n    ".join(f"{p}       : in  logic3da" for p in ports)
@@ -501,20 +508,29 @@ def main():
         sys.exit(1)
 
     print(f"[1/3] Build training sets for {gate}")
-    Xd, Yd = build_drive_dataset(pu, pd, n_in)
-    Xi, Yi = build_inv_dataset(inv)
+    Xd, Yd = build_drive_dataset(pu, pd, n_in, tables)
+    # Build inv dataset from inv table. Reuse TH22's inv table (same for
+    # all gates since inverter sizing is identical) — need its own VDD
+    # axis so reload th22 cache if inv came from a table without one.
+    if "vdd_list" in tables.files and "inv" in tables.files:
+        inv_tables = tables
+    else:
+        inv_tables = np.load(th22_cache)
+    Xi, Yi = build_inv_dataset(inv_tables["inv"], inv_tables)
     Yd_s = Yd * I_SCALE
     Yi_s = Yi * I_SCALE
     print(f"  drive: X {Xd.shape}, Y {Yd_s.shape}  (|Y|max={np.abs(Yd_s).max():.2e})")
     print(f"  inv  : X {Xi.shape}, Y {Yi_s.shape}  (|Y|max={np.abs(Yi_s).max():.2e})")
 
-    # More hidden neurons for higher-input gates (surface is more complex).
-    n_hid = 10 + 2 * (n_in - 2)
+    # Hidden width: the input space is now (VDD, V_X, V_a, ..., V_n) —
+    # n_in+2 dimensions. Need much more capacity than the single-VDD
+    # version (was 10–14 hidden). 32+ neurons with more epochs.
+    n_hid = 32 + 8 * (n_in - 2)
 
     print("[2/3] Train drive NN")
-    drive_nn = MLP(n_in=1 + n_in, n_hid=n_hid, seed=7)
-    drive_nn.train(Xd, Yd_s, lr=2e-3, target_mse=1e-3,
-                   max_epochs=4000, batch=32, patience=500)
+    drive_nn = MLP(n_in=2 + n_in, n_hid=n_hid, seed=7)
+    drive_nn.train(Xd, Yd_s, lr=3e-3, target_mse=1e-4,
+                   max_epochs=15000, batch=64, patience=1500)
     rescale(drive_nn)
 
     yp = drive_nn.forward(Xd).reshape(-1)
@@ -522,9 +538,9 @@ def main():
     print(f"  drive residual: mean={err.mean():.2e}A, max={err.max():.2e}A")
 
     print("[2/3] Train inverter NN")
-    inv_nn = MLP(n_in=2, n_hid=n_hid, seed=11)
-    inv_nn.train(Xi, Yi_s, lr=2e-3, target_mse=1e-3,
-                 max_epochs=4000, batch=16, patience=500)
+    inv_nn = MLP(n_in=3, n_hid=24, seed=11)
+    inv_nn.train(Xi, Yi_s, lr=3e-3, target_mse=1e-4,
+                 max_epochs=15000, batch=32, patience=1500)
     rescale(inv_nn)
 
     yp = inv_nn.forward(Xi).reshape(-1)

@@ -28,10 +28,10 @@ import numpy as np
 XYCE = "/usr/local/src/Xyce-8/xyce-build/src/Xyce"
 PLUGIN = "/usr/local/src/kestrel/sim/psp103_sg13g2.so"
 MODELS = "/tmp/sg13g2_models.lib"
-VDD = 1.2
 
-V_OUT = np.linspace(0.0, VDD, 13)
-V_GATE = np.linspace(0.0, VDD, 5)
+VDD_LIST = [0.9, 1.05, 1.2, 1.35, 1.5]
+V_OUT = np.linspace(0.0, 1.5, 13)
+V_GATE = np.linspace(0.0, 1.5, 5)
 
 WORK = "/tmp/th23_char"
 os.makedirs(WORK, exist_ok=True)
@@ -50,16 +50,16 @@ def run_xyce(sp_path):
 
 
 def sweep_pullup():
-    """3-PMOS series stack VDD→X. I_pu > 0 when all three inputs LOW."""
-    data = np.zeros((len(V_OUT), len(V_GATE), len(V_GATE), len(V_GATE)))
-    n_total = len(V_GATE) ** 3
-    done = 0
-    for ic, vc in enumerate(V_GATE):
-        for ib, vb in enumerate(V_GATE):
-            for ia, va in enumerate(V_GATE):
-                sp = f"""* pullup TH23 A={va} B={vb} C={vc}
+    """3-PMOS series stack VDD→X, VDD-swept."""
+    data = np.zeros((len(VDD_LIST), len(V_OUT), len(V_GATE), len(V_GATE), len(V_GATE)))
+    for iv, vd in enumerate(VDD_LIST):
+        print(f"  pu VDD={vd:.2f}")
+        for ic, vc in enumerate(V_GATE):
+            for ib, vb in enumerate(V_GATE):
+                for ia, va in enumerate(V_GATE):
+                    sp = f"""* pullup TH23 VDD={vd} A={va} B={vb} C={vc}
 .include "{MODELS}"
-VVDD VDD 0 {VDD}
+VVDD VDD 0 {vd}
 VA   A   0 {va}
 VB   B   0 {vb}
 VC   C   0 {vc}
@@ -67,32 +67,28 @@ VX   X   0 0
 MPA  N1 A VDD VDD sg13g2_pmos w=1.0u l=0.13u
 MPB  N2 B N1  VDD sg13g2_pmos w=1.0u l=0.13u
 MPC  X  C N2  VDD sg13g2_pmos w=1.0u l=0.13u
-.dc VX 0 {VDD} {V_OUT[1]-V_OUT[0]:.3f}
+.dc VX 0 {V_OUT[-1]} {V_OUT[1]-V_OUT[0]:.3f}
 .print dc format=csv v(X) i(VX)
 .end
 """
-                path = f"{WORK}/pu_{ia}_{ib}_{ic}.sp"
-                open(path, "w").write(sp)
-                hdr, d = run_xyce(path)
-                col_i = hdr.index("I(VX)")
-                for ix in range(len(V_OUT)):
-                    data[ix, ia, ib, ic] = float(d[ix, col_i])
-                done += 1
-                if done % 25 == 0:
-                    print(f"  pu: {done}/{n_total}")
+                    path = f"{WORK}/pu_{iv}_{ia}_{ib}_{ic}.sp"
+                    open(path, "w").write(sp)
+                    hdr, d = run_xyce(path)
+                    col_i = hdr.index("I(VX)")
+                    for ix in range(len(V_OUT)):
+                        data[iv, ix, ia, ib, ic] = float(d[ix, col_i])
     return data
 
 
 def sweep_pulldown():
-    """Three parallel 2-stack branches A·B, A·C, B·C to VSS.
-    I_pd < 0 when ≥2 inputs HIGH and V_X > 0."""
-    data = np.zeros((len(V_OUT), len(V_GATE), len(V_GATE), len(V_GATE)))
-    n_total = len(V_GATE) ** 3
-    done = 0
-    for ic, vc in enumerate(V_GATE):
-        for ib, vb in enumerate(V_GATE):
-            for ia, va in enumerate(V_GATE):
-                sp = f"""* pulldown TH23 A={va} B={vb} C={vc}
+    """Three parallel 2-stack branches A·B, A·C, B·C, VDD-swept."""
+    data = np.zeros((len(VDD_LIST), len(V_OUT), len(V_GATE), len(V_GATE), len(V_GATE)))
+    for iv, vd in enumerate(VDD_LIST):
+        print(f"  pd VDD={vd:.2f}")
+        for ic, vc in enumerate(V_GATE):
+            for ib, vb in enumerate(V_GATE):
+                for ia, va in enumerate(V_GATE):
+                    sp = f"""* pulldown TH23 VDD={vd} A={va} B={vb} C={vc}
 .include "{MODELS}"
 VVSS VSS 0 0
 VA   A   0 {va}
@@ -105,19 +101,16 @@ MNAC1 M2 A VSS VSS sg13g2_nmos W=0.7u L=0.13u
 MNAC2 X  C M2  VSS sg13g2_nmos W=0.7u L=0.13u
 MNBC1 M3 B VSS VSS sg13g2_nmos W=0.7u L=0.13u
 MNBC2 X  C M3  VSS sg13g2_nmos W=0.7u L=0.13u
-.dc VX 0 {VDD} {V_OUT[1]-V_OUT[0]:.3f}
+.dc VX 0 {V_OUT[-1]} {V_OUT[1]-V_OUT[0]:.3f}
 .print dc format=csv v(X) i(VX)
 .end
 """
-                path = f"{WORK}/pd_{ia}_{ib}_{ic}.sp"
-                open(path, "w").write(sp)
-                hdr, d = run_xyce(path)
-                col_i = hdr.index("I(VX)")
-                for ix in range(len(V_OUT)):
-                    data[ix, ia, ib, ic] = float(d[ix, col_i])
-                done += 1
-                if done % 25 == 0:
-                    print(f"  pd: {done}/{n_total}")
+                    path = f"{WORK}/pd_{iv}_{ia}_{ib}_{ic}.sp"
+                    open(path, "w").write(sp)
+                    hdr, d = run_xyce(path)
+                    col_i = hdr.index("I(VX)")
+                    for ix in range(len(V_OUT)):
+                        data[iv, ix, ia, ib, ic] = float(d[ix, col_i])
     return data
 
 
@@ -135,7 +128,9 @@ def main():
     print(f"  shape {pd.shape}  |I|max={np.abs(pd).max():.2e} A")
 
     out = "/tmp/th23_char/tables.npz"
-    np.savez(out, pu=pu, pd=pd)
+    np.savez(out, pu=pu, pd=pd,
+             vdd_list=np.array(VDD_LIST),
+             v_out=V_OUT, v_gate=V_GATE)
     print(f"Saved {out}")
 
 
