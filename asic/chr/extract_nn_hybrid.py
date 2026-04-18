@@ -348,11 +348,19 @@ begin
           if V_X_v > vdd_v then V_X_v := vdd_v; end if;
           if V_X_v < 0.0   then V_X_v := 0.0;   end if;
 
-          -- Digital inverter: V(Y) = NOT V(X) (same rule as hybrid_evt).
-          if V_X_v > VTN then
-            v_y := 0.0;
-          else
+          -- Inverter rule with HOLD zone (completion detection). Only
+          -- commit V(Y) to a rail when V(X) is clearly past the PMOS/NMOS
+          -- threshold. In between (ACTIVE zone) keep the previous v_y —
+          -- this is the event-driven analogue of "the physical inverter
+          -- is still mid-transition, so the downstream gate shouldn't
+          -- see a new rail yet". Without this the cell snaps to a rail
+          -- on every partial input change and the keeper locks it in
+          -- prematurely, breaking multi-stage NCL cascades.
+          if V_X_v < VTN then
             v_y := vdd_v;
+          elsif V_X_v > vdd_v - VTP_ABS then
+            v_y := 0.0;
+          -- else: hold previous v_y
           end if;
         end loop;
 

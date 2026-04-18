@@ -52,29 +52,29 @@ architecture evt of th22_nn_hybrid is
   end function;
 
   constant drive_W1 : real_vector(0 to 29) := (
-    -6.757553e-02, +5.771494e-01, -7.459418e-02, -1.910015e-01, -2.428427e-01, +4.137539e-01,
-    -2.119856e-01, +2.273992e-01, -1.466404e-01, -1.637514e-01, +5.954984e-01, +5.510343e-01,
-    +3.498088e-01, -7.722267e-01, -5.458179e-02, +7.693095e-01, -6.424746e-01, -4.512769e-01,
-    -5.679804e-01, -3.901301e-01, -1.214220e+00, +5.823394e-01, -7.137135e-01, +3.569326e-01,
-    -1.154496e-01, +7.440680e-01, -8.157561e-01, -7.791761e-01, -1.162216e-02, +1.609831e-01
+    -6.317732e-02, +5.885632e-01, -7.389983e-02, -1.867839e-01, -2.344588e-01, +4.033927e-01,
+    -2.233375e-01, +2.288679e-01, -1.466294e-01, -1.630604e-01, +5.932574e-01, +5.560420e-01,
+    +3.489923e-01, -7.714210e-01, -3.123014e-02, +7.534885e-01, -6.506052e-01, -4.517190e-01,
+    -5.679727e-01, -3.901579e-01, -1.213416e+00, +5.961364e-01, -7.130239e-01, +3.611633e-01,
+    -7.771186e-02, +7.289060e-01, -8.197737e-01, -7.900918e-01, -1.160225e-02, +1.621992e-01
   );
   constant drive_b1 : real_vector(0 to 9) := (
-    +9.934899e-03, +6.177596e-03, +1.387088e-02, +7.247484e-02, +5.626499e-01, +6.992260e-03,
-    +6.000466e-01, +1.407551e+00, -1.973726e-03, +6.893641e-02
+    +6.216898e-03, +9.206813e-03, +1.350325e-02, +7.494900e-02, +4.846868e-01, +9.952895e-03,
+    +6.080702e-01, +1.422320e+00, -1.991599e-03, +6.903341e-02
   );
   constant drive_W2 : real_vector(0 to 9) := (
-    -1.309437e-05, -9.818310e-06, -7.552886e-06, -8.171588e-06, +6.821628e-06, -1.109054e-05,
-    +8.660420e-06, +1.634116e-05, -1.660220e-06, -1.591694e-06
+    -1.307438e-05, -9.992909e-06, -7.541867e-06, -8.175005e-06, +6.095961e-06, -1.084126e-05,
+    +8.841566e-06, +1.651747e-05, -1.659845e-06, -1.598033e-06
   );
-  constant drive_b2 : real_vector(0 to 0) := (0 => +1.172497e-05);
+  constant drive_b2 : real_vector(0 to 0) := (0 => +1.183707e-05);
 
   signal v_y_sig : real := 0.0;
 
 begin
 
   eval : process
-    variable za, zb           : integer := 0;
-    variable za_new, zb_new   : integer;
+    variable z_a, z_b : integer := 0;
+    variable z_a_new, z_b_new : integer;
     variable vdd_v            : real;
     variable V_X_v            : real := 0.0;  -- internal X node, persistent
     variable v_y              : real := 0.0;
@@ -91,12 +91,12 @@ begin
       wait on A, B, VDD;
 
       vdd_v := VDD.voltage;
-      za_new := zone(A.voltage, vdd_v);
-      zb_new := zone(B.voltage, vdd_v);
+      z_a_new := zone(A.voltage, vdd_v);
+      z_b_new := zone(B.voltage, vdd_v);
 
-      if za_new /= za or zb_new /= zb then
-        za := za_new;
-        zb := zb_new;
+      if z_a_new /= z_a or z_b_new /= z_b then
+        z_a := z_a_new;
+        z_b := z_b_new;
 
         -- Newton-style iteration over V(X). At each step:
         --   1. Evaluate NN for i_drive(V_X, V_A, V_B)
@@ -133,11 +133,19 @@ begin
           if V_X_v > vdd_v then V_X_v := vdd_v; end if;
           if V_X_v < 0.0   then V_X_v := 0.0;   end if;
 
-          -- Digital inverter: V(Y) = NOT V(X) (same rule as hybrid_evt).
-          if V_X_v > VTN then
-            v_y := 0.0;
-          else
+          -- Inverter rule with HOLD zone (completion detection). Only
+          -- commit V(Y) to a rail when V(X) is clearly past the PMOS/NMOS
+          -- threshold. In between (ACTIVE zone) keep the previous v_y —
+          -- this is the event-driven analogue of "the physical inverter
+          -- is still mid-transition, so the downstream gate shouldn't
+          -- see a new rail yet". Without this the cell snaps to a rail
+          -- on every partial input change and the keeper locks it in
+          -- prematurely, breaking multi-stage NCL cascades.
+          if V_X_v < VTN then
             v_y := vdd_v;
+          elsif V_X_v > vdd_v - VTP_ABS then
+            v_y := 0.0;
+          -- else: hold previous v_y
           end if;
         end loop;
 
