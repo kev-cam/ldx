@@ -21,6 +21,8 @@ characterize_th22_subnets.py (13×5×5 pull-up/pull-down, 13×13 inverter).
 Runs that script automatically if the cache is missing.
 """
 
+import argparse
+import itertools
 import os
 import subprocess
 import sys
@@ -28,22 +30,40 @@ import numpy as np
 
 CWD = os.path.dirname(os.path.abspath(__file__))
 ASIC = os.path.abspath(os.path.join(CWD, ".."))
-TABLE_CACHE = "/tmp/th22_char/tables.npz"
 
 VDD_NOM = 1.2
 V_OUT = np.linspace(0.0, VDD_NOM, 13)
 V_GATE = np.linspace(0.0, VDD_NOM, 5)
 
 
-def ensure_tables():
-    if os.path.exists(TABLE_CACHE):
-        return np.load(TABLE_CACHE)
-    print("No cached tables — running characterize_th22_subnets.py")
+# Per-gate config: number of inputs, input port names, characterisation
+# cache path, corresponding characterise script.
+GATES = {
+    "th22": {
+        "n_in": 2,
+        "ports": ("A", "B"),
+        "cache": "/tmp/th22_char/tables.npz",
+        "char_script": "characterize_th22_subnets.py",
+    },
+    "th23": {
+        "n_in": 3,
+        "ports": ("A", "B", "C"),
+        "cache": "/tmp/th23_char/tables.npz",
+        "char_script": "characterize_th23_subnets.py",
+    },
+}
+
+
+def ensure_tables(gate):
+    info = GATES[gate]
+    if os.path.exists(info["cache"]):
+        return np.load(info["cache"])
+    print(f"No cached {gate} tables — running {info['char_script']}")
     subprocess.run(
-        [sys.executable, os.path.join(CWD, "characterize_th22_subnets.py")],
+        [sys.executable, os.path.join(CWD, info["char_script"])],
         check=True,
     )
-    return np.load(TABLE_CACHE)
+    return np.load(info["cache"])
 
 
 # ----------------------------------------------------------------------
@@ -108,23 +128,25 @@ class MLP:
 # ----------------------------------------------------------------------
 # Build training sets from tables.
 # ----------------------------------------------------------------------
-def build_drive_dataset(pu, pd):
-    """Combined pull-up + pull-down current into X.
+def build_drive_dataset(pu, pd, n_in):
+    """Combined pull-up + pull-down current into X for an n_in-input gate.
 
     Positive = net current flowing into X (pulls X up);
     Negative = net current flowing out of X toward VSS (pulls X down).
 
-    Both PU and PD tables are stored as I(VX) from the Xyce DC sweep;
-    see characterize_th22_subnets.py:71-108. We sum them: the resulting
-    net current is what the VA's `I(X, VSS) <+ -(i_pu + i_pd)` stamps.
+    Table layout: pu[ix, i0, i1, ..., i_{n-1}] where ix indexes V_X and
+    i_k indexes V_GATE[input_k]. Sums PU + PD to give net drive current,
+    which the VA's `I(X, VSS) <+ -(i_drive)` stamps.
     """
     X_list, Y_list = [], []
-    NX, NG = pu.shape[0], pu.shape[1]
+    NX = pu.shape[0]
+    NG = pu.shape[1]  # all gate dims are same size
     for ix in range(NX):
-        for ia in range(NG):
-            for ib in range(NG):
-                X_list.append([V_OUT[ix], V_GATE[ia], V_GATE[ib]])
-                Y_list.append([pu[ix, ia, ib] + pd[ix, ia, ib]])
+        for idxs in itertools.product(range(NG), repeat=n_in):
+            gate_vs = [V_GATE[k] for k in idxs]
+            X_list.append([V_OUT[ix]] + gate_vs)
+            # Index pu / pd with (ix, *idxs)
+            Y_list.append([pu[(ix,) + idxs] + pd[(ix,) + idxs]])
     return np.array(X_list), np.array(Y_list)
 
 
@@ -192,13 +214,36 @@ def nn_forward_vhdl(n_in, n_hid, xs, weight_prefix, indent=8):
     return out
 
 
-def emit_vhdl(drive_nn, inv_nn, n_hid, out_path):
+def emit_vhdl(gate, drive_nn, inv_nn, n_hid, out_path):
+    ports = GATES[gate]["ports"]
+    n_in = GATES[gate]["n_in"]
+    drive_xs = ["V_X_v"] + [f"{p}.voltage" for p in ports]
     drive_fwd = nn_forward_vhdl(
-        3, n_hid, ["V_X_v", "A.voltage", "B.voltage"],
-        "drive", indent=8,
+        1 + n_in, n_hid, drive_xs, "drive", indent=8,
+    )
+    # Port list entries
+    port_decls = ";\n    ".join(f"{p}       : in  logic3da" for p in ports)
+    # Sensitivity list — all gate inputs + VDD
+    wait_list = ", ".join(list(ports) + ["VDD"])
+    # Zone variables
+    z_curr_names = [f"z_{p.lower()}" for p in ports]
+    z_new_names = [f"{z}_new" for z in z_curr_names]
+    zone_decl = (
+        f"    variable {', '.join(z_curr_names)} : integer := 0;\n"
+        f"    variable {', '.join(z_new_names)} : integer;"
+    )
+    zone_compute = "\n".join(
+        f"      {new} := zone({p}.voltage, vdd_v);"
+        for p, new in zip(ports, z_new_names)
+    )
+    zone_change_cond = " or ".join(
+        f"{new} /= {cur}" for new, cur in zip(z_new_names, z_curr_names)
+    )
+    zone_commit = "\n".join(
+        f"        {cur} := {new};" for cur, new in zip(z_curr_names, z_new_names)
     )
 
-    vhdl = f"""-- th22_nn_hybrid.vhd — NN-predicted drive current + analytical keeper.
+    vhdl = f"""-- {gate}_nn_hybrid.vhd — NN-predicted drive current + analytical keeper.
 --
 -- Topology mirrors th22_hybrid_evt.vhd exactly. The IV-table lookup for
 -- pull-up + pull-down is replaced by a small leaky-ReLU MLP:
@@ -219,10 +264,9 @@ use work.logic3d_types_pkg.all;
 use work.logic3ds_pkg.all;
 use work.logic3da_pkg.all;
 
-entity th22_nn_hybrid is
+entity {gate}_nn_hybrid is
   port (
-    A       : in  logic3da;
-    B       : in  logic3da;
+    {port_decls};
     VDD     : in  logic3da;
     VSS     : in  logic3da;
     Y_drv   : out logic3da;
@@ -231,7 +275,7 @@ entity th22_nn_hybrid is
   );
 end entity;
 
-architecture evt of th22_nn_hybrid is
+architecture evt of {gate}_nn_hybrid is
 
   constant VTN     : real := 0.40;
   constant VTP_ABS : real := 0.35;
@@ -261,8 +305,7 @@ architecture evt of th22_nn_hybrid is
 begin
 
   eval : process
-    variable za, zb           : integer := 0;
-    variable za_new, zb_new   : integer;
+{zone_decl}
     variable vdd_v            : real;
     variable V_X_v            : real := 0.0;  -- internal X node, persistent
     variable v_y              : real := 0.0;
@@ -276,15 +319,13 @@ begin
     VDD_drv <= (voltage => 0.0, resistance => 1.0e9, flags => AFL_KNOWN);
 
     loop
-      wait on A, B, VDD;
+      wait on {wait_list};
 
       vdd_v := VDD.voltage;
-      za_new := zone(A.voltage, vdd_v);
-      zb_new := zone(B.voltage, vdd_v);
+{zone_compute}
 
-      if za_new /= za or zb_new /= zb then
-        za := za_new;
-        zb := zb_new;
+      if {zone_change_cond} then
+{zone_commit}
 
         -- Newton-style iteration over V(X). At each step:
         --   1. Evaluate NN for i_drive(V_X, V_A, V_B)
@@ -424,26 +465,44 @@ endmodule
 
 
 def main():
-    tables = ensure_tables()
-    pu, pd, inv = tables["pu"], tables["pd"], tables["inv"]
+    ap = argparse.ArgumentParser()
+    ap.add_argument("gate", choices=list(GATES), help="gate name")
+    args = ap.parse_args()
+    gate = args.gate
+    n_in = GATES[gate]["n_in"]
 
-    print("[1/3] Build training sets")
-    Xd, Yd = build_drive_dataset(pu, pd)
+    tables = ensure_tables(gate)
+    pu = tables["pu"]
+    pd = tables["pd"]
+    # Inverter table: TH22 has it cached; other gates reuse TH22's
+    # inverter network identically (same MPY/MNY sizing).
+    th22_cache = GATES["th22"]["cache"]
+    if "inv" in tables.files:
+        inv = tables["inv"]
+    elif os.path.exists(th22_cache):
+        inv = np.load(th22_cache)["inv"]
+    else:
+        print("No inverter table — run characterize_th22_subnets.py first",
+              file=sys.stderr)
+        sys.exit(1)
+
+    print(f"[1/3] Build training sets for {gate}")
+    Xd, Yd = build_drive_dataset(pu, pd, n_in)
     Xi, Yi = build_inv_dataset(inv)
-    # Scale currents up so MSE targets are reasonable.
     Yd_s = Yd * I_SCALE
     Yi_s = Yi * I_SCALE
     print(f"  drive: X {Xd.shape}, Y {Yd_s.shape}  (|Y|max={np.abs(Yd_s).max():.2e})")
     print(f"  inv  : X {Xi.shape}, Y {Yi_s.shape}  (|Y|max={np.abs(Yi_s).max():.2e})")
 
+    # More hidden neurons for higher-input gates (surface is more complex).
+    n_hid = 10 + 2 * (n_in - 2)
+
     print("[2/3] Train drive NN")
-    n_hid = 10
-    drive_nn = MLP(n_in=3, n_hid=n_hid, seed=7)
+    drive_nn = MLP(n_in=1 + n_in, n_hid=n_hid, seed=7)
     drive_nn.train(Xd, Yd_s, lr=2e-3, target_mse=1e-3,
                    max_epochs=4000, batch=32, patience=500)
     rescale(drive_nn)
 
-    # Quick residual check
     yp = drive_nn.forward(Xd).reshape(-1)
     err = np.abs(yp - Yd.reshape(-1))
     print(f"  drive residual: mean={err.mean():.2e}A, max={err.max():.2e}A")
@@ -459,10 +518,12 @@ def main():
     print(f"  inv residual: mean={err.mean():.2e}A, max={err.max():.2e}A")
 
     print("[3/3] Emit cells")
-    vhdl_path = os.path.join(ASIC, "cells", "th22_nn_hybrid.vhd")
-    va_path = os.path.join(ASIC, "cells", "th22_nn_hybrid.va")
-    emit_vhdl(drive_nn, inv_nn, n_hid, vhdl_path)
-    emit_va(drive_nn, inv_nn, n_hid, va_path)
+    vhdl_path = os.path.join(ASIC, "cells", f"{gate}_nn_hybrid.vhd")
+    va_path = os.path.join(ASIC, "cells", f"{gate}_nn_hybrid.va")
+    emit_vhdl(gate, drive_nn, inv_nn, n_hid, vhdl_path)
+    # VA emission is TH22-specific for now; skip for other gates.
+    if gate == "th22":
+        emit_va(drive_nn, inv_nn, n_hid, va_path)
 
 
 if __name__ == "__main__":
