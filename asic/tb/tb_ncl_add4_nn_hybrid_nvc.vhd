@@ -103,10 +103,17 @@ begin
     wait;
   end process;
 
-  -- Carry chain: cinH/cinL feed cH(0)/cL(0); each fa(i) takes cH(i)/cL(i)
-  -- and produces cH(i+1)/cL(i+1). Final cH(3)/cL(3) output is cout.
+  -- Carry chain: drive resolved cH/cL nets from the carry-out driver of
+  -- each FA (and cinH/cinL for the LSB). Assigning the FA's driver port
+  -- directly into the resolved signal mirrors the usual NCL event flow.
   cH(0) <= cinH;
   cL(0) <= cinL;
+  cH(1) <= fa_coH_drv(0);
+  cL(1) <= fa_coL_drv(0);
+  cH(2) <= fa_coH_drv(1);
+  cL(2) <= fa_coL_drv(1);
+  cH(3) <= fa_coH_drv(2);
+  cL(3) <= fa_coL_drv(2);
 
   -- ---- Four NCL-FA instances ----
   fa_gen : for i in 0 to 3 generate
@@ -126,14 +133,6 @@ begin
     sH(i) <= fa_sH_drv(i);
     sL(i) <= fa_sL_drv(i);
   end generate;
-
-  -- Carry chain: each FA's carry-out becomes the next FA's carry-in.
-  cH(1) <= fa_coH_drv(0);
-  cL(1) <= fa_coL_drv(0);
-  cH(2) <= fa_coH_drv(1);
-  cL(2) <= fa_coL_drv(1);
-  cH(3) <= fa_coH_drv(2);
-  cL(3) <= fa_coL_drv(2);
 
   coH_final <= fa_coH_drv(3);
   coL_final <= fa_coL_drv(3);
