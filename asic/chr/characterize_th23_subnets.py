@@ -29,12 +29,38 @@ XYCE = "/usr/local/src/Xyce-8/xyce-build/src/Xyce"
 PLUGIN = "/usr/local/src/kestrel/sim/psp103_sg13g2.so"
 MODELS = "/tmp/sg13g2_models.lib"
 
-VDD_LIST = [0.9, 1.05, 1.2, 1.35, 1.5]
-V_OUT = np.linspace(0.0, 1.5, 13)
+# Nested PWL characterisation — mirrors characterize_th22_subnets.py.
+VDD_LIST = [0.9, 1.05, 1.2, 1.35, 1.5]   # legacy; unused by PWL path
+V_MIN = -0.2
+V_MAX = 1.5
+VDD_MIN = 0.9
+VDD_MAX = 1.5
+T_SIM = 40.0
+N_VX_CYCLES = 5
+T_SAMPLE = 0.05
 V_GATE = np.linspace(0.0, 1.5, 5)
 
 WORK = "/tmp/th23_char"
 os.makedirs(WORK, exist_ok=True)
+
+
+def vx_pwl(t_end: float) -> str:
+    half = t_end / (2 * N_VX_CYCLES)
+    pts = [(0.0, V_MIN)]
+    up = True
+    t = 0.0
+    for _ in range(2 * N_VX_CYCLES):
+        t += half
+        pts.append((t, V_MAX if up else V_MIN))
+        up = not up
+    body = "\n".join(f"+ {p[0]:.4f}n {p[1]}" for p in pts)
+    return "PWL\n" + body
+
+
+def vdd_pwl(t_end: float) -> str:
+    half = t_end / 2.0
+    return (f"PWL\n+ 0n {VDD_MIN}\n+ {half:.3f}n {VDD_MAX}\n"
+            f"+ {t_end:.3f}n {VDD_MIN}")
 
 
 def run_xyce(sp_path):
@@ -50,68 +76,79 @@ def run_xyce(sp_path):
 
 
 def sweep_pullup():
-    """3-PMOS series stack VDD→X, VDD-swept."""
-    data = np.zeros((len(VDD_LIST), len(V_OUT), len(V_GATE), len(V_GATE), len(V_GATE)))
-    for iv, vd in enumerate(VDD_LIST):
-        print(f"  pu VDD={vd:.2f}")
-        for ic, vc in enumerate(V_GATE):
-            for ib, vb in enumerate(V_GATE):
-                for ia, va in enumerate(V_GATE):
-                    sp = f"""* pullup TH23 VDD={vd} A={va} B={vb} C={vc}
+    """I_pu scatter via nested PWL on VDD (slow) + V_X (fast).
+    Scatter columns: (VDD, V_X, V_A, V_B, V_C, I)."""
+    samples = []
+    for ic, vc in enumerate(V_GATE):
+        for ib, vb in enumerate(V_GATE):
+            for ia, va in enumerate(V_GATE):
+                print(f"  pu A={va:.2f} B={vb:.2f} C={vc:.2f}")
+                sp = f"""* pullup TH23 A={va} B={vb} C={vc}
 .include "{MODELS}"
-VVDD VDD 0 {vd}
+VVDD VDD 0 {vdd_pwl(T_SIM)}
 VA   A   0 {va}
 VB   B   0 {vb}
 VC   C   0 {vc}
-VX   X   0 0
+VX   X   0 {vx_pwl(T_SIM)}
 MPA  N1 A VDD VDD sg13g2_pmos w=1.0u l=0.13u
 MPB  N2 B N1  VDD sg13g2_pmos w=1.0u l=0.13u
 MPC  X  C N2  VDD sg13g2_pmos w=1.0u l=0.13u
-.dc VX 0 {V_OUT[-1]} {V_OUT[1]-V_OUT[0]:.3f}
-.print dc format=csv v(X) i(VX)
+.tran {T_SAMPLE}n {T_SIM}n
+.print tran format=csv time v(VDD) v(X) i(VX)
 .end
 """
-                    path = f"{WORK}/pu_{iv}_{ia}_{ib}_{ic}.sp"
-                    open(path, "w").write(sp)
-                    hdr, d = run_xyce(path)
-                    col_i = hdr.index("I(VX)")
-                    for ix in range(len(V_OUT)):
-                        data[iv, ix, ia, ib, ic] = float(d[ix, col_i])
-    return data
+                path = f"{WORK}/pu_{ia}_{ib}_{ic}.sp"
+                open(path, "w").write(sp)
+                hdr, d = run_xyce(path)
+                col_vdd = hdr.index("V(VDD)")
+                col_vx  = hdr.index("V(X)")
+                col_i   = hdr.index("I(VX)")
+                for row in range(d.shape[0]):
+                    samples.append((float(d[row, col_vdd]),
+                                    float(d[row, col_vx]),
+                                    va, vb, vc,
+                                    float(d[row, col_i])))
+    return np.array(samples)
 
 
 def sweep_pulldown():
-    """Three parallel 2-stack branches A·B, A·C, B·C, VDD-swept."""
-    data = np.zeros((len(VDD_LIST), len(V_OUT), len(V_GATE), len(V_GATE), len(V_GATE)))
-    for iv, vd in enumerate(VDD_LIST):
-        print(f"  pd VDD={vd:.2f}")
-        for ic, vc in enumerate(V_GATE):
-            for ib, vb in enumerate(V_GATE):
-                for ia, va in enumerate(V_GATE):
-                    sp = f"""* pulldown TH23 VDD={vd} A={va} B={vb} C={vc}
+    """I_pd scatter — three parallel 2-stack branches A·B, A·C, B·C.
+    Scatter columns: (VDD, V_X, V_A, V_B, V_C, I)."""
+    samples = []
+    for ic, vc in enumerate(V_GATE):
+        for ib, vb in enumerate(V_GATE):
+            for ia, va in enumerate(V_GATE):
+                print(f"  pd A={va:.2f} B={vb:.2f} C={vc:.2f}")
+                sp = f"""* pulldown TH23 A={va} B={vb} C={vc}
 .include "{MODELS}"
+VVDD VDD 0 {vdd_pwl(T_SIM)}
 VVSS VSS 0 0
 VA   A   0 {va}
 VB   B   0 {vb}
 VC   C   0 {vc}
-VX   X   0 0
+VX   X   0 {vx_pwl(T_SIM)}
 MNAB1 M1 A VSS VSS sg13g2_nmos W=0.7u L=0.13u
 MNAB2 X  B M1  VSS sg13g2_nmos W=0.7u L=0.13u
 MNAC1 M2 A VSS VSS sg13g2_nmos W=0.7u L=0.13u
 MNAC2 X  C M2  VSS sg13g2_nmos W=0.7u L=0.13u
 MNBC1 M3 B VSS VSS sg13g2_nmos W=0.7u L=0.13u
 MNBC2 X  C M3  VSS sg13g2_nmos W=0.7u L=0.13u
-.dc VX 0 {V_OUT[-1]} {V_OUT[1]-V_OUT[0]:.3f}
-.print dc format=csv v(X) i(VX)
+.tran {T_SAMPLE}n {T_SIM}n
+.print tran format=csv time v(VDD) v(X) i(VX)
 .end
 """
-                    path = f"{WORK}/pd_{iv}_{ia}_{ib}_{ic}.sp"
-                    open(path, "w").write(sp)
-                    hdr, d = run_xyce(path)
-                    col_i = hdr.index("I(VX)")
-                    for ix in range(len(V_OUT)):
-                        data[iv, ix, ia, ib, ic] = float(d[ix, col_i])
-    return data
+                path = f"{WORK}/pd_{ia}_{ib}_{ic}.sp"
+                open(path, "w").write(sp)
+                hdr, d = run_xyce(path)
+                col_vdd = hdr.index("V(VDD)")
+                col_vx  = hdr.index("V(X)")
+                col_i   = hdr.index("I(VX)")
+                for row in range(d.shape[0]):
+                    samples.append((float(d[row, col_vdd]),
+                                    float(d[row, col_vx]),
+                                    va, vb, vc,
+                                    float(d[row, col_i])))
+    return np.array(samples)
 
 
 def main():
@@ -119,19 +156,17 @@ def main():
         print(f"Missing {MODELS}; run sg13g2 model setup first.", file=sys.stderr)
         sys.exit(1)
 
-    print("[1/2] pull-up sweeps (125 points × 13 V_X each)")
+    print("[1/2] pull-up PWL scatter (125 runs)")
     pu = sweep_pullup()
-    print(f"  shape {pu.shape}  |I|max={np.abs(pu).max():.2e} A")
+    print(f"  scatter shape {pu.shape}  |I|max={np.abs(pu[:, -1]).max():.2e} A")
 
-    print("[2/2] pull-down sweeps (125 points × 13 V_X each)")
+    print("[2/2] pull-down PWL scatter (125 runs)")
     pd = sweep_pulldown()
-    print(f"  shape {pd.shape}  |I|max={np.abs(pd).max():.2e} A")
+    print(f"  scatter shape {pd.shape}  |I|max={np.abs(pd[:, -1]).max():.2e} A")
 
     out = "/tmp/th23_char/tables.npz"
-    np.savez(out, pu=pu, pd=pd,
-             vdd_list=np.array(VDD_LIST),
-             v_out=V_OUT, v_gate=V_GATE)
-    print(f"Saved {out}")
+    np.savez(out, pu=pu, pd=pd)
+    print(f"Saved {out}  (cols: VDD, V_X, V_A, V_B, V_C, I)")
 
 
 if __name__ == "__main__":

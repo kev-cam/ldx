@@ -511,20 +511,34 @@ def main():
     # version (was 10–14 hidden). 32+ neurons with more epochs.
     n_hid = 32 + 8 * (n_in - 2)
 
-    print("[2/3] Train drive NN")
+    # Subsample very large scatter datasets so training completes in
+    # reasonable time. Stratified random sample — retains coverage
+    # across the full (VDD, V_X, V_a, ...) operating surface.
+    MAX_SAMPLES = 25000
+    if Xd.shape[0] > MAX_SAMPLES:
+        rng = np.random.default_rng(42)
+        idx = rng.choice(Xd.shape[0], size=MAX_SAMPLES, replace=False)
+        Xd = Xd[idx]; Yd = Yd[idx]; Yd_s = Yd_s[idx]
+        print(f"  subsampled drive dataset to {MAX_SAMPLES} points")
+
+    # Small batch + moderate epochs for convergence quality.
+    batch_drive = 64
+    batch_inv   = 32
+
+    print(f"[2/3] Train drive NN (batch={batch_drive})")
     drive_nn = MLP(n_in=2 + n_in, n_hid=n_hid, seed=7)
     drive_nn.train(Xd, Yd_s, lr=3e-3, target_mse=1e-4,
-                   max_epochs=15000, batch=64, patience=1500)
+                   max_epochs=5000, batch=batch_drive, patience=800)
     rescale(drive_nn)
 
     yp = drive_nn.forward(Xd).reshape(-1)
     err = np.abs(yp - Yd.reshape(-1))
     print(f"  drive residual: mean={err.mean():.2e}A, max={err.max():.2e}A")
 
-    print("[2/3] Train inverter NN")
+    print(f"[2/3] Train inverter NN (batch={batch_inv})")
     inv_nn = MLP(n_in=3, n_hid=24, seed=11)
     inv_nn.train(Xi, Yi_s, lr=3e-3, target_mse=1e-4,
-                 max_epochs=15000, batch=32, patience=1500)
+                 max_epochs=5000, batch=batch_inv, patience=800)
     rescale(inv_nn)
 
     yp = inv_nn.forward(Xi).reshape(-1)
