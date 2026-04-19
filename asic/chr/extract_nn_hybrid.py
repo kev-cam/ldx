@@ -335,7 +335,15 @@ begin
           i_drive := y_drive;
           i_keep  := (vdd_v - v_y - V_X_v) / R_KEEP;
 
-          V_X_v := V_X_v + (i_drive + i_keep) * R_STEP;
+          -- Deadband on the summed current. NN drive-current residuals
+          -- run ~8 µA mean (TH22) to ~35 µA mean (TH34W2); a tiny
+          -- steady bias drifts V_X out of HOLD over 8 iterations.
+          -- 5 µA threshold empirically balances: blocks sub-noise-
+          -- floor drift, still admits real fire currents (≥100 µA at
+          -- nominal VDD, ≥30 µA at VDD=0.9).
+          if abs(i_drive + i_keep) > 5.0e-6 then
+            V_X_v := V_X_v + (i_drive + i_keep) * R_STEP;
+          end if;
           if V_X_v > vdd_v then V_X_v := vdd_v; end if;
           if V_X_v < 0.0   then V_X_v := 0.0;   end if;
 
@@ -506,10 +514,12 @@ def main():
     print(f"  drive: X {Xd.shape}, Y {Yd_s.shape}  (|Y|max={np.abs(Yd_s).max():.2e})")
     print(f"  inv  : X {Xi.shape}, Y {Yi_s.shape}  (|Y|max={np.abs(Yi_s).max():.2e})")
 
-    # Hidden width: the input space is now (VDD, V_X, V_a, ..., V_n) —
-    # n_in+2 dimensions. Need much more capacity than the single-VDD
-    # version (was 10–14 hidden). 32+ neurons with more epochs.
-    n_hid = 32 + 8 * (n_in - 2)
+    # Hidden width: the input space is (VDD, V_X, V_a, ..., V_n) —
+    # n_in+2 dimensions. Scales super-linearly: TH22 n_in=2 needs
+    # ~32 hidden to fit cleanly; TH23 n_in=3 and TH34W2 n_in=4 need
+    # much more capacity to absorb the larger operating surface.
+    # 48 + 32·(n_in-2) gives TH22=48, TH23=80, TH34W2=112.
+    n_hid = 48 + 32 * (n_in - 2)
 
     # Subsample very large scatter datasets so training completes in
     # reasonable time. Stratified random sample — retains coverage
