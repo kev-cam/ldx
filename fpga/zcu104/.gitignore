@@ -1,0 +1,21 @@
+## Build artefacts
+sw/*.elf
+sw/*.bin
+sw/*.dis
+sw/*.hex
+sw/ldx_daemon
+sw/mesh_daemon
+
+## Sim outputs
+sim/*.hex
+sim/*.vvp
+sim/*.vcd
+sim/.bridge_run*
+
+## Vivado outputs
+vivado/build/
+vivado/*.log
+vivado/*.jou
+vivado/*.stdout
+vivado/.Xil/
+vivado/NA/
