@@ -22,7 +22,7 @@ set_property board_part $board_part [current_project]
 add_files -norecurse [list \
     $rtl_dir/ldx_soc_axi.v \
     $repo_root/fpga/rtl/VexRiscv.v \
-    $repo_root/fpga/rtl/ldx_cfu.v \
+    $rtl_dir/ldx_cfu.v \
     $cfu_dir/cfu_vl_bitreverse8.v \
     $cfu_dir/cfu_vl_bswap32.v \
     $cfu_dir/cfu_vl_countones_i.v \

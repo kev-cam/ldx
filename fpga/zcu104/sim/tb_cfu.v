@@ -73,8 +73,13 @@ module tb_cfu;
         begin
             @(negedge clk);
             fid = f; in0 = a; in1 = b; cmd_valid = 1; rsp_ready = 1;
+            // Wait for cmd_fire (cmd_valid && cmd_ready)
             @(posedge clk);
-            // CFU is combinational (cmd_ready = rsp_ready, rsp_valid = cmd_valid)
+            while (!cmd_ready) @(posedge clk);
+            // Drop cmd_valid after fire so we don't reissue
+            @(negedge clk); cmd_valid = 0;
+            // Wait for rsp_valid (multi-cycle for div/mod)
+            while (!rsp_valid) @(posedge clk);
             if (rsp !== expected) begin
                 $display("FAIL fid=%0d in0=%h in1=%h got=%h want=%h",
                          f, a, b, rsp, expected);
@@ -83,7 +88,7 @@ module tb_cfu;
                 $display("PASS fid=%0d in0=%h in1=%h got=%h",
                          f, a, b, rsp);
             end
-            cmd_valid = 0;
+            @(posedge clk);
         end
     endtask
 

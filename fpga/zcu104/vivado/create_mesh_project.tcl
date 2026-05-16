@@ -24,7 +24,7 @@ add_files -norecurse [list \
     $rtl_dir/mesh_top.v \
     $rtl_dir/ldx_soc_mesh.v \
     $rtl_dir/fifo.v \
-    $repo_root/fpga/rtl/ldx_cfu.v \
+    $rtl_dir/ldx_cfu.v \
     $cfu_dir/cfu_vl_bitreverse8.v \
     $cfu_dir/cfu_vl_bswap32.v \
     $cfu_dir/cfu_vl_countones_i.v \
@@ -43,11 +43,9 @@ create_bd_cell -type ip -vlnv [lindex [get_ipdefs -filter {NAME == zynq_ultra_ps
 apply_bd_automation -rule xilinx.com:bd_rule:zynq_ultra_ps_e \
     -config {apply_board_preset "1"} [get_bd_cells ps]
 
-## Lower pl_clk0 from 99.999 to 33.333 MHz — gives ~30 ns slack so the
-## combinational div/mod in ldx_cfu (~28.4 ns critical path with 25 instances)
-## meets timing comfortably.
-set_property -dict [list CONFIG.PSU__CRL_APB__PL0_REF_CTRL__FREQMHZ {33.333333}] \
-    [get_bd_cells ps]
+## pl_clk0 stays at the 99.999 MHz board default — the multi-cycle divider
+## in zcu104/rtl/ldx_cfu.v keeps the combinational path short enough to
+## meet timing.
 
 create_bd_cell -type ip -vlnv [lindex [get_ipdefs -filter {NAME == smartconnect}] 0] axi_smc
 set_property -dict [list CONFIG.NUM_SI {1} CONFIG.NUM_MI {1} CONFIG.NUM_CLKS {1}] \
