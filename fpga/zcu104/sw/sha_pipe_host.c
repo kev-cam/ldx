@@ -72,6 +72,8 @@ static inline uint32_t pop_w(unsigned eb) {
 int main(int argc, char **argv) {
     const char *fw = (argc >= 2) ? argv[1] : "sha_stage.bin";
     unsigned iters = (argc >= 3) ? (unsigned)strtoul(argv[2], NULL, 0) : 1;
+    // Pipeline topology: "5" = 5-stage row y=3 (default), "25" = full mesh
+    int topology = (argc >= 4) ? atoi(argv[3]) : 5;
 
     int fd = open("/dev/mem", O_RDWR | O_SYNC);
     if (fd < 0) { perror("/dev/mem"); return 1; }
@@ -88,8 +90,15 @@ int main(int argc, char **argv) {
         while (!(rd(eb + EP_POPST) & 1u)) (void)rd(eb + EP_POP);
     }
 
-    unsigned ep_in  = EP_BASE + ep_west_row(3) * EP_STRIDE;
-    unsigned ep_out = EP_BASE + ep_east_row(3) * EP_STRIDE;
+    unsigned ep_in, ep_out;
+    if (topology == 25) {
+        ep_in  = EP_BASE + ep_west_row(1) * EP_STRIDE;   // (1,1) west
+        ep_out = EP_BASE + ep_east_row(5) * EP_STRIDE;   // (5,5) east
+    } else {
+        ep_in  = EP_BASE + ep_west_row(3) * EP_STRIDE;
+        ep_out = EP_BASE + ep_east_row(3) * EP_STRIDE;
+    }
+    printf("topology=%d  ep_in=0x%05x  ep_out=0x%05x\n", topology, ep_in, ep_out);
 
     static const uint32_t init_state[8] = {
         0x6a09e667u, 0xbb67ae85u, 0x3c6ef372u, 0xa54ff53au,

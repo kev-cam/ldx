@@ -17,6 +17,7 @@ all: hello.bin hello.dis hello.hex cfu_test.bin cfu_test.dis cfu_test.hex \
      worker.bin worker.dis worker.hex \
      sha_pipeline.bin sha_pipeline.dis sha_pipeline.hex \
      sha_stage.bin sha_stage.dis sha_stage.hex \
+     sha_stage25.bin sha_stage25.dis sha_stage25.hex \
      ldx_daemon mesh_daemon sha_test_host sha_pipe_host
 
 ldx_daemon: ldx_daemon.c
@@ -66,6 +67,9 @@ sha_pipeline.elf: sha_pipeline.c mesh.h ldx.ld start.S
 
 sha_stage.elf: sha_stage.c mesh.h ldx.ld start.S
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ start.S sha_stage.c
+
+sha_stage25.elf: sha_stage25.c mesh.h ldx.ld start.S
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ start.S sha_stage25.c
 
 %.bin: %.elf
 	$(OBJCOPY) -O binary $< $@
