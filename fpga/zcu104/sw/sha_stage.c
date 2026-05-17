@@ -7,11 +7,11 @@
 // FIFO. The final stage applies the initial-state addition and emits
 // the 8-word hash to E instead of the 32-word pipeline message.
 //
-// Wire format on the pipe (32 words):
-//   init_state[0..7]        original input state (passes through unchanged)
-//   state[0..7]             current a..h
-//   w_ring[0..15]           W values for the most recent 16 rounds,
-//                           indexed by `round % 16` (so w_ring[r%16] = W[r])
+// Wire format on the pipe (24 words):
+//   a_h[0..7]    running state (a..h)
+//   w_ring[0..15] W values indexed by `r%16` (so w_ring[r%16] = W[r])
+// The host holds the original SHA initial state and adds it to the
+// final-stage's 8-word a_h output to form the digest.
 
 #include "mesh.h"
 
@@ -86,14 +86,12 @@ void main(void) {
     int r0 = stage_r0(stage);
     int r1 = stage_r1(stage);
 
-    uint32_t init_state[8];
     uint32_t a_h[8];
     uint32_t w_ring[16];
 
     for (;;) {
-        read_dir(IN_DIR, init_state, 8);
-        read_dir(IN_DIR, a_h,        8);
-        read_dir(IN_DIR, w_ring,    16);
+        read_dir(IN_DIR, a_h,    8);
+        read_dir(IN_DIR, w_ring, 16);
 
         uint32_t a = a_h[0], b = a_h[1], c = a_h[2], d = a_h[3];
         uint32_t e = a_h[4], f = a_h[5], g = a_h[6], h = a_h[7];
@@ -104,10 +102,10 @@ void main(void) {
             if (r < 16) {
                 w_val = w_ring[ri];
             } else {
-                uint32_t wm2  = w_ring[(ri + 14) & 15u]; // r-2
-                uint32_t wm7  = w_ring[(ri +  9) & 15u]; // r-7
-                uint32_t wm15 = w_ring[(ri +  1) & 15u]; // r-15
-                uint32_t wm16 = w_ring[ ri              ]; // r-16
+                uint32_t wm2  = w_ring[(ri + 14) & 15u];
+                uint32_t wm7  = w_ring[(ri +  9) & 15u];
+                uint32_t wm15 = w_ring[(ri +  1) & 15u];
+                uint32_t wm16 = w_ring[ ri              ];
                 w_val = SIG1(wm2) + wm7 + SIG0(wm15) + wm16;
                 w_ring[ri] = w_val;
             }
@@ -121,13 +119,10 @@ void main(void) {
         a_h[4] = e; a_h[5] = f; a_h[6] = g; a_h[7] = h;
 
         if (stage == NSTAGES - 1) {
-            uint32_t out[8];
-            for (int i = 0; i < 8; i++) out[i] = init_state[i] + a_h[i];
-            write_dir(OUT_DIR, out, 8);
+            write_dir(OUT_DIR, a_h, 8);
         } else {
-            write_dir(OUT_DIR, init_state, 8);
-            write_dir(OUT_DIR, a_h,        8);
-            write_dir(OUT_DIR, w_ring,    16);
+            write_dir(OUT_DIR, a_h,    8);
+            write_dir(OUT_DIR, w_ring, 16);
         }
     }
 }

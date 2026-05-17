@@ -134,8 +134,8 @@ int main(int argc, char **argv) {
 
     void *producer(void *arg) {
         struct ctx *c = arg;
+        // 24-word wire format: a_h (= init_state for round 0) + w_ring (= block)
         for (unsigned it = 0; it < c->iters; it++) {
-            for (int i = 0; i < 8;  i++) push_w(c->ep_in, c->init_state[i]);
             for (int i = 0; i < 8;  i++) push_w(c->ep_in, c->init_state[i]);
             for (int i = 0; i < 16; i++) push_w(c->ep_in, c->block[i]);
         }
@@ -144,8 +144,11 @@ int main(int argc, char **argv) {
     void *consumer(void *arg) {
         struct ctx *c = arg;
         for (unsigned it = 0; it < c->iters; it++) {
-            uint32_t out[8];
-            for (int i = 0; i < 8; i++) out[i] = pop_w(c->ep_out);
+            uint32_t a_h[8], out[8];
+            for (int i = 0; i < 8; i++) a_h[i] = pop_w(c->ep_out);
+            // Host applies the final SHA-256 add: digest = init_state + a..h
+            for (int i = 0; i < 8; i++) out[i] = c->init_state[i] + a_h[i];
+
             int show = (it == 0 || it == c->iters - 1);
             for (int i = 0; i < 8; i++) {
                 int ok = out[i] == c->expected[i];

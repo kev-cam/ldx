@@ -9,6 +9,13 @@
 //   y=1  ►─►─►─►─►─┘ (stages  0- 4; enters west at (1,1))
 //
 // Round split is 14 stages × 3 rounds + 11 stages × 2 rounds = 64.
+//
+// Wire format (24 words per inter-stage handoff):
+//   a_h[0..7]              running state (a..h)
+//   w_ring[0..15]          W values indexed by r%16
+// The original SHA initial state is held by the host; the final stage
+// emits just 8 words (final a..h), and the host computes the digest as
+// initial[i] + a_h[i]. This saves 8 words per handoff vs the v1 format.
 
 #include "mesh.h"
 
@@ -102,14 +109,12 @@ void main(void) {
     int r0 = STAGE_R[stage];
     int r1 = STAGE_R[stage + 1];
 
-    uint32_t init_state[8];
     uint32_t a_h[8];
     uint32_t w_ring[16];
 
     for (;;) {
-        read_dir(in_dir, init_state, 8);
-        read_dir(in_dir, a_h,        8);
-        read_dir(in_dir, w_ring,    16);
+        read_dir(in_dir, a_h,    8);
+        read_dir(in_dir, w_ring, 16);
 
         uint32_t a = a_h[0], b = a_h[1], c = a_h[2], d = a_h[3];
         uint32_t e = a_h[4], f = a_h[5], g = a_h[6], h = a_h[7];
@@ -137,13 +142,10 @@ void main(void) {
         a_h[4] = e; a_h[5] = f; a_h[6] = g; a_h[7] = h;
 
         if (stage == NSTAGES - 1) {
-            uint32_t out[8];
-            for (int i = 0; i < 8; i++) out[i] = init_state[i] + a_h[i];
-            write_dir(out_dir, out, 8);
+            write_dir(out_dir, a_h, 8);
         } else {
-            write_dir(out_dir, init_state, 8);
-            write_dir(out_dir, a_h,        8);
-            write_dir(out_dir, w_ring,    16);
+            write_dir(out_dir, a_h,    8);
+            write_dir(out_dir, w_ring, 16);
         }
     }
 }
