@@ -14,6 +14,7 @@ all: hello.bin hello.dis hello.hex cfu_test.bin cfu_test.dis cfu_test.hex \
      wf_a.bin wf_a.dis wf_a.hex wf_b.bin wf_b.dis wf_b.hex \
      wc_a.bin wc_a.dis wc_a.hex wc_b.bin wc_b.dis wc_b.hex \
      universal.bin universal.dis universal.hex \
+     worker.bin worker.dis worker.hex \
      ldx_daemon mesh_daemon
 
 ldx_daemon: ldx_daemon.c
@@ -48,6 +49,9 @@ wc_b.elf: wc_b.c mesh.h ldx.ld start.S
 
 universal.elf: universal.c mesh.h ldx.ld start.S
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ start.S universal.c
+
+worker.elf: worker.c mesh.h ldx.ld start.S
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ start.S worker.c
 
 %.bin: %.elf
 	$(OBJCOPY) -O binary $< $@
