@@ -15,13 +15,21 @@ all: hello.bin hello.dis hello.hex cfu_test.bin cfu_test.dis cfu_test.hex \
      wc_a.bin wc_a.dis wc_a.hex wc_b.bin wc_b.dis wc_b.hex \
      universal.bin universal.dis universal.hex \
      worker.bin worker.dis worker.hex \
-     ldx_daemon mesh_daemon
+     sha_pipeline.bin sha_pipeline.dis sha_pipeline.hex \
+     sha_stage.bin sha_stage.dis sha_stage.hex \
+     ldx_daemon mesh_daemon sha_test_host sha_pipe_host
 
 ldx_daemon: ldx_daemon.c
 	$(A53_CC) $(A53_CFLAGS) -o $@ $<
 
 mesh_daemon: mesh_daemon.c
 	$(A53_CC) $(A53_CFLAGS) -o $@ $<
+
+sha_test_host: sha_test_host.c
+	$(A53_CC) $(A53_CFLAGS) -o $@ $<
+
+sha_pipe_host: sha_pipe_host.c
+	$(A53_CC) $(A53_CFLAGS) -o $@ $< -lpthread
 
 hello.elf: hello.c ldx.ld start.S
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ start.S hello.c
@@ -52,6 +60,12 @@ universal.elf: universal.c mesh.h ldx.ld start.S
 
 worker.elf: worker.c mesh.h ldx.ld start.S
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ start.S worker.c
+
+sha_pipeline.elf: sha_pipeline.c mesh.h ldx.ld start.S
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ start.S sha_pipeline.c
+
+sha_stage.elf: sha_stage.c mesh.h ldx.ld start.S
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ start.S sha_stage.c
 
 %.bin: %.elf
 	$(OBJCOPY) -O binary $< $@
