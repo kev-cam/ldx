@@ -33,6 +33,17 @@ static inline uint32_t rotr(uint32_t x, uint32_t n) {
     return (x >> n) | (x << (32u - n));
 }
 
+#define CFU_X(fid, x) ({                                                  \
+    uint32_t _r;                                                          \
+    asm volatile (".insn r 0x0B, " #fid ", 0x00, %0, %1, x0"              \
+                  : "=r"(_r) : "r"(x));                                   \
+    _r;                                                                   \
+})
+static inline uint32_t cfu_ep0 (uint32_t x) { return CFU_X(0, x); }
+static inline uint32_t cfu_ep1 (uint32_t x) { return CFU_X(1, x); }
+static inline uint32_t cfu_sig0(uint32_t x) { return CFU_X(2, x); }
+static inline uint32_t cfu_sig1(uint32_t x) { return CFU_X(3, x); }
+
 static const uint32_t K[64] = {
     0x428a2f98u, 0x71374491u, 0xb5c0fbcfu, 0xe9b5dba5u,
     0x3956c25bu, 0x59f111f1u, 0x923f82a4u, 0xab1c5ed5u,
@@ -54,10 +65,10 @@ static const uint32_t K[64] = {
 
 #define CH(x,y,z)  (((x) & (y)) ^ (~(x) & (z)))
 #define MAJ(x,y,z) (((x) & (y)) ^ ((x) & (z)) ^ ((y) & (z)))
-#define EP0(x)     (rotr(x, 2) ^ rotr(x,13) ^ rotr(x,22))
-#define EP1(x)     (rotr(x, 6) ^ rotr(x,11) ^ rotr(x,25))
-#define SIG0(x)    (rotr(x, 7) ^ rotr(x,18) ^ ((x) >> 3))
-#define SIG1(x)    (rotr(x,17) ^ rotr(x,19) ^ ((x) >> 10))
+#define EP0(x)     cfu_ep0(x)
+#define EP1(x)     cfu_ep1(x)
+#define SIG0(x)    cfu_sig0(x)
+#define SIG1(x)    cfu_sig1(x)
 
 static void sha256_block(uint32_t state[8], const uint32_t block[16]) {
     uint32_t w[64];
