@@ -32,6 +32,9 @@ sha_test_host: sha_test_host.c
 sha_pipe_host: sha_pipe_host.c
 	$(A53_CC) $(A53_CFLAGS) -o $@ $< -lpthread
 
+v4cfu_host: v4cfu_host.c
+	$(A53_CC) $(A53_CFLAGS) -o $@ $<
+
 hello.elf: hello.c ldx.ld start.S
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ start.S hello.c
 
@@ -61,6 +64,9 @@ universal.elf: universal.c mesh.h ldx.ld start.S
 
 worker.elf: worker.c mesh.h ldx.ld start.S
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ start.S worker.c
+
+v4cfu_smoke.elf: v4cfu_smoke.c mesh.h ldx.ld start.S
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ start.S v4cfu_smoke.c
 
 sha_pipeline.elf: sha_pipeline.c mesh.h ldx.ld start.S
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ start.S sha_pipeline.c
