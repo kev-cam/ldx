@@ -1,0 +1,2549 @@
+{
+  "results": [
+    {
+      "design": "4bit_adder",
+      "design_gates": 20,
+      "design_type": "arithmetic",
+      "mesh_size": 2,
+      "num_cores": 4,
+      "config": {
+        "mesh_width": 2,
+        "mesh_height": 2,
+        "num_cores": 4,
+        "memory_per_core_kb": 4,
+        "total_memory_kb": 16,
+        "max_gates_per_core": 256,
+        "max_total_gates": 1024,
+        "mesh_topology": "2d_grid",
+        "sync_protocol": "barrier"
+      },
+      "performance": {
+        "gates_per_core": 5,
+        "effective_cores": 4,
+        "load_imbalance": 1.0,
+        "cross_edges": 4,
+        "estimated_speedup": 1.1428571428571428,
+        "parallel_efficiency": 0.2857142857142857,
+        "total_cycles": 35.0
+      }
+    },
+    {
+      "design": "4bit_adder",
+      "design_gates": 20,
+      "design_type": "arithmetic",
+      "mesh_size": 3,
+      "num_cores": 9,
+      "config": {
+        "mesh_width": 3,
+        "mesh_height": 3,
+        "num_cores": 9,
+        "memory_per_core_kb": 4,
+        "total_memory_kb": 36,
+        "max_gates_per_core": 256,
+        "max_total_gates": 2304,
+        "mesh_topology": "2d_grid",
+        "sync_protocol": "barrier"
+      },
+      "performance": {
+        "gates_per_core": 3,
+        "effective_cores": 9,
+        "load_imbalance": 1.2222222222222223,
+        "cross_edges": 4,
+        "estimated_speedup": 1.4173228346456694,
+        "parallel_efficiency": 0.15748031496062995,
+        "total_cycles": 28.22222222222222
+      }
+    },
+    {
+      "design": "4bit_adder",
+      "design_gates": 20,
+      "design_type": "arithmetic",
+      "mesh_size": 4,
+      "num_cores": 16,
+      "config": {
+        "mesh_width": 4,
+        "mesh_height": 4,
+        "num_cores": 16,
+        "memory_per_core_kb": 4,
+        "total_memory_kb": 64,
+        "max_gates_per_core": 256,
+        "max_total_gates": 4096,
+        "mesh_topology": "2d_grid",
+        "sync_protocol": "barrier"
+      },
+      "performance": {
+        "gates_per_core": 2,
+        "effective_cores": 16,
+        "load_imbalance": 1.25,
+        "cross_edges": 4,
+        "estimated_speedup": 1.5841584158415842,
+        "parallel_efficiency": 0.09900990099009901,
+        "total_cycles": 25.25
+      }
+    },
+    {
+      "design": "4bit_adder",
+      "design_gates": 20,
+      "design_type": "arithmetic",
+      "mesh_size": 5,
+      "num_cores": 25,
+      "config": {
+        "mesh_width": 5,
+        "mesh_height": 5,
+        "num_cores": 25,
+        "memory_per_core_kb": 4,
+        "total_memory_kb": 100,
+        "max_gates_per_core": 256,
+        "max_total_gates": 6400,
+        "mesh_topology": "2d_grid",
+        "sync_protocol": "barrier"
+      },
+      "performance": {
+        "gates_per_core": 1,
+        "effective_cores": 20,
+        "load_imbalance": 1.25,
+        "cross_edges": 4,
+        "estimated_speedup": 1.7391304347826086,
+        "parallel_efficiency": 0.08695652173913043,
+        "total_cycles": 23.0
+      }
+    },
+    {
+      "design": "4bit_adder",
+      "design_gates": 20,
+      "design_type": "arithmetic",
+      "mesh_size": 6,
+      "num_cores": 36,
+      "config": {
+        "mesh_width": 6,
+        "mesh_height": 6,
+        "num_cores": 36,
+        "memory_per_core_kb": 4,
+        "total_memory_kb": 144,
+        "max_gates_per_core": 256,
+        "max_total_gates": 9216,
+        "mesh_topology": "2d_grid",
+        "sync_protocol": "barrier"
+      },
+      "performance": {
+        "gates_per_core": 1,
+        "effective_cores": 20,
+        "load_imbalance": 1.8,
+        "cross_edges": 4,
+        "estimated_speedup": 1.7391304347826086,
+        "parallel_efficiency": 0.08695652173913043,
+        "total_cycles": 23.0
+      }
+    },
+    {
+      "design": "4bit_adder",
+      "design_gates": 20,
+      "design_type": "arithmetic",
+      "mesh_size": 7,
+      "num_cores": 49,
+      "config": {
+        "mesh_width": 7,
+        "mesh_height": 7,
+        "num_cores": 49,
+        "memory_per_core_kb": 4,
+        "total_memory_kb": 196,
+        "max_gates_per_core": 256,
+        "max_total_gates": 12544,
+        "mesh_topology": "2d_grid",
+        "sync_protocol": "barrier"
+      },
+      "performance": {
+        "gates_per_core": 1,
+        "effective_cores": 20,
+        "load_imbalance": 2.45,
+        "cross_edges": 4,
+        "estimated_speedup": 1.7391304347826086,
+        "parallel_efficiency": 0.08695652173913043,
+        "total_cycles": 23.0
+      }
+    },
+    {
+      "design": "4bit_adder",
+      "design_gates": 20,
+      "design_type": "arithmetic",
+      "mesh_size": 8,
+      "num_cores": 64,
+      "config": {
+        "mesh_width": 8,
+        "mesh_height": 8,
+        "num_cores": 64,
+        "memory_per_core_kb": 4,
+        "total_memory_kb": 256,
+        "max_gates_per_core": 256,
+        "max_total_gates": 16384,
+        "mesh_topology": "2d_grid",
+        "sync_protocol": "barrier"
+      },
+      "performance": {
+        "gates_per_core": 1,
+        "effective_cores": 20,
+        "load_imbalance": 3.2,
+        "cross_edges": 4,
+        "estimated_speedup": 1.7391304347826086,
+        "parallel_efficiency": 0.08695652173913043,
+        "total_cycles": 23.0
+      }
+    },
+    {
+      "design": "4bit_adder",
+      "design_gates": 20,
+      "design_type": "arithmetic",
+      "mesh_size": 10,
+      "num_cores": 100,
+      "config": {
+        "mesh_width": 10,
+        "mesh_height": 10,
+        "num_cores": 100,
+        "memory_per_core_kb": 4,
+        "total_memory_kb": 400,
+        "max_gates_per_core": 256,
+        "max_total_gates": 25600,
+        "mesh_topology": "2d_grid",
+        "sync_protocol": "barrier"
+      },
+      "performance": {
+        "gates_per_core": 1,
+        "effective_cores": 20,
+        "load_imbalance": 5.0,
+        "cross_edges": 4,
+        "estimated_speedup": 1.7391304347826086,
+        "parallel_efficiency": 0.08695652173913043,
+        "total_cycles": 23.0
+      }
+    },
+    {
+      "design": "4bit_adder",
+      "design_gates": 20,
+      "design_type": "arithmetic",
+      "mesh_size": 12,
+      "num_cores": 144,
+      "config": {
+        "mesh_width": 12,
+        "mesh_height": 12,
+        "num_cores": 144,
+        "memory_per_core_kb": 4,
+        "total_memory_kb": 576,
+        "max_gates_per_core": 256,
+        "max_total_gates": 36864,
+        "mesh_topology": "2d_grid",
+        "sync_protocol": "barrier"
+      },
+      "performance": {
+        "gates_per_core": 1,
+        "effective_cores": 20,
+        "load_imbalance": 7.2,
+        "cross_edges": 4,
+        "estimated_speedup": 1.7391304347826086,
+        "parallel_efficiency": 0.08695652173913043,
+        "total_cycles": 23.0
+      }
+    },
+    {
+      "design": "8bit_counter",
+      "design_gates": 32,
+      "design_type": "sequential",
+      "mesh_size": 2,
+      "num_cores": 4,
+      "config": {
+        "mesh_width": 2,
+        "mesh_height": 2,
+        "num_cores": 4,
+        "memory_per_core_kb": 4,
+        "total_memory_kb": 16,
+        "max_gates_per_core": 256,
+        "max_total_gates": 1024,
+        "mesh_topology": "2d_grid",
+        "sync_protocol": "barrier"
+      },
+      "performance": {
+        "gates_per_core": 8,
+        "effective_cores": 4,
+        "load_imbalance": 1.0,
+        "cross_edges": 6,
+        "estimated_speedup": 1.471264367816092,
+        "parallel_efficiency": 0.367816091954023,
+        "total_cycles": 43.5
+      }
+    },
+    {
+      "design": "8bit_counter",
+      "design_gates": 32,
+      "design_type": "sequential",
+      "mesh_size": 3,
+      "num_cores": 9,
+      "config": {
+        "mesh_width": 3,
+        "mesh_height": 3,
+        "num_cores": 9,
+        "memory_per_core_kb": 4,
+        "total_memory_kb": 36,
+        "max_gates_per_core": 256,
+        "max_total_gates": 2304,
+        "mesh_topology": "2d_grid",
+        "sync_protocol": "barrier"
+      },
+      "performance": {
+        "gates_per_core": 4,
+        "effective_cores": 9,
+        "load_imbalance": 1.5555555555555556,
+        "cross_edges": 6,
+        "estimated_speedup": 2.0425531914893615,
+        "parallel_efficiency": 0.22695035460992907,
+        "total_cycles": 31.333333333333336
+      }
+    },
+    {
+      "design": "8bit_counter",
+      "design_gates": 32,
+      "design_type": "sequential",
+      "mesh_size": 4,
+      "num_cores": 16,
+      "config": {
+        "mesh_width": 4,
+        "mesh_height": 4,
+        "num_cores": 16,
+        "memory_per_core_kb": 4,
+        "total_memory_kb": 64,
+        "max_gates_per_core": 256,
+        "max_total_gates": 4096,
+        "mesh_topology": "2d_grid",
+        "sync_protocol": "barrier"
+      },
+      "performance": {
+        "gates_per_core": 2,
+        "effective_cores": 16,
+        "load_imbalance": 1.0,
+        "cross_edges": 6,
+        "estimated_speedup": 2.473429951690821,
+        "parallel_efficiency": 0.15458937198067632,
+        "total_cycles": 25.875
+      }
+    },
+    {
+      "design": "8bit_counter",
+      "design_gates": 32,
+      "design_type": "sequential",
+      "mesh_size": 5,
+      "num_cores": 25,
+      "config": {
+        "mesh_width": 5,
+        "mesh_height": 5,
+        "num_cores": 25,
+        "memory_per_core_kb": 4,
+        "total_memory_kb": 100,
+        "max_gates_per_core": 256,
+        "max_total_gates": 6400,
+        "mesh_topology": "2d_grid",
+        "sync_protocol": "barrier"
+      },
+      "performance": {
+        "gates_per_core": 2,
+        "effective_cores": 25,
+        "load_imbalance": 1.28,
+        "cross_edges": 6,
+        "estimated_speedup": 2.5396825396825395,
+        "parallel_efficiency": 0.10158730158730159,
+        "total_cycles": 25.2
+      }
+    },
+    {
+      "design": "8bit_counter",
+      "design_gates": 32,
+      "design_type": "sequential",
+      "mesh_size": 6,
+      "num_cores": 36,
+      "config": {
+        "mesh_width": 6,
+        "mesh_height": 6,
+        "num_cores": 36,
+        "memory_per_core_kb": 4,
+        "total_memory_kb": 144,
+        "max_gates_per_core": 256,
+        "max_total_gates": 9216,
+        "mesh_topology": "2d_grid",
+        "sync_protocol": "barrier"
+      },
+      "performance": {
+        "gates_per_core": 1,
+        "effective_cores": 32,
+        "load_imbalance": 1.125,
+        "cross_edges": 6,
+        "estimated_speedup": 2.790190735694823,
+        "parallel_efficiency": 0.08719346049046321,
+        "total_cycles": 22.9375
+      }
+    },
+    {
+      "design": "8bit_counter",
+      "design_gates": 32,
+      "design_type": "sequential",
+      "mesh_size": 7,
+      "num_cores": 49,
+      "config": {
+        "mesh_width": 7,
+        "mesh_height": 7,
+        "num_cores": 49,
+        "memory_per_core_kb": 4,
+        "total_memory_kb": 196,
+        "max_gates_per_core": 256,
+        "max_total_gates": 12544,
+        "mesh_topology": "2d_grid",
+        "sync_protocol": "barrier"
+      },
+      "performance": {
+        "gates_per_core": 1,
+        "effective_cores": 32,
+        "load_imbalance": 1.53125,
+        "cross_edges": 6,
+        "estimated_speedup": 2.790190735694823,
+        "parallel_efficiency": 0.08719346049046321,
+        "total_cycles": 22.9375
+      }
+    },
+    {
+      "design": "8bit_counter",
+      "design_gates": 32,
+      "design_type": "sequential",
+      "mesh_size": 8,
+      "num_cores": 64,
+      "config": {
+        "mesh_width": 8,
+        "mesh_height": 8,
+        "num_cores": 64,
+        "memory_per_core_kb": 4,
+        "total_memory_kb": 256,
+        "max_gates_per_core": 256,
+        "max_total_gates": 16384,
+        "mesh_topology": "2d_grid",
+        "sync_protocol": "barrier"
+      },
+      "performance": {
+        "gates_per_core": 1,
+        "effective_cores": 32,
+        "load_imbalance": 2.0,
+        "cross_edges": 6,
+        "estimated_speedup": 2.790190735694823,
+        "parallel_efficiency": 0.08719346049046321,
+        "total_cycles": 22.9375
+      }
+    },
+    {
+      "design": "8bit_counter",
+      "design_gates": 32,
+      "design_type": "sequential",
+      "mesh_size": 10,
+      "num_cores": 100,
+      "config": {
+        "mesh_width": 10,
+        "mesh_height": 10,
+        "num_cores": 100,
+        "memory_per_core_kb": 4,
+        "total_memory_kb": 400,
+        "max_gates_per_core": 256,
+        "max_total_gates": 25600,
+        "mesh_topology": "2d_grid",
+        "sync_protocol": "barrier"
+      },
+      "performance": {
+        "gates_per_core": 1,
+        "effective_cores": 32,
+        "load_imbalance": 3.125,
+        "cross_edges": 6,
+        "estimated_speedup": 2.790190735694823,
+        "parallel_efficiency": 0.08719346049046321,
+        "total_cycles": 22.9375
+      }
+    },
+    {
+      "design": "8bit_counter",
+      "design_gates": 32,
+      "design_type": "sequential",
+      "mesh_size": 12,
+      "num_cores": 144,
+      "config": {
+        "mesh_width": 12,
+        "mesh_height": 12,
+        "num_cores": 144,
+        "memory_per_core_kb": 4,
+        "total_memory_kb": 576,
+        "max_gates_per_core": 256,
+        "max_total_gates": 36864,
+        "mesh_topology": "2d_grid",
+        "sync_protocol": "barrier"
+      },
+      "performance": {
+        "gates_per_core": 1,
+        "effective_cores": 32,
+        "load_imbalance": 4.5,
+        "cross_edges": 6,
+        "estimated_speedup": 2.790190735694823,
+        "parallel_efficiency": 0.08719346049046321,
+        "total_cycles": 22.9375
+      }
+    },
+    {
+      "design": "16bit_alu",
+      "design_gates": 80,
+      "design_type": "arithmetic",
+      "mesh_size": 2,
+      "num_cores": 4,
+      "config": {
+        "mesh_width": 2,
+        "mesh_height": 2,
+        "num_cores": 4,
+        "memory_per_core_kb": 4,
+        "total_memory_kb": 16,
+        "max_gates_per_core": 256,
+        "max_total_gates": 1024,
+        "mesh_topology": "2d_grid",
+        "sync_protocol": "barrier"
+      },
+      "performance": {
+        "gates_per_core": 20,
+        "effective_cores": 4,
+        "load_imbalance": 1.0,
+        "cross_edges": 16,
+        "estimated_speedup": 2.0,
+        "parallel_efficiency": 0.5,
+        "total_cycles": 80.0
+      }
+    },
+    {
+      "design": "16bit_alu",
+      "design_gates": 80,
+      "design_type": "arithmetic",
+      "mesh_size": 3,
+      "num_cores": 9,
+      "config": {
+        "mesh_width": 3,
+        "mesh_height": 3,
+        "num_cores": 9,
+        "memory_per_core_kb": 4,
+        "total_memory_kb": 36,
+        "max_gates_per_core": 256,
+        "max_total_gates": 2304,
+        "mesh_topology": "2d_grid",
+        "sync_protocol": "barrier"
+      },
+      "performance": {
+        "gates_per_core": 9,
+        "effective_cores": 9,
+        "load_imbalance": 1.8888888888888888,
+        "cross_edges": 16,
+        "estimated_speedup": 3.4123222748815167,
+        "parallel_efficiency": 0.37914691943127965,
+        "total_cycles": 46.888888888888886
+      }
+    },
+    {
+      "design": "16bit_alu",
+      "design_gates": 80,
+      "design_type": "arithmetic",
+      "mesh_size": 4,
+      "num_cores": 16,
+      "config": {
+        "mesh_width": 4,
+        "mesh_height": 4,
+        "num_cores": 16,
+        "memory_per_core_kb": 4,
+        "total_memory_kb": 64,
+        "max_gates_per_core": 256,
+        "max_total_gates": 4096,
+        "mesh_topology": "2d_grid",
+        "sync_protocol": "barrier"
+      },
+      "performance": {
+        "gates_per_core": 5,
+        "effective_cores": 16,
+        "load_imbalance": 1.0,
+        "cross_edges": 16,
+        "estimated_speedup": 4.571428571428571,
+        "parallel_efficiency": 0.2857142857142857,
+        "total_cycles": 35.0
+      }
+    },
+    {
+      "design": "16bit_alu",
+      "design_gates": 80,
+      "design_type": "arithmetic",
+      "mesh_size": 5,
+      "num_cores": 25,
+      "config": {
+        "mesh_width": 5,
+        "mesh_height": 5,
+        "num_cores": 25,
+        "memory_per_core_kb": 4,
+        "total_memory_kb": 100,
+        "max_gates_per_core": 256,
+        "max_total_gates": 6400,
+        "mesh_topology": "2d_grid",
+        "sync_protocol": "barrier"
+      },
+      "performance": {
+        "gates_per_core": 4,
+        "effective_cores": 25,
+        "load_imbalance": 1.2,
+        "cross_edges": 16,
+        "estimated_speedup": 5.128205128205129,
+        "parallel_efficiency": 0.20512820512820515,
+        "total_cycles": 31.2
+      }
+    },
+    {
+      "design": "16bit_alu",
+      "design_gates": 80,
+      "design_type": "arithmetic",
+      "mesh_size": 6,
+      "num_cores": 36,
+      "config": {
+        "mesh_width": 6,
+        "mesh_height": 6,
+        "num_cores": 36,
+        "memory_per_core_kb": 4,
+        "total_memory_kb": 144,
+        "max_gates_per_core": 256,
+        "max_total_gates": 9216,
+        "mesh_topology": "2d_grid",
+        "sync_protocol": "barrier"
+      },
+      "performance": {
+        "gates_per_core": 3,
+        "effective_cores": 36,
+        "load_imbalance": 1.2222222222222223,
+        "cross_edges": 16,
+        "estimated_speedup": 5.669291338582678,
+        "parallel_efficiency": 0.15748031496062995,
+        "total_cycles": 28.22222222222222
+      }
+    },
+    {
+      "design": "16bit_alu",
+      "design_gates": 80,
+      "design_type": "arithmetic",
+      "mesh_size": 7,
+      "num_cores": 49,
+      "config": {
+        "mesh_width": 7,
+        "mesh_height": 7,
+        "num_cores": 49,
+        "memory_per_core_kb": 4,
+        "total_memory_kb": 196,
+        "max_gates_per_core": 256,
+        "max_total_gates": 12544,
+        "mesh_topology": "2d_grid",
+        "sync_protocol": "barrier"
+      },
+      "performance": {
+        "gates_per_core": 2,
+        "effective_cores": 49,
+        "load_imbalance": 1.6326530612244898,
+        "cross_edges": 16,
+        "estimated_speedup": 6.24203821656051,
+        "parallel_efficiency": 0.12738853503184713,
+        "total_cycles": 25.632653061224488
+      }
+    },
+    {
+      "design": "16bit_alu",
+      "design_gates": 80,
+      "design_type": "arithmetic",
+      "mesh_size": 8,
+      "num_cores": 64,
+      "config": {
+        "mesh_width": 8,
+        "mesh_height": 8,
+        "num_cores": 64,
+        "memory_per_core_kb": 4,
+        "total_memory_kb": 256,
+        "max_gates_per_core": 256,
+        "max_total_gates": 16384,
+        "mesh_topology": "2d_grid",
+        "sync_protocol": "barrier"
+      },
+      "performance": {
+        "gates_per_core": 2,
+        "effective_cores": 64,
+        "load_imbalance": 1.25,
+        "cross_edges": 16,
+        "estimated_speedup": 6.336633663366337,
+        "parallel_efficiency": 0.09900990099009901,
+        "total_cycles": 25.25
+      }
+    },
+    {
+      "design": "16bit_alu",
+      "design_gates": 80,
+      "design_type": "arithmetic",
+      "mesh_size": 10,
+      "num_cores": 100,
+      "config": {
+        "mesh_width": 10,
+        "mesh_height": 10,
+        "num_cores": 100,
+        "memory_per_core_kb": 4,
+        "total_memory_kb": 400,
+        "max_gates_per_core": 256,
+        "max_total_gates": 25600,
+        "mesh_topology": "2d_grid",
+        "sync_protocol": "barrier"
+      },
+      "performance": {
+        "gates_per_core": 1,
+        "effective_cores": 80,
+        "load_imbalance": 1.25,
+        "cross_edges": 16,
+        "estimated_speedup": 6.956521739130435,
+        "parallel_efficiency": 0.08695652173913043,
+        "total_cycles": 23.0
+      }
+    },
+    {
+      "design": "16bit_alu",
+      "design_gates": 80,
+      "design_type": "arithmetic",
+      "mesh_size": 12,
+      "num_cores": 144,
+      "config": {
+        "mesh_width": 12,
+        "mesh_height": 12,
+        "num_cores": 144,
+        "memory_per_core_kb": 4,
+        "total_memory_kb": 576,
+        "max_gates_per_core": 256,
+        "max_total_gates": 36864,
+        "mesh_topology": "2d_grid",
+        "sync_protocol": "barrier"
+      },
+      "performance": {
+        "gates_per_core": 1,
+        "effective_cores": 80,
+        "load_imbalance": 1.8,
+        "cross_edges": 16,
+        "estimated_speedup": 6.956521739130435,
+        "parallel_efficiency": 0.08695652173913043,
+        "total_cycles": 23.0
+      }
+    },
+    {
+      "design": "32bit_adder",
+      "design_gates": 160,
+      "design_type": "arithmetic",
+      "mesh_size": 2,
+      "num_cores": 4,
+      "config": {
+        "mesh_width": 2,
+        "mesh_height": 2,
+        "num_cores": 4,
+        "memory_per_core_kb": 4,
+        "total_memory_kb": 16,
+        "max_gates_per_core": 256,
+        "max_total_gates": 1024,
+        "mesh_topology": "2d_grid",
+        "sync_protocol": "barrier"
+      },
+      "performance": {
+        "gates_per_core": 40,
+        "effective_cores": 4,
+        "load_imbalance": 1.0,
+        "cross_edges": 32,
+        "estimated_speedup": 2.2857142857142856,
+        "parallel_efficiency": 0.5714285714285714,
+        "total_cycles": 140.0
+      }
+    },
+    {
+      "design": "32bit_adder",
+      "design_gates": 160,
+      "design_type": "arithmetic",
+      "mesh_size": 3,
+      "num_cores": 9,
+      "config": {
+        "mesh_width": 3,
+        "mesh_height": 3,
+        "num_cores": 9,
+        "memory_per_core_kb": 4,
+        "total_memory_kb": 36,
+        "max_gates_per_core": 256,
+        "max_total_gates": 2304,
+        "mesh_topology": "2d_grid",
+        "sync_protocol": "barrier"
+      },
+      "performance": {
+        "gates_per_core": 18,
+        "effective_cores": 9,
+        "load_imbalance": 1.7777777777777777,
+        "cross_edges": 32,
+        "estimated_speedup": 4.337349397590362,
+        "parallel_efficiency": 0.48192771084337355,
+        "total_cycles": 73.77777777777777
+      }
+    },
+    {
+      "design": "32bit_adder",
+      "design_gates": 160,
+      "design_type": "arithmetic",
+      "mesh_size": 4,
+      "num_cores": 16,
+      "config": {
+        "mesh_width": 4,
+        "mesh_height": 4,
+        "num_cores": 16,
+        "memory_per_core_kb": 4,
+        "total_memory_kb": 64,
+        "max_gates_per_core": 256,
+        "max_total_gates": 4096,
+        "mesh_topology": "2d_grid",
+        "sync_protocol": "barrier"
+      },
+      "performance": {
+        "gates_per_core": 10,
+        "effective_cores": 16,
+        "load_imbalance": 1.0,
+        "cross_edges": 32,
+        "estimated_speedup": 6.4,
+        "parallel_efficiency": 0.4,
+        "total_cycles": 50.0
+      }
+    },
+    {
+      "design": "32bit_adder",
+      "design_gates": 160,
+      "design_type": "arithmetic",
+      "mesh_size": 5,
+      "num_cores": 25,
+      "config": {
+        "mesh_width": 5,
+        "mesh_height": 5,
+        "num_cores": 25,
+        "memory_per_core_kb": 4,
+        "total_memory_kb": 100,
+        "max_gates_per_core": 256,
+        "max_total_gates": 6400,
+        "mesh_topology": "2d_grid",
+        "sync_protocol": "barrier"
+      },
+      "performance": {
+        "gates_per_core": 7,
+        "effective_cores": 25,
+        "load_imbalance": 1.4,
+        "cross_edges": 32,
+        "estimated_speedup": 7.920792079207921,
+        "parallel_efficiency": 0.31683168316831684,
+        "total_cycles": 40.4
+      }
+    },
+    {
+      "design": "32bit_adder",
+      "design_gates": 160,
+      "design_type": "arithmetic",
+      "mesh_size": 6,
+      "num_cores": 36,
+      "config": {
+        "mesh_width": 6,
+        "mesh_height": 6,
+        "num_cores": 36,
+        "memory_per_core_kb": 4,
+        "total_memory_kb": 144,
+        "max_gates_per_core": 256,
+        "max_total_gates": 9216,
+        "mesh_topology": "2d_grid",
+        "sync_protocol": "barrier"
+      },
+      "performance": {
+        "gates_per_core": 5,
+        "effective_cores": 36,
+        "load_imbalance": 1.4444444444444444,
+        "cross_edges": 32,
+        "estimated_speedup": 9.290322580645162,
+        "parallel_efficiency": 0.25806451612903225,
+        "total_cycles": 34.44444444444444
+      }
+    },
+    {
+      "design": "32bit_adder",
+      "design_gates": 160,
+      "design_type": "arithmetic",
+      "mesh_size": 7,
+      "num_cores": 49,
+      "config": {
+        "mesh_width": 7,
+        "mesh_height": 7,
+        "num_cores": 49,
+        "memory_per_core_kb": 4,
+        "total_memory_kb": 196,
+        "max_gates_per_core": 256,
+        "max_total_gates": 12544,
+        "mesh_topology": "2d_grid",
+        "sync_protocol": "barrier"
+      },
+      "performance": {
+        "gates_per_core": 4,
+        "effective_cores": 49,
+        "load_imbalance": 1.2653061224489797,
+        "cross_edges": 32,
+        "estimated_speedup": 10.234986945169712,
+        "parallel_efficiency": 0.20887728459530025,
+        "total_cycles": 31.26530612244898
+      }
+    },
+    {
+      "design": "32bit_adder",
+      "design_gates": 160,
+      "design_type": "arithmetic",
+      "mesh_size": 8,
+      "num_cores": 64,
+      "config": {
+        "mesh_width": 8,
+        "mesh_height": 8,
+        "num_cores": 64,
+        "memory_per_core_kb": 4,
+        "total_memory_kb": 256,
+        "max_gates_per_core": 256,
+        "max_total_gates": 16384,
+        "mesh_topology": "2d_grid",
+        "sync_protocol": "barrier"
+      },
+      "performance": {
+        "gates_per_core": 3,
+        "effective_cores": 64,
+        "load_imbalance": 1.5,
+        "cross_edges": 32,
+        "estimated_speedup": 11.228070175438596,
+        "parallel_efficiency": 0.17543859649122806,
+        "total_cycles": 28.5
+      }
+    },
+    {
+      "design": "32bit_adder",
+      "design_gates": 160,
+      "design_type": "arithmetic",
+      "mesh_size": 10,
+      "num_cores": 100,
+      "config": {
+        "mesh_width": 10,
+        "mesh_height": 10,
+        "num_cores": 100,
+        "memory_per_core_kb": 4,
+        "total_memory_kb": 400,
+        "max_gates_per_core": 256,
+        "max_total_gates": 25600,
+        "mesh_topology": "2d_grid",
+        "sync_protocol": "barrier"
+      },
+      "performance": {
+        "gates_per_core": 2,
+        "effective_cores": 100,
+        "load_imbalance": 1.6,
+        "cross_edges": 32,
+        "estimated_speedup": 12.5,
+        "parallel_efficiency": 0.125,
+        "total_cycles": 25.6
+      }
+    },
+    {
+      "design": "32bit_adder",
+      "design_gates": 160,
+      "design_type": "arithmetic",
+      "mesh_size": 12,
+      "num_cores": 144,
+      "config": {
+        "mesh_width": 12,
+        "mesh_height": 12,
+        "num_cores": 144,
+        "memory_per_core_kb": 4,
+        "total_memory_kb": 576,
+        "max_gates_per_core": 256,
+        "max_total_gates": 36864,
+        "mesh_topology": "2d_grid",
+        "sync_protocol": "barrier"
+      },
+      "performance": {
+        "gates_per_core": 2,
+        "effective_cores": 144,
+        "load_imbalance": 1.1111111111111112,
+        "cross_edges": 32,
+        "estimated_speedup": 12.743362831858407,
+        "parallel_efficiency": 0.08849557522123894,
+        "total_cycles": 25.11111111111111
+      }
+    },
+    {
+      "design": "simple_cpu",
+      "design_gates": 256,
+      "design_type": "processor",
+      "mesh_size": 2,
+      "num_cores": 4,
+      "config": {
+        "mesh_width": 2,
+        "mesh_height": 2,
+        "num_cores": 4,
+        "memory_per_core_kb": 4,
+        "total_memory_kb": 16,
+        "max_gates_per_core": 256,
+        "max_total_gates": 1024,
+        "mesh_topology": "2d_grid",
+        "sync_protocol": "barrier"
+      },
+      "performance": {
+        "gates_per_core": 64,
+        "effective_cores": 4,
+        "load_imbalance": 1.0,
+        "cross_edges": 51,
+        "estimated_speedup": 2.4179456906729633,
+        "parallel_efficiency": 0.6044864226682408,
+        "total_cycles": 211.75
+      }
+    },
+    {
+      "design": "simple_cpu",
+      "design_gates": 256,
+      "design_type": "processor",
+      "mesh_size": 3,
+      "num_cores": 9,
+      "config": {
+        "mesh_width": 3,
+        "mesh_height": 3,
+        "num_cores": 9,
+        "memory_per_core_kb": 4,
+        "total_memory_kb": 36,
+        "max_gates_per_core": 256,
+        "max_total_gates": 2304,
+        "mesh_topology": "2d_grid",
+        "sync_protocol": "barrier"
+      },
+      "performance": {
+        "gates_per_core": 29,
+        "effective_cores": 9,
+        "load_imbalance": 1.4444444444444444,
+        "cross_edges": 51,
+        "estimated_speedup": 4.815047021943574,
+        "parallel_efficiency": 0.5350052246603971,
+        "total_cycles": 106.33333333333333
+      }
+    },
+    {
+      "design": "simple_cpu",
+      "design_gates": 256,
+      "design_type": "processor",
+      "mesh_size": 4,
+      "num_cores": 16,
+      "config": {
+        "mesh_width": 4,
+        "mesh_height": 4,
+        "num_cores": 16,
+        "memory_per_core_kb": 4,
+        "total_memory_kb": 64,
+        "max_gates_per_core": 256,
+        "max_total_gates": 4096,
+        "mesh_topology": "2d_grid",
+        "sync_protocol": "barrier"
+      },
+      "performance": {
+        "gates_per_core": 16,
+        "effective_cores": 16,
+        "load_imbalance": 1.0,
+        "cross_edges": 51,
+        "estimated_speedup": 7.536338546458142,
+        "parallel_efficiency": 0.47102115915363385,
+        "total_cycles": 67.9375
+      }
+    },
+    {
+      "design": "simple_cpu",
+      "design_gates": 256,
+      "design_type": "processor",
+      "mesh_size": 5,
+      "num_cores": 25,
+      "config": {
+        "mesh_width": 5,
+        "mesh_height": 5,
+        "num_cores": 25,
+        "memory_per_core_kb": 4,
+        "total_memory_kb": 100,
+        "max_gates_per_core": 256,
+        "max_total_gates": 6400,
+        "mesh_topology": "2d_grid",
+        "sync_protocol": "barrier"
+      },
+      "performance": {
+        "gates_per_core": 11,
+        "effective_cores": 25,
+        "load_imbalance": 1.24,
+        "cross_edges": 51,
+        "estimated_speedup": 9.808429118773946,
+        "parallel_efficiency": 0.3923371647509578,
+        "total_cycles": 52.2
+      }
+    },
+    {
+      "design": "simple_cpu",
+      "design_gates": 256,
+      "design_type": "processor",
+      "mesh_size": 6,
+      "num_cores": 36,
+      "config": {
+        "mesh_width": 6,
+        "mesh_height": 6,
+        "num_cores": 36,
+        "memory_per_core_kb": 4,
+        "total_memory_kb": 144,
+        "max_gates_per_core": 256,
+        "max_total_gates": 9216,
+        "mesh_topology": "2d_grid",
+        "sync_protocol": "barrier"
+      },
+      "performance": {
+        "gates_per_core": 8,
+        "effective_cores": 36,
+        "load_imbalance": 1.1111111111111112,
+        "cross_edges": 51,
+        "estimated_speedup": 11.88394584139265,
+        "parallel_efficiency": 0.3301096067053514,
+        "total_cycles": 43.08333333333333
+      }
+    },
+    {
+      "design": "simple_cpu",
+      "design_gates": 256,
+      "design_type": "processor",
+      "mesh_size": 7,
+      "num_cores": 49,
+      "config": {
+        "mesh_width": 7,
+        "mesh_height": 7,
+        "num_cores": 49,
+        "memory_per_core_kb": 4,
+        "total_memory_kb": 196,
+        "max_gates_per_core": 256,
+        "max_total_gates": 12544,
+        "mesh_topology": "2d_grid",
+        "sync_protocol": "barrier"
+      },
+      "performance": {
+        "gates_per_core": 6,
+        "effective_cores": 49,
+        "load_imbalance": 1.2244897959183674,
+        "cross_edges": 51,
+        "estimated_speedup": 13.761930883159629,
+        "parallel_efficiency": 0.28085573230938016,
+        "total_cycles": 37.20408163265306
+      }
+    },
+    {
+      "design": "simple_cpu",
+      "design_gates": 256,
+      "design_type": "processor",
+      "mesh_size": 8,
+      "num_cores": 64,
+      "config": {
+        "mesh_width": 8,
+        "mesh_height": 8,
+        "num_cores": 64,
+        "memory_per_core_kb": 4,
+        "total_memory_kb": 256,
+        "max_gates_per_core": 256,
+        "max_total_gates": 16384,
+        "mesh_topology": "2d_grid",
+        "sync_protocol": "barrier"
+      },
+      "performance": {
+        "gates_per_core": 4,
+        "effective_cores": 64,
+        "load_imbalance": 1.0,
+        "cross_edges": 51,
+        "estimated_speedup": 16.00781631656082,
+        "parallel_efficiency": 0.2501221299462628,
+        "total_cycles": 31.984375
+      }
+    },
+    {
+      "design": "simple_cpu",
+      "design_gates": 256,
+      "design_type": "processor",
+      "mesh_size": 10,
+      "num_cores": 100,
+      "config": {
+        "mesh_width": 10,
+        "mesh_height": 10,
+        "num_cores": 100,
+        "memory_per_core_kb": 4,
+        "total_memory_kb": 400,
+        "max_gates_per_core": 256,
+        "max_total_gates": 25600,
+        "mesh_topology": "2d_grid",
+        "sync_protocol": "barrier"
+      },
+      "performance": {
+        "gates_per_core": 3,
+        "effective_cores": 100,
+        "load_imbalance": 1.56,
+        "cross_edges": 51,
+        "estimated_speedup": 17.933450087565674,
+        "parallel_efficiency": 0.17933450087565675,
+        "total_cycles": 28.55
+      }
+    },
+    {
+      "design": "simple_cpu",
+      "design_gates": 256,
+      "design_type": "processor",
+      "mesh_size": 12,
+      "num_cores": 144,
+      "config": {
+        "mesh_width": 12,
+        "mesh_height": 12,
+        "num_cores": 144,
+        "memory_per_core_kb": 4,
+        "total_memory_kb": 576,
+        "max_gates_per_core": 256,
+        "max_total_gates": 36864,
+        "mesh_topology": "2d_grid",
+        "sync_protocol": "barrier"
+      },
+      "performance": {
+        "gates_per_core": 2,
+        "effective_cores": 144,
+        "load_imbalance": 1.7777777777777777,
+        "cross_edges": 51,
+        "estimated_speedup": 19.86742118027486,
+        "parallel_efficiency": 0.13796820264079765,
+        "total_cycles": 25.770833333333332
+      }
+    },
+    {
+      "design": "risc_cpu",
+      "design_gates": 500,
+      "design_type": "processor",
+      "mesh_size": 2,
+      "num_cores": 4,
+      "config": {
+        "mesh_width": 2,
+        "mesh_height": 2,
+        "num_cores": 4,
+        "memory_per_core_kb": 4,
+        "total_memory_kb": 16,
+        "max_gates_per_core": 256,
+        "max_total_gates": 1024,
+        "mesh_topology": "2d_grid",
+        "sync_protocol": "barrier"
+      },
+      "performance": {
+        "gates_per_core": 125,
+        "effective_cores": 4,
+        "load_imbalance": 1.0,
+        "cross_edges": 100,
+        "estimated_speedup": 2.5316455696202533,
+        "parallel_efficiency": 0.6329113924050633,
+        "total_cycles": 395.0
+      }
+    },
+    {
+      "design": "risc_cpu",
+      "design_gates": 500,
+      "design_type": "processor",
+      "mesh_size": 3,
+      "num_cores": 9,
+      "config": {
+        "mesh_width": 3,
+        "mesh_height": 3,
+        "num_cores": 9,
+        "memory_per_core_kb": 4,
+        "total_memory_kb": 36,
+        "max_gates_per_core": 256,
+        "max_total_gates": 2304,
+        "mesh_topology": "2d_grid",
+        "sync_protocol": "barrier"
+      },
+      "performance": {
+        "gates_per_core": 56,
+        "effective_cores": 9,
+        "load_imbalance": 1.5555555555555556,
+        "cross_edges": 100,
+        "estimated_speedup": 5.33175355450237,
+        "parallel_efficiency": 0.5924170616113744,
+        "total_cycles": 187.55555555555554
+      }
+    },
+    {
+      "design": "risc_cpu",
+      "design_gates": 500,
+      "design_type": "processor",
+      "mesh_size": 4,
+      "num_cores": 16,
+      "config": {
+        "mesh_width": 4,
+        "mesh_height": 4,
+        "num_cores": 16,
+        "memory_per_core_kb": 4,
+        "total_memory_kb": 64,
+        "max_gates_per_core": 256,
+        "max_total_gates": 4096,
+        "mesh_topology": "2d_grid",
+        "sync_protocol": "barrier"
+      },
+      "performance": {
+        "gates_per_core": 32,
+        "effective_cores": 16,
+        "load_imbalance": 1.25,
+        "cross_edges": 100,
+        "estimated_speedup": 8.676789587852495,
+        "parallel_efficiency": 0.5422993492407809,
+        "total_cycles": 115.25
+      }
+    },
+    {
+      "design": "risc_cpu",
+      "design_gates": 500,
+      "design_type": "processor",
+      "mesh_size": 5,
+      "num_cores": 25,
+      "config": {
+        "mesh_width": 5,
+        "mesh_height": 5,
+        "num_cores": 25,
+        "memory_per_core_kb": 4,
+        "total_memory_kb": 100,
+        "max_gates_per_core": 256,
+        "max_total_gates": 6400,
+        "mesh_topology": "2d_grid",
+        "sync_protocol": "barrier"
+      },
+      "performance": {
+        "gates_per_core": 20,
+        "effective_cores": 25,
+        "load_imbalance": 1.0,
+        "cross_edges": 100,
+        "estimated_speedup": 12.5,
+        "parallel_efficiency": 0.5,
+        "total_cycles": 80.0
+      }
+    },
+    {
+      "design": "risc_cpu",
+      "design_gates": 500,
+      "design_type": "processor",
+      "mesh_size": 6,
+      "num_cores": 36,
+      "config": {
+        "mesh_width": 6,
+        "mesh_height": 6,
+        "num_cores": 36,
+        "memory_per_core_kb": 4,
+        "total_memory_kb": 144,
+        "max_gates_per_core": 256,
+        "max_total_gates": 9216,
+        "mesh_topology": "2d_grid",
+        "sync_protocol": "barrier"
+      },
+      "performance": {
+        "gates_per_core": 14,
+        "effective_cores": 36,
+        "load_imbalance": 1.8888888888888888,
+        "cross_edges": 100,
+        "estimated_speedup": 16.15798922800718,
+        "parallel_efficiency": 0.4488330341113106,
+        "total_cycles": 61.888888888888886
+      }
+    },
+    {
+      "design": "risc_cpu",
+      "design_gates": 500,
+      "design_type": "processor",
+      "mesh_size": 7,
+      "num_cores": 49,
+      "config": {
+        "mesh_width": 7,
+        "mesh_height": 7,
+        "num_cores": 49,
+        "memory_per_core_kb": 4,
+        "total_memory_kb": 196,
+        "max_gates_per_core": 256,
+        "max_total_gates": 12544,
+        "mesh_topology": "2d_grid",
+        "sync_protocol": "barrier"
+      },
+      "performance": {
+        "gates_per_core": 11,
+        "effective_cores": 49,
+        "load_imbalance": 1.2040816326530612,
+        "cross_edges": 100,
+        "estimated_speedup": 19.155590304925724,
+        "parallel_efficiency": 0.39093041438623927,
+        "total_cycles": 52.20408163265306
+      }
+    },
+    {
+      "design": "risc_cpu",
+      "design_gates": 500,
+      "design_type": "processor",
+      "mesh_size": 8,
+      "num_cores": 64,
+      "config": {
+        "mesh_width": 8,
+        "mesh_height": 8,
+        "num_cores": 64,
+        "memory_per_core_kb": 4,
+        "total_memory_kb": 256,
+        "max_gates_per_core": 256,
+        "max_total_gates": 16384,
+        "mesh_topology": "2d_grid",
+        "sync_protocol": "barrier"
+      },
+      "performance": {
+        "gates_per_core": 8,
+        "effective_cores": 64,
+        "load_imbalance": 1.8125,
+        "cross_edges": 100,
+        "estimated_speedup": 22.82453637660485,
+        "parallel_efficiency": 0.3566333808844508,
+        "total_cycles": 43.8125
+      }
+    },
+    {
+      "design": "risc_cpu",
+      "design_gates": 500,
+      "design_type": "processor",
+      "mesh_size": 10,
+      "num_cores": 100,
+      "config": {
+        "mesh_width": 10,
+        "mesh_height": 10,
+        "num_cores": 100,
+        "memory_per_core_kb": 4,
+        "total_memory_kb": 400,
+        "max_gates_per_core": 256,
+        "max_total_gates": 25600,
+        "mesh_topology": "2d_grid",
+        "sync_protocol": "barrier"
+      },
+      "performance": {
+        "gates_per_core": 5,
+        "effective_cores": 100,
+        "load_imbalance": 1.0,
+        "cross_edges": 100,
+        "estimated_speedup": 28.571428571428573,
+        "parallel_efficiency": 0.28571428571428575,
+        "total_cycles": 35.0
+      }
+    },
+    {
+      "design": "risc_cpu",
+      "design_gates": 500,
+      "design_type": "processor",
+      "mesh_size": 12,
+      "num_cores": 144,
+      "config": {
+        "mesh_width": 12,
+        "mesh_height": 12,
+        "num_cores": 144,
+        "memory_per_core_kb": 4,
+        "total_memory_kb": 576,
+        "max_gates_per_core": 256,
+        "max_total_gates": 36864,
+        "mesh_topology": "2d_grid",
+        "sync_protocol": "barrier"
+      },
+      "performance": {
+        "gates_per_core": 4,
+        "effective_cores": 144,
+        "load_imbalance": 1.4722222222222223,
+        "cross_edges": 100,
+        "estimated_speedup": 31.77405119152692,
+        "parallel_efficiency": 0.22065313327449249,
+        "total_cycles": 31.47222222222222
+      }
+    },
+    {
+      "design": "crypto_unit",
+      "design_gates": 800,
+      "design_type": "specialized",
+      "mesh_size": 2,
+      "num_cores": 4,
+      "config": {
+        "mesh_width": 2,
+        "mesh_height": 2,
+        "num_cores": 4,
+        "memory_per_core_kb": 4,
+        "total_memory_kb": 16,
+        "max_gates_per_core": 256,
+        "max_total_gates": 1024,
+        "mesh_topology": "2d_grid",
+        "sync_protocol": "barrier"
+      },
+      "performance": {
+        "gates_per_core": 200,
+        "effective_cores": 4,
+        "load_imbalance": 1.0,
+        "cross_edges": 160,
+        "estimated_speedup": 2.5806451612903225,
+        "parallel_efficiency": 0.6451612903225806,
+        "total_cycles": 620.0
+      }
+    },
+    {
+      "design": "crypto_unit",
+      "design_gates": 800,
+      "design_type": "specialized",
+      "mesh_size": 3,
+      "num_cores": 9,
+      "config": {
+        "mesh_width": 3,
+        "mesh_height": 3,
+        "num_cores": 9,
+        "memory_per_core_kb": 4,
+        "total_memory_kb": 36,
+        "max_gates_per_core": 256,
+        "max_total_gates": 2304,
+        "mesh_topology": "2d_grid",
+        "sync_protocol": "barrier"
+      },
+      "performance": {
+        "gates_per_core": 89,
+        "effective_cores": 9,
+        "load_imbalance": 1.8888888888888888,
+        "cross_edges": 160,
+        "estimated_speedup": 5.577072037180479,
+        "parallel_efficiency": 0.619674670797831,
+        "total_cycles": 286.8888888888889
+      }
+    },
+    {
+      "design": "crypto_unit",
+      "design_gates": 800,
+      "design_type": "specialized",
+      "mesh_size": 4,
+      "num_cores": 16,
+      "config": {
+        "mesh_width": 4,
+        "mesh_height": 4,
+        "num_cores": 16,
+        "memory_per_core_kb": 4,
+        "total_memory_kb": 64,
+        "max_gates_per_core": 256,
+        "max_total_gates": 4096,
+        "mesh_topology": "2d_grid",
+        "sync_protocol": "barrier"
+      },
+      "performance": {
+        "gates_per_core": 50,
+        "effective_cores": 16,
+        "load_imbalance": 1.0,
+        "cross_edges": 160,
+        "estimated_speedup": 9.411764705882353,
+        "parallel_efficiency": 0.5882352941176471,
+        "total_cycles": 170.0
+      }
+    },
+    {
+      "design": "crypto_unit",
+      "design_gates": 800,
+      "design_type": "specialized",
+      "mesh_size": 5,
+      "num_cores": 25,
+      "config": {
+        "mesh_width": 5,
+        "mesh_height": 5,
+        "num_cores": 25,
+        "memory_per_core_kb": 4,
+        "total_memory_kb": 100,
+        "max_gates_per_core": 256,
+        "max_total_gates": 6400,
+        "mesh_topology": "2d_grid",
+        "sync_protocol": "barrier"
+      },
+      "performance": {
+        "gates_per_core": 32,
+        "effective_cores": 25,
+        "load_imbalance": 1.0,
+        "cross_edges": 160,
+        "estimated_speedup": 13.793103448275861,
+        "parallel_efficiency": 0.5517241379310345,
+        "total_cycles": 116.0
+      }
+    },
+    {
+      "design": "crypto_unit",
+      "design_gates": 800,
+      "design_type": "specialized",
+      "mesh_size": 6,
+      "num_cores": 36,
+      "config": {
+        "mesh_width": 6,
+        "mesh_height": 6,
+        "num_cores": 36,
+        "memory_per_core_kb": 4,
+        "total_memory_kb": 144,
+        "max_gates_per_core": 256,
+        "max_total_gates": 9216,
+        "mesh_topology": "2d_grid",
+        "sync_protocol": "barrier"
+      },
+      "performance": {
+        "gates_per_core": 23,
+        "effective_cores": 36,
+        "load_imbalance": 1.2222222222222223,
+        "cross_edges": 160,
+        "estimated_speedup": 18.1360201511335,
+        "parallel_efficiency": 0.5037783375314862,
+        "total_cycles": 88.22222222222223
+      }
+    },
+    {
+      "design": "crypto_unit",
+      "design_gates": 800,
+      "design_type": "specialized",
+      "mesh_size": 7,
+      "num_cores": 49,
+      "config": {
+        "mesh_width": 7,
+        "mesh_height": 7,
+        "num_cores": 49,
+        "memory_per_core_kb": 4,
+        "total_memory_kb": 196,
+        "max_gates_per_core": 256,
+        "max_total_gates": 12544,
+        "mesh_topology": "2d_grid",
+        "sync_protocol": "barrier"
+      },
+      "performance": {
+        "gates_per_core": 17,
+        "effective_cores": 49,
+        "load_imbalance": 1.3265306122448979,
+        "cross_edges": 160,
+        "estimated_speedup": 22.751015670342426,
+        "parallel_efficiency": 0.4643064422518862,
+        "total_cycles": 70.3265306122449
+      }
+    },
+    {
+      "design": "crypto_unit",
+      "design_gates": 800,
+      "design_type": "specialized",
+      "mesh_size": 8,
+      "num_cores": 64,
+      "config": {
+        "mesh_width": 8,
+        "mesh_height": 8,
+        "num_cores": 64,
+        "memory_per_core_kb": 4,
+        "total_memory_kb": 256,
+        "max_gates_per_core": 256,
+        "max_total_gates": 16384,
+        "mesh_topology": "2d_grid",
+        "sync_protocol": "barrier"
+      },
+      "performance": {
+        "gates_per_core": 13,
+        "effective_cores": 64,
+        "load_imbalance": 1.5,
+        "cross_edges": 160,
+        "estimated_speedup": 27.35042735042735,
+        "parallel_efficiency": 0.42735042735042733,
+        "total_cycles": 58.5
+      }
+    },
+    {
+      "design": "crypto_unit",
+      "design_gates": 800,
+      "design_type": "specialized",
+      "mesh_size": 10,
+      "num_cores": 100,
+      "config": {
+        "mesh_width": 10,
+        "mesh_height": 10,
+        "num_cores": 100,
+        "memory_per_core_kb": 4,
+        "total_memory_kb": 400,
+        "max_gates_per_core": 256,
+        "max_total_gates": 25600,
+        "mesh_topology": "2d_grid",
+        "sync_protocol": "barrier"
+      },
+      "performance": {
+        "gates_per_core": 8,
+        "effective_cores": 100,
+        "load_imbalance": 1.0,
+        "cross_edges": 160,
+        "estimated_speedup": 36.36363636363637,
+        "parallel_efficiency": 0.36363636363636365,
+        "total_cycles": 44.0
+      }
+    },
+    {
+      "design": "crypto_unit",
+      "design_gates": 800,
+      "design_type": "specialized",
+      "mesh_size": 12,
+      "num_cores": 144,
+      "config": {
+        "mesh_width": 12,
+        "mesh_height": 12,
+        "num_cores": 144,
+        "memory_per_core_kb": 4,
+        "total_memory_kb": 576,
+        "max_gates_per_core": 256,
+        "max_total_gates": 36864,
+        "mesh_topology": "2d_grid",
+        "sync_protocol": "barrier"
+      },
+      "performance": {
+        "gates_per_core": 6,
+        "effective_cores": 144,
+        "load_imbalance": 1.5555555555555556,
+        "cross_edges": 160,
+        "estimated_speedup": 42.603550295857985,
+        "parallel_efficiency": 0.29585798816568043,
+        "total_cycles": 37.55555555555556
+      }
+    },
+    {
+      "design": "gpu_core",
+      "design_gates": 1200,
+      "design_type": "parallel",
+      "mesh_size": 2,
+      "num_cores": 4,
+      "config": {
+        "mesh_width": 2,
+        "mesh_height": 2,
+        "num_cores": 4,
+        "memory_per_core_kb": 4,
+        "total_memory_kb": 16,
+        "max_gates_per_core": 256,
+        "max_total_gates": 1024,
+        "mesh_topology": "2d_grid",
+        "sync_protocol": "barrier"
+      },
+      "performance": {
+        "gates_per_core": 300,
+        "effective_cores": 4,
+        "load_imbalance": 1.0,
+        "cross_edges": 240,
+        "estimated_speedup": 2.608695652173913,
+        "parallel_efficiency": 0.6521739130434783,
+        "total_cycles": 920.0
+      }
+    },
+    {
+      "design": "gpu_core",
+      "design_gates": 1200,
+      "design_type": "parallel",
+      "mesh_size": 3,
+      "num_cores": 9,
+      "config": {
+        "mesh_width": 3,
+        "mesh_height": 3,
+        "num_cores": 9,
+        "memory_per_core_kb": 4,
+        "total_memory_kb": 36,
+        "max_gates_per_core": 256,
+        "max_total_gates": 2304,
+        "mesh_topology": "2d_grid",
+        "sync_protocol": "barrier"
+      },
+      "performance": {
+        "gates_per_core": 134,
+        "effective_cores": 9,
+        "load_imbalance": 1.3333333333333333,
+        "cross_edges": 240,
+        "estimated_speedup": 5.696202531645569,
+        "parallel_efficiency": 0.6329113924050632,
+        "total_cycles": 421.33333333333337
+      }
+    },
+    {
+      "design": "gpu_core",
+      "design_gates": 1200,
+      "design_type": "parallel",
+      "mesh_size": 4,
+      "num_cores": 16,
+      "config": {
+        "mesh_width": 4,
+        "mesh_height": 4,
+        "num_cores": 16,
+        "memory_per_core_kb": 4,
+        "total_memory_kb": 64,
+        "max_gates_per_core": 256,
+        "max_total_gates": 4096,
+        "mesh_topology": "2d_grid",
+        "sync_protocol": "barrier"
+      },
+      "performance": {
+        "gates_per_core": 75,
+        "effective_cores": 16,
+        "load_imbalance": 1.0,
+        "cross_edges": 240,
+        "estimated_speedup": 9.795918367346939,
+        "parallel_efficiency": 0.6122448979591837,
+        "total_cycles": 245.0
+      }
+    },
+    {
+      "design": "gpu_core",
+      "design_gates": 1200,
+      "design_type": "parallel",
+      "mesh_size": 5,
+      "num_cores": 25,
+      "config": {
+        "mesh_width": 5,
+        "mesh_height": 5,
+        "num_cores": 25,
+        "memory_per_core_kb": 4,
+        "total_memory_kb": 100,
+        "max_gates_per_core": 256,
+        "max_total_gates": 6400,
+        "mesh_topology": "2d_grid",
+        "sync_protocol": "barrier"
+      },
+      "performance": {
+        "gates_per_core": 48,
+        "effective_cores": 25,
+        "load_imbalance": 1.0,
+        "cross_edges": 240,
+        "estimated_speedup": 14.634146341463415,
+        "parallel_efficiency": 0.5853658536585367,
+        "total_cycles": 164.0
+      }
+    },
+    {
+      "design": "gpu_core",
+      "design_gates": 1200,
+      "design_type": "parallel",
+      "mesh_size": 6,
+      "num_cores": 36,
+      "config": {
+        "mesh_width": 6,
+        "mesh_height": 6,
+        "num_cores": 36,
+        "memory_per_core_kb": 4,
+        "total_memory_kb": 144,
+        "max_gates_per_core": 256,
+        "max_total_gates": 9216,
+        "mesh_topology": "2d_grid",
+        "sync_protocol": "barrier"
+      },
+      "performance": {
+        "gates_per_core": 34,
+        "effective_cores": 36,
+        "load_imbalance": 1.3333333333333333,
+        "cross_edges": 240,
+        "estimated_speedup": 19.780219780219777,
+        "parallel_efficiency": 0.5494505494505494,
+        "total_cycles": 121.33333333333334
+      }
+    },
+    {
+      "design": "gpu_core",
+      "design_gates": 1200,
+      "design_type": "parallel",
+      "mesh_size": 7,
+      "num_cores": 49,
+      "config": {
+        "mesh_width": 7,
+        "mesh_height": 7,
+        "num_cores": 49,
+        "memory_per_core_kb": 4,
+        "total_memory_kb": 196,
+        "max_gates_per_core": 256,
+        "max_total_gates": 12544,
+        "mesh_topology": "2d_grid",
+        "sync_protocol": "barrier"
+      },
+      "performance": {
+        "gates_per_core": 25,
+        "effective_cores": 49,
+        "load_imbalance": 1.489795918367347,
+        "cross_edges": 240,
+        "estimated_speedup": 25.399568034557234,
+        "parallel_efficiency": 0.5183585313174945,
+        "total_cycles": 94.48979591836735
+      }
+    },
+    {
+      "design": "gpu_core",
+      "design_gates": 1200,
+      "design_type": "parallel",
+      "mesh_size": 8,
+      "num_cores": 64,
+      "config": {
+        "mesh_width": 8,
+        "mesh_height": 8,
+        "num_cores": 64,
+        "memory_per_core_kb": 4,
+        "total_memory_kb": 256,
+        "max_gates_per_core": 256,
+        "max_total_gates": 16384,
+        "mesh_topology": "2d_grid",
+        "sync_protocol": "barrier"
+      },
+      "performance": {
+        "gates_per_core": 19,
+        "effective_cores": 64,
+        "load_imbalance": 1.75,
+        "cross_edges": 240,
+        "estimated_speedup": 31.270358306188925,
+        "parallel_efficiency": 0.48859934853420195,
+        "total_cycles": 76.75
+      }
+    },
+    {
+      "design": "gpu_core",
+      "design_gates": 1200,
+      "design_type": "parallel",
+      "mesh_size": 10,
+      "num_cores": 100,
+      "config": {
+        "mesh_width": 10,
+        "mesh_height": 10,
+        "num_cores": 100,
+        "memory_per_core_kb": 4,
+        "total_memory_kb": 400,
+        "max_gates_per_core": 256,
+        "max_total_gates": 25600,
+        "mesh_topology": "2d_grid",
+        "sync_protocol": "barrier"
+      },
+      "performance": {
+        "gates_per_core": 12,
+        "effective_cores": 100,
+        "load_imbalance": 1.0,
+        "cross_edges": 240,
+        "estimated_speedup": 42.857142857142854,
+        "parallel_efficiency": 0.42857142857142855,
+        "total_cycles": 56.0
+      }
+    },
+    {
+      "design": "gpu_core",
+      "design_gates": 1200,
+      "design_type": "parallel",
+      "mesh_size": 12,
+      "num_cores": 144,
+      "config": {
+        "mesh_width": 12,
+        "mesh_height": 12,
+        "num_cores": 144,
+        "memory_per_core_kb": 4,
+        "total_memory_kb": 576,
+        "max_gates_per_core": 256,
+        "max_total_gates": 36864,
+        "mesh_topology": "2d_grid",
+        "sync_protocol": "barrier"
+      },
+      "performance": {
+        "gates_per_core": 9,
+        "effective_cores": 144,
+        "load_imbalance": 1.3333333333333333,
+        "cross_edges": 240,
+        "estimated_speedup": 51.798561151079134,
+        "parallel_efficiency": 0.3597122302158273,
+        "total_cycles": 46.333333333333336
+      }
+    },
+    {
+      "design": "soc_subsystem",
+      "design_gates": 2000,
+      "design_type": "system",
+      "mesh_size": 2,
+      "num_cores": 4,
+      "config": {
+        "mesh_width": 2,
+        "mesh_height": 2,
+        "num_cores": 4,
+        "memory_per_core_kb": 4,
+        "total_memory_kb": 16,
+        "max_gates_per_core": 256,
+        "max_total_gates": 1024,
+        "mesh_topology": "2d_grid",
+        "sync_protocol": "barrier"
+      },
+      "performance": {
+        "gates_per_core": 500,
+        "effective_cores": 4,
+        "load_imbalance": 1.0,
+        "cross_edges": 400,
+        "estimated_speedup": 2.6315789473684212,
+        "parallel_efficiency": 0.6578947368421053,
+        "total_cycles": 1520.0
+      }
+    },
+    {
+      "design": "soc_subsystem",
+      "design_gates": 2000,
+      "design_type": "system",
+      "mesh_size": 3,
+      "num_cores": 9,
+      "config": {
+        "mesh_width": 3,
+        "mesh_height": 3,
+        "num_cores": 9,
+        "memory_per_core_kb": 4,
+        "total_memory_kb": 36,
+        "max_gates_per_core": 256,
+        "max_total_gates": 2304,
+        "mesh_topology": "2d_grid",
+        "sync_protocol": "barrier"
+      },
+      "performance": {
+        "gates_per_core": 223,
+        "effective_cores": 9,
+        "load_imbalance": 1.2222222222222223,
+        "cross_edges": 400,
+        "estimated_speedup": 5.812076202776881,
+        "parallel_efficiency": 0.6457862447529867,
+        "total_cycles": 688.2222222222222
+      }
+    },
+    {
+      "design": "soc_subsystem",
+      "design_gates": 2000,
+      "design_type": "system",
+      "mesh_size": 4,
+      "num_cores": 16,
+      "config": {
+        "mesh_width": 4,
+        "mesh_height": 4,
+        "num_cores": 16,
+        "memory_per_core_kb": 4,
+        "total_memory_kb": 64,
+        "max_gates_per_core": 256,
+        "max_total_gates": 4096,
+        "mesh_topology": "2d_grid",
+        "sync_protocol": "barrier"
+      },
+      "performance": {
+        "gates_per_core": 125,
+        "effective_cores": 16,
+        "load_imbalance": 1.0,
+        "cross_edges": 400,
+        "estimated_speedup": 10.126582278481013,
+        "parallel_efficiency": 0.6329113924050633,
+        "total_cycles": 395.0
+      }
+    },
+    {
+      "design": "soc_subsystem",
+      "design_gates": 2000,
+      "design_type": "system",
+      "mesh_size": 5,
+      "num_cores": 25,
+      "config": {
+        "mesh_width": 5,
+        "mesh_height": 5,
+        "num_cores": 25,
+        "memory_per_core_kb": 4,
+        "total_memory_kb": 100,
+        "max_gates_per_core": 256,
+        "max_total_gates": 6400,
+        "mesh_topology": "2d_grid",
+        "sync_protocol": "barrier"
+      },
+      "performance": {
+        "gates_per_core": 80,
+        "effective_cores": 25,
+        "load_imbalance": 1.0,
+        "cross_edges": 400,
+        "estimated_speedup": 15.384615384615385,
+        "parallel_efficiency": 0.6153846153846154,
+        "total_cycles": 260.0
+      }
+    },
+    {
+      "design": "soc_subsystem",
+      "design_gates": 2000,
+      "design_type": "system",
+      "mesh_size": 6,
+      "num_cores": 36,
+      "config": {
+        "mesh_width": 6,
+        "mesh_height": 6,
+        "num_cores": 36,
+        "memory_per_core_kb": 4,
+        "total_memory_kb": 144,
+        "max_gates_per_core": 256,
+        "max_total_gates": 9216,
+        "mesh_topology": "2d_grid",
+        "sync_protocol": "barrier"
+      },
+      "performance": {
+        "gates_per_core": 56,
+        "effective_cores": 36,
+        "load_imbalance": 1.5555555555555556,
+        "cross_edges": 400,
+        "estimated_speedup": 21.32701421800948,
+        "parallel_efficiency": 0.5924170616113744,
+        "total_cycles": 187.55555555555554
+      }
+    },
+    {
+      "design": "soc_subsystem",
+      "design_gates": 2000,
+      "design_type": "system",
+      "mesh_size": 7,
+      "num_cores": 49,
+      "config": {
+        "mesh_width": 7,
+        "mesh_height": 7,
+        "num_cores": 49,
+        "memory_per_core_kb": 4,
+        "total_memory_kb": 196,
+        "max_gates_per_core": 256,
+        "max_total_gates": 12544,
+        "mesh_topology": "2d_grid",
+        "sync_protocol": "barrier"
+      },
+      "performance": {
+        "gates_per_core": 41,
+        "effective_cores": 49,
+        "load_imbalance": 1.816326530612245,
+        "cross_edges": 400,
+        "estimated_speedup": 28.008002286367535,
+        "parallel_efficiency": 0.5715918833952558,
+        "total_cycles": 142.81632653061223
+      }
+    },
+    {
+      "design": "soc_subsystem",
+      "design_gates": 2000,
+      "design_type": "system",
+      "mesh_size": 8,
+      "num_cores": 64,
+      "config": {
+        "mesh_width": 8,
+        "mesh_height": 8,
+        "num_cores": 64,
+        "memory_per_core_kb": 4,
+        "total_memory_kb": 256,
+        "max_gates_per_core": 256,
+        "max_total_gates": 16384,
+        "mesh_topology": "2d_grid",
+        "sync_protocol": "barrier"
+      },
+      "performance": {
+        "gates_per_core": 32,
+        "effective_cores": 64,
+        "load_imbalance": 1.25,
+        "cross_edges": 400,
+        "estimated_speedup": 34.70715835140998,
+        "parallel_efficiency": 0.5422993492407809,
+        "total_cycles": 115.25
+      }
+    },
+    {
+      "design": "soc_subsystem",
+      "design_gates": 2000,
+      "design_type": "system",
+      "mesh_size": 10,
+      "num_cores": 100,
+      "config": {
+        "mesh_width": 10,
+        "mesh_height": 10,
+        "num_cores": 100,
+        "memory_per_core_kb": 4,
+        "total_memory_kb": 400,
+        "max_gates_per_core": 256,
+        "max_total_gates": 25600,
+        "mesh_topology": "2d_grid",
+        "sync_protocol": "barrier"
+      },
+      "performance": {
+        "gates_per_core": 20,
+        "effective_cores": 100,
+        "load_imbalance": 1.0,
+        "cross_edges": 400,
+        "estimated_speedup": 50.0,
+        "parallel_efficiency": 0.5,
+        "total_cycles": 80.0
+      }
+    },
+    {
+      "design": "soc_subsystem",
+      "design_gates": 2000,
+      "design_type": "system",
+      "mesh_size": 12,
+      "num_cores": 144,
+      "config": {
+        "mesh_width": 12,
+        "mesh_height": 12,
+        "num_cores": 144,
+        "memory_per_core_kb": 4,
+        "total_memory_kb": 576,
+        "max_gates_per_core": 256,
+        "max_total_gates": 36864,
+        "mesh_topology": "2d_grid",
+        "sync_protocol": "barrier"
+      },
+      "performance": {
+        "gates_per_core": 14,
+        "effective_cores": 144,
+        "load_imbalance": 1.8888888888888888,
+        "cross_edges": 400,
+        "estimated_speedup": 64.63195691202873,
+        "parallel_efficiency": 0.4488330341113106,
+        "total_cycles": 61.888888888888886
+      }
+    },
+    {
+      "design": "fpga_fabric",
+      "design_gates": 4000,
+      "design_type": "reconfigurable",
+      "mesh_size": 2,
+      "num_cores": 4,
+      "config": {
+        "mesh_width": 2,
+        "mesh_height": 2,
+        "num_cores": 4,
+        "memory_per_core_kb": 4,
+        "total_memory_kb": 16,
+        "max_gates_per_core": 256,
+        "max_total_gates": 1024,
+        "mesh_topology": "2d_grid",
+        "sync_protocol": "barrier"
+      },
+      "performance": {
+        "gates_per_core": 1000,
+        "effective_cores": 4,
+        "load_imbalance": 1.0,
+        "cross_edges": 800,
+        "estimated_speedup": 2.6490066225165565,
+        "parallel_efficiency": 0.6622516556291391,
+        "total_cycles": 3020.0
+      }
+    },
+    {
+      "design": "fpga_fabric",
+      "design_gates": 4000,
+      "design_type": "reconfigurable",
+      "mesh_size": 3,
+      "num_cores": 9,
+      "config": {
+        "mesh_width": 3,
+        "mesh_height": 3,
+        "num_cores": 9,
+        "memory_per_core_kb": 4,
+        "total_memory_kb": 36,
+        "max_gates_per_core": 256,
+        "max_total_gates": 2304,
+        "mesh_topology": "2d_grid",
+        "sync_protocol": "barrier"
+      },
+      "performance": {
+        "gates_per_core": 445,
+        "effective_cores": 9,
+        "load_imbalance": 1.4444444444444444,
+        "cross_edges": 800,
+        "estimated_speedup": 5.9064807219032,
+        "parallel_efficiency": 0.6562756357670222,
+        "total_cycles": 1354.4444444444443
+      }
+    },
+    {
+      "design": "fpga_fabric",
+      "design_gates": 4000,
+      "design_type": "reconfigurable",
+      "mesh_size": 4,
+      "num_cores": 16,
+      "config": {
+        "mesh_width": 4,
+        "mesh_height": 4,
+        "num_cores": 16,
+        "memory_per_core_kb": 4,
+        "total_memory_kb": 64,
+        "max_gates_per_core": 256,
+        "max_total_gates": 4096,
+        "mesh_topology": "2d_grid",
+        "sync_protocol": "barrier"
+      },
+      "performance": {
+        "gates_per_core": 250,
+        "effective_cores": 16,
+        "load_imbalance": 1.0,
+        "cross_edges": 800,
+        "estimated_speedup": 10.38961038961039,
+        "parallel_efficiency": 0.6493506493506493,
+        "total_cycles": 770.0
+      }
+    },
+    {
+      "design": "fpga_fabric",
+      "design_gates": 4000,
+      "design_type": "reconfigurable",
+      "mesh_size": 5,
+      "num_cores": 25,
+      "config": {
+        "mesh_width": 5,
+        "mesh_height": 5,
+        "num_cores": 25,
+        "memory_per_core_kb": 4,
+        "total_memory_kb": 100,
+        "max_gates_per_core": 256,
+        "max_total_gates": 6400,
+        "mesh_topology": "2d_grid",
+        "sync_protocol": "barrier"
+      },
+      "performance": {
+        "gates_per_core": 160,
+        "effective_cores": 25,
+        "load_imbalance": 1.0,
+        "cross_edges": 800,
+        "estimated_speedup": 16.0,
+        "parallel_efficiency": 0.64,
+        "total_cycles": 500.0
+      }
+    },
+    {
+      "design": "fpga_fabric",
+      "design_gates": 4000,
+      "design_type": "reconfigurable",
+      "mesh_size": 6,
+      "num_cores": 36,
+      "config": {
+        "mesh_width": 6,
+        "mesh_height": 6,
+        "num_cores": 36,
+        "memory_per_core_kb": 4,
+        "total_memory_kb": 144,
+        "max_gates_per_core": 256,
+        "max_total_gates": 9216,
+        "mesh_topology": "2d_grid",
+        "sync_protocol": "barrier"
+      },
+      "performance": {
+        "gates_per_core": 112,
+        "effective_cores": 36,
+        "load_imbalance": 1.1111111111111112,
+        "cross_edges": 800,
+        "estimated_speedup": 22.528160200250316,
+        "parallel_efficiency": 0.625782227784731,
+        "total_cycles": 355.1111111111111
+      }
+    },
+    {
+      "design": "fpga_fabric",
+      "design_gates": 4000,
+      "design_type": "reconfigurable",
+      "mesh_size": 7,
+      "num_cores": 49,
+      "config": {
+        "mesh_width": 7,
+        "mesh_height": 7,
+        "num_cores": 49,
+        "memory_per_core_kb": 4,
+        "total_memory_kb": 196,
+        "max_gates_per_core": 256,
+        "max_total_gates": 12544,
+        "mesh_topology": "2d_grid",
+        "sync_protocol": "barrier"
+      },
+      "performance": {
+        "gates_per_core": 82,
+        "effective_cores": 49,
+        "load_imbalance": 1.6326530612244898,
+        "cross_edges": 800,
+        "estimated_speedup": 30.116779348494166,
+        "parallel_efficiency": 0.6146281499692687,
+        "total_cycles": 265.63265306122446
+      }
+    },
+    {
+      "design": "fpga_fabric",
+      "design_gates": 4000,
+      "design_type": "reconfigurable",
+      "mesh_size": 8,
+      "num_cores": 64,
+      "config": {
+        "mesh_width": 8,
+        "mesh_height": 8,
+        "num_cores": 64,
+        "memory_per_core_kb": 4,
+        "total_memory_kb": 256,
+        "max_gates_per_core": 256,
+        "max_total_gates": 16384,
+        "mesh_topology": "2d_grid",
+        "sync_protocol": "barrier"
+      },
+      "performance": {
+        "gates_per_core": 63,
+        "effective_cores": 64,
+        "load_imbalance": 1.5,
+        "cross_edges": 800,
+        "estimated_speedup": 38.36930455635492,
+        "parallel_efficiency": 0.5995203836930456,
+        "total_cycles": 208.5
+      }
+    },
+    {
+      "design": "fpga_fabric",
+      "design_gates": 4000,
+      "design_type": "reconfigurable",
+      "mesh_size": 10,
+      "num_cores": 100,
+      "config": {
+        "mesh_width": 10,
+        "mesh_height": 10,
+        "num_cores": 100,
+        "memory_per_core_kb": 4,
+        "total_memory_kb": 400,
+        "max_gates_per_core": 256,
+        "max_total_gates": 25600,
+        "mesh_topology": "2d_grid",
+        "sync_protocol": "barrier"
+      },
+      "performance": {
+        "gates_per_core": 40,
+        "effective_cores": 100,
+        "load_imbalance": 1.0,
+        "cross_edges": 800,
+        "estimated_speedup": 57.142857142857146,
+        "parallel_efficiency": 0.5714285714285715,
+        "total_cycles": 140.0
+      }
+    },
+    {
+      "design": "fpga_fabric",
+      "design_gates": 4000,
+      "design_type": "reconfigurable",
+      "mesh_size": 12,
+      "num_cores": 144,
+      "config": {
+        "mesh_width": 12,
+        "mesh_height": 12,
+        "num_cores": 144,
+        "memory_per_core_kb": 4,
+        "total_memory_kb": 576,
+        "max_gates_per_core": 256,
+        "max_total_gates": 36864,
+        "mesh_topology": "2d_grid",
+        "sync_protocol": "barrier"
+      },
+      "performance": {
+        "gates_per_core": 28,
+        "effective_cores": 144,
+        "load_imbalance": 1.7777777777777777,
+        "cross_edges": 800,
+        "estimated_speedup": 77.08779443254818,
+        "parallel_efficiency": 0.5353319057815846,
+        "total_cycles": 103.77777777777777
+      }
+    }
+  ],
+  "recommendations": {
+    "arithmetic": {
+      "optimal_mesh_size": 12,
+      "num_cores": 144,
+      "avg_speedup": 7.146338335257151,
+      "config": {
+        "mesh_width": 12,
+        "mesh_height": 12,
+        "num_cores": 144,
+        "memory_per_core_kb": 4,
+        "total_memory_kb": 576,
+        "max_gates_per_core": 256,
+        "max_total_gates": 36864,
+        "mesh_topology": "2d_grid",
+        "sync_protocol": "barrier"
+      }
+    },
+    "sequential": {
+      "optimal_mesh_size": 6,
+      "num_cores": 36,
+      "avg_speedup": 2.790190735694823,
+      "config": {
+        "mesh_width": 6,
+        "mesh_height": 6,
+        "num_cores": 36,
+        "memory_per_core_kb": 4,
+        "total_memory_kb": 144,
+        "max_gates_per_core": 256,
+        "max_total_gates": 9216,
+        "mesh_topology": "2d_grid",
+        "sync_protocol": "barrier"
+      }
+    },
+    "processor": {
+      "optimal_mesh_size": 12,
+      "num_cores": 144,
+      "avg_speedup": 25.82073618590089,
+      "config": {
+        "mesh_width": 12,
+        "mesh_height": 12,
+        "num_cores": 144,
+        "memory_per_core_kb": 4,
+        "total_memory_kb": 576,
+        "max_gates_per_core": 256,
+        "max_total_gates": 36864,
+        "mesh_topology": "2d_grid",
+        "sync_protocol": "barrier"
+      }
+    },
+    "specialized": {
+      "optimal_mesh_size": 12,
+      "num_cores": 144,
+      "avg_speedup": 42.603550295857985,
+      "config": {
+        "mesh_width": 12,
+        "mesh_height": 12,
+        "num_cores": 144,
+        "memory_per_core_kb": 4,
+        "total_memory_kb": 576,
+        "max_gates_per_core": 256,
+        "max_total_gates": 36864,
+        "mesh_topology": "2d_grid",
+        "sync_protocol": "barrier"
+      }
+    },
+    "parallel": {
+      "optimal_mesh_size": 12,
+      "num_cores": 144,
+      "avg_speedup": 51.798561151079134,
+      "config": {
+        "mesh_width": 12,
+        "mesh_height": 12,
+        "num_cores": 144,
+        "memory_per_core_kb": 4,
+        "total_memory_kb": 576,
+        "max_gates_per_core": 256,
+        "max_total_gates": 36864,
+        "mesh_topology": "2d_grid",
+        "sync_protocol": "barrier"
+      }
+    },
+    "system": {
+      "optimal_mesh_size": 12,
+      "num_cores": 144,
+      "avg_speedup": 64.63195691202873,
+      "config": {
+        "mesh_width": 12,
+        "mesh_height": 12,
+        "num_cores": 144,
+        "memory_per_core_kb": 4,
+        "total_memory_kb": 576,
+        "max_gates_per_core": 256,
+        "max_total_gates": 36864,
+        "mesh_topology": "2d_grid",
+        "sync_protocol": "barrier"
+      }
+    },
+    "reconfigurable": {
+      "optimal_mesh_size": 12,
+      "num_cores": 144,
+      "avg_speedup": 77.08779443254818,
+      "config": {
+        "mesh_width": 12,
+        "mesh_height": 12,
+        "num_cores": 144,
+        "memory_per_core_kb": 4,
+        "total_memory_kb": 576,
+        "max_gates_per_core": 256,
+        "max_total_gates": 36864,
+        "mesh_topology": "2d_grid",
+        "sync_protocol": "barrier"
+      }
+    }
+  },
+  "summary": "RTL simulation mesh configuration performance sweep"
+}

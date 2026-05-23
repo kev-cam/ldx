@@ -1,0 +1,255 @@
+[
+  {
+    "mesh_size": 2,
+    "num_cores": 4,
+    "resource_estimate": {
+      "mesh_size": "2\u00d72",
+      "num_cores": 4,
+      "estimated_resources": {
+        "luts": 2866,
+        "flip_flops": 3538,
+        "bram_tiles": 4.1,
+        "dsp_slices": 0.5
+      },
+      "utilization_percent": {
+        "luts": 1.2,
+        "flip_flops": 0.8,
+        "bram_tiles": 1.3,
+        "dsp_slices": 0.0
+      },
+      "fits_zcu104": true
+    },
+    "target_designs": [
+      "4bit_adder",
+      "8bit_counter"
+    ]
+  },
+  {
+    "mesh_size": 3,
+    "num_cores": 9,
+    "resource_estimate": {
+      "mesh_size": "3\u00d73",
+      "num_cores": 9,
+      "estimated_resources": {
+        "luts": 6599,
+        "flip_flops": 7961,
+        "bram_tiles": 9.2,
+        "dsp_slices": 1.1
+      },
+      "utilization_percent": {
+        "luts": 2.9,
+        "flip_flops": 1.7,
+        "bram_tiles": 2.9,
+        "dsp_slices": 0.1
+      },
+      "fits_zcu104": true
+    },
+    "target_designs": [
+      "4bit_adder",
+      "8bit_counter"
+    ]
+  },
+  {
+    "mesh_size": 4,
+    "num_cores": 16,
+    "resource_estimate": {
+      "mesh_size": "4\u00d74",
+      "num_cores": 16,
+      "estimated_resources": {
+        "luts": 11866,
+        "flip_flops": 14152,
+        "bram_tiles": 16.3,
+        "dsp_slices": 1.9
+      },
+      "utilization_percent": {
+        "luts": 5.2,
+        "flip_flops": 3.1,
+        "bram_tiles": 5.2,
+        "dsp_slices": 0.1
+      },
+      "fits_zcu104": true
+    },
+    "target_designs": [
+      "16bit_alu",
+      "32bit_adder"
+    ]
+  },
+  {
+    "mesh_size": 5,
+    "num_cores": 25,
+    "resource_estimate": {
+      "mesh_size": "5\u00d75",
+      "num_cores": 25,
+      "estimated_resources": {
+        "luts": 18666,
+        "flip_flops": 22114,
+        "bram_tiles": 25.5,
+        "dsp_slices": 3.0
+      },
+      "utilization_percent": {
+        "luts": 8.1,
+        "flip_flops": 4.8,
+        "bram_tiles": 8.2,
+        "dsp_slices": 0.2
+      },
+      "fits_zcu104": true
+    },
+    "target_designs": [
+      "16bit_alu",
+      "32bit_adder"
+    ]
+  },
+  {
+    "mesh_size": 6,
+    "num_cores": 36,
+    "resource_estimate": {
+      "mesh_size": "6\u00d76",
+      "num_cores": 36,
+      "estimated_resources": {
+        "luts": 26999,
+        "flip_flops": 31844,
+        "bram_tiles": 36.7,
+        "dsp_slices": 4.3
+      },
+      "utilization_percent": {
+        "luts": 11.7,
+        "flip_flops": 6.9,
+        "bram_tiles": 11.8,
+        "dsp_slices": 0.2
+      },
+      "fits_zcu104": true
+    },
+    "target_designs": [
+      "simple_cpu",
+      "risc_cpu"
+    ]
+  },
+  {
+    "mesh_size": 7,
+    "num_cores": 49,
+    "resource_estimate": {
+      "mesh_size": "7\u00d77",
+      "num_cores": 49,
+      "estimated_resources": {
+        "luts": 36865,
+        "flip_flops": 43343,
+        "bram_tiles": 50.0,
+        "dsp_slices": 5.9
+      },
+      "utilization_percent": {
+        "luts": 16.0,
+        "flip_flops": 9.4,
+        "bram_tiles": 16.0,
+        "dsp_slices": 0.3
+      },
+      "fits_zcu104": true
+    },
+    "target_designs": [
+      "simple_cpu",
+      "risc_cpu"
+    ]
+  },
+  {
+    "mesh_size": 8,
+    "num_cores": 64,
+    "resource_estimate": {
+      "mesh_size": "8\u00d78",
+      "num_cores": 64,
+      "estimated_resources": {
+        "luts": 48264,
+        "flip_flops": 56611,
+        "bram_tiles": 65.3,
+        "dsp_slices": 7.7
+      },
+      "utilization_percent": {
+        "luts": 20.9,
+        "flip_flops": 12.3,
+        "bram_tiles": 20.9,
+        "dsp_slices": 0.4
+      },
+      "fits_zcu104": true
+    },
+    "target_designs": [
+      "simple_cpu",
+      "risc_cpu"
+    ]
+  },
+  {
+    "mesh_size": 10,
+    "num_cores": 100,
+    "resource_estimate": {
+      "mesh_size": "10\u00d710",
+      "num_cores": 100,
+      "estimated_resources": {
+        "luts": 75664,
+        "flip_flops": 88456,
+        "bram_tiles": 102.0,
+        "dsp_slices": 12.0
+      },
+      "utilization_percent": {
+        "luts": 32.8,
+        "flip_flops": 19.2,
+        "bram_tiles": 32.7,
+        "dsp_slices": 0.7
+      },
+      "fits_zcu104": true
+    },
+    "target_designs": [
+      "crypto_unit",
+      "gpu_core",
+      "soc_subsystem"
+    ]
+  },
+  {
+    "mesh_size": 12,
+    "num_cores": 144,
+    "resource_estimate": {
+      "mesh_size": "12\u00d712",
+      "num_cores": 144,
+      "estimated_resources": {
+        "luts": 109196,
+        "flip_flops": 127376,
+        "bram_tiles": 146.9,
+        "dsp_slices": 17.3
+      },
+      "utilization_percent": {
+        "luts": 47.4,
+        "flip_flops": 27.6,
+        "bram_tiles": 47.1,
+        "dsp_slices": 1.0
+      },
+      "fits_zcu104": true
+    },
+    "target_designs": [
+      "crypto_unit",
+      "gpu_core",
+      "soc_subsystem"
+    ]
+  },
+  {
+    "mesh_size": 16,
+    "num_cores": 256,
+    "resource_estimate": {
+      "mesh_size": "16\u00d716",
+      "num_cores": 256,
+      "estimated_resources": {
+        "luts": 194659,
+        "flip_flops": 226447,
+        "bram_tiles": 261.1,
+        "dsp_slices": 30.7
+      },
+      "utilization_percent": {
+        "luts": 84.5,
+        "flip_flops": 49.1,
+        "bram_tiles": 83.7,
+        "dsp_slices": 1.8
+      },
+      "fits_zcu104": true
+    },
+    "target_designs": [
+      "crypto_unit",
+      "gpu_core",
+      "soc_subsystem"
+    ]
+  }
+]
