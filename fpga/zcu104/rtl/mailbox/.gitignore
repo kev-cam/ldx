@@ -2,3 +2,8 @@ obj_sim/
 obj_arr/
 sim_mailbox
 sim_array
+m1/obj_m1/
+m1/sim_m1
+m1/*.elf
+m1/*.bin
+m1/*.hex
