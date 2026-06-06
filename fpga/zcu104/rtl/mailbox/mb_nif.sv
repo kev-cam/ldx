@@ -189,10 +189,11 @@ module mb_nif
 
   assign nif_busy = (rx_state != RX_IDLE) || (tx_state != TX_IDLE) || m_valid;
 
-  // in-flight credits: a packet is "sent" when its last beat leaves tx, and
-  // "delivered" when rx commits it. (off_array packets are delivered at the
-  // egress NIF — TODO emit the deliv credit there.)
-  assign pkt_sent  = m_valid && m_ready && m_last;
+  // in-flight credits: a packet is "sent" when its last (on-array) beat leaves
+  // tx, and "delivered" when rx commits it. off_array packets exit at egress and
+  // have no on-array delivery, so they are NOT counted (else in_flight never
+  // returns to 0 — e.g. a per-cycle $display would deadlock the barrier).
+  assign pkt_sent  = m_valid && m_ready && m_last && !m_off_array;
   assign pkt_deliv = sf_commit_en;
 
 endmodule

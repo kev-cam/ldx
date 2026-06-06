@@ -36,7 +36,20 @@ module mb_barrier #(
 
   wire any_busy = |core_busy;
   wire any_nif  = |nif_busy;
-  wire q_now    = !any_busy && (in_flight == 0) && !any_nif;
+
+  // Re-engage gate: every core must have asserted core_busy since the last
+  // advance before the barrier may fire again. Without this the barrier
+  // double-advances during the poll-latency window (a core idle between its
+  // own cycles) and CYCLE_CNT jumps by 2 per logical cycle — which breaks the
+  // cycle_parity double-buffer. seen_busy clears on advance, fills as cores work.
+  logic [N_CORES-1:0] seen_busy;
+  always_ff @(posedge clk)
+    if (rst)                seen_busy <= '0;
+    else if (cycle_advance) seen_busy <= core_busy;          // clear (cores idle at advance)
+    else                    seen_busy <= seen_busy | core_busy;
+  wire all_engaged = &seen_busy;
+
+  wire q_now    = all_engaged && !any_busy && (in_flight == 0) && !any_nif;
 
   // hold quiescent for HOLD cycles before advancing
   logic [$clog2(HOLD+1)-1:0] hold_cnt;

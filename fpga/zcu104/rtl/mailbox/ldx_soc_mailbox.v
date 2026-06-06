@@ -223,7 +223,7 @@ module ldx_soc_mailbox
             slot_limit_r   <= N_SLOTS_MAX[SLOT_ID_W:0];
             region_base_r  <= '0;
             mailbox_base_r <= 32'hF000_0800;
-            busy_reg       <= 1'b0;
+            busy_reg       <= 1'b1;   // start busy so the barrier waits for the worker to engage
             cycle_cnt_r    <= 32'd0;
         end else begin
             if (cycle_advance) cycle_cnt_r <= cycle_cnt_r + 1;
