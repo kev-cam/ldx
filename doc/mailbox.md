@@ -17,7 +17,7 @@ Both deposit into the consumer's banked signal BRAM.
 
 ## Slots and masks
 
-**Max 32 slots per core** — that's the point: free / ready / allocate are single-instruction bitmap ops on one 32-bit word (`ctz`, `and`, `popcount`) with no width handling on any RV32. A core need not use all 32; `slot_limit` caps the live count and the unused capacity is repurposed for signal/scratchpad storage. BRAM is plentiful, so the **default is generous**.
+**Max 32 slots per core** — that's the point: free / ready / allocate are single-instruction bitmap ops on one 32-bit word (`ctz`, `and`, `popcount`) with no width handling on any RV32. A core need not use all 32; `slot_limit` caps the live count. The slots live in a node BRAM wherever a per-node **`mailbox_base` register** points — the compiler places the slot region in whatever block fits (paired with `region_base` for the signal region), so nothing is pinned to a fixed offset. The NIF deposits incoming messages at `mailbox_base + slot*stride`; the processor reads them with ordinary loads. The mailbox is the **long-reach add-on**: where the existing nearest-neighbor mesh reached only N/E/S/W, the mailbox reaches any node via the flat namespace. The free/ready bitmaps are the only separate (register) state; BRAM is plentiful, so the **default slot count is generous**.
 
 Two 32-bit CSRs per core (only the low `slot_limit` bits are live):
 
@@ -61,12 +61,12 @@ The NIF writes words 1..size first and commits word 0 last, raising ready one cy
 
 ## Addressing and banking
 
-The consumer's signal store is an array of BRAMs. **`bank_id` — which BRAM — is fixed in the address** (the upper bits of `dst_slot`); nothing about it flips.
+The consumer's signal store is an array of BRAMs; each block holds its mailbox slots at the base and its signal regions above. **`bank_id` — which BRAM — is fixed in the address** (the upper bits of `dst_slot`); nothing about it flips.
 
 `addr_mode` (word 0, [30]) chooses how the lower address is interpreted *within* the selected BRAM, and that meaning follows the op-code:
 
 - **`addr_mode=0`** — absolute offset from the **base of the BRAM**. Non-banked regions: config, LUTs, scratchpad, debug.
-- **`addr_mode=1`** — offset from **`region_base`** (a runtime register — the region base isn't known a-priori; it's programmed at config/boot). The target-specific **active/inactive op-code bit** lands (shifted) in the region-select bit of the offset, **XOR'd with a one-bit cycle parity that flips every cycle**. Active and inactive are two *fixed* regions; the parity re-aliases which is which each cycle.
+- **`addr_mode=1`** — offset from **`region_base`**, a **per-BRAM register** holding the base of that block's active/inactive (clocked-signal) region (above the mailbox slots at the block base; not known a-priori, programmed at config/boot). The target-specific **active/inactive op-code bit** lands (shifted) in the region-select bit of the offset, **XOR'd with a one-bit cycle parity that flips every cycle**. Active and inactive are two *fixed* regions; the parity re-aliases which is which each cycle.
 
 Because the parity flips with the cycle counter, a value deposited to **inactive** this cycle is addressed as **active** next cycle — a double buffer by **addressing alone: zero data movement, no flip command**. The hardware never moves a value between regions and never triggers processing on its own:
 
@@ -96,6 +96,11 @@ idle:
 ```
 
 No decode dependency chain — `bltz`, size, and op peel out independently. A core whose `ready_mask` drains issues `wfi` and burns zero clocks until the NIF raises ready, so idle phases cost nothing in dynamic power.
+
+**The processor runs this drain in software, when it has nothing else to do** — after its local
+events are exhausted it turns to the mailbox. That's the baseline (and the M1 target). The drain
+*can* be hardware-accelerated later (a dispatch engine that applies deposits without waking the
+core), but software-first keeps the fabric minimal and the personality in charge.
 
 ## Producer send
 
