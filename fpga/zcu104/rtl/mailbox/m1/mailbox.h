@@ -10,7 +10,9 @@
 #define MB_SLOT_LIMIT  MB_REG(0x10)
 #define MB_MBOX_BASE   MB_REG(0x14)
 #define MB_REGION_BASE MB_REG(0x18)
-#define MB_DONE        MB_REG(0x1C)   /* W: free a drained slot     */
+#define MB_DONE        MB_REG(0x1C)   /* W: free a drained slot        */
+#define MB_CORE_BUSY   MB_REG(0x20)   /* RW: worker declares busy/done */
+#define MB_CYCLE_CNT   MB_REG(0x24)   /* R: ++ on each barrier advance */
 #define MB_MY_YX       MB_REG(0x40)
 #define MB_SLOT(s,w)   (*(volatile uint32_t*)(MB_BASE+0x800u+((s)*16u)+((w)*4u)))
 

@@ -161,6 +161,8 @@ module ldx_soc_mailbox
     reg  [SLOT_ID_W:0]    slot_limit_r;
     reg  [BRAM_OFS_W-1:0] region_base_r;
     reg  [31:0]           mailbox_base_r;
+    reg                   busy_reg;        // worker declares "busy this cycle"
+    reg  [31:0]           cycle_cnt_r;     // ++ on each barrier advance (worker polls)
 
     // direct-send adapter: SEND_D1 write fires; hold ds_valid until ds_ack
     reg  ds_pending;
@@ -174,7 +176,7 @@ module ldx_soc_mailbox
     wire [SLOT_ID_W-1:0]  sf_wr_slot, sf_commit_slot;
     wire [$clog2(SLOT_WORDS)-1:0] sf_wr_woff;
     wire [WORD_W-1:0]     sf_wr_data;
-    wire [N_SLOTS_MAX-1:0] mb_free_mask, mb_ready_mask;
+    wire [N_SLOTS_MAX-1:0] mb_free_mask /*verilator public_flat_rd*/, mb_ready_mask /*verilator public_flat_rd*/;
 
     // CPU reads incoming slot words through the slot window
     wire                  cpu_slot_rd = io_rd && io_addr[11];     // >= 0x800
@@ -221,7 +223,10 @@ module ldx_soc_mailbox
             slot_limit_r   <= N_SLOTS_MAX[SLOT_ID_W:0];
             region_base_r  <= '0;
             mailbox_base_r <= 32'hF000_0800;
+            busy_reg       <= 1'b0;
+            cycle_cnt_r    <= 32'd0;
         end else begin
+            if (cycle_advance) cycle_cnt_r <= cycle_cnt_r + 1;
             if (ds_pending && ds_ack) ds_pending <= 1'b0;
             if (io_wr) begin
                 case (io_addr[11:0])
@@ -230,6 +235,7 @@ module ldx_soc_mailbox
                     12'h010: slot_limit_r   <= dbus_cmd_payload_data[SLOT_ID_W:0];
                     12'h014: mailbox_base_r <= dbus_cmd_payload_data;
                     12'h018: region_base_r  <= dbus_cmd_payload_data[BRAM_OFS_W-1:0];
+                    12'h020: busy_reg       <= dbus_cmd_payload_data[0];
                     default: ;
                 endcase
             end
@@ -255,11 +261,14 @@ module ldx_soc_mailbox
             12'h010: dbus_rdata = {{(32-(SLOT_ID_W+1)){1'b0}}, slot_limit_r};
             12'h014: dbus_rdata = mailbox_base_r;
             12'h018: dbus_rdata = {{(32-BRAM_OFS_W){1'b0}}, region_base_r};
+            12'h020: dbus_rdata = {31'd0, busy_reg};
+            12'h024: dbus_rdata = cycle_cnt_r;
             12'h040: dbus_rdata = {24'd0, MY_Y, MY_X};
             default: dbus_rdata = 32'd0;
         endcase
     end
 
-    assign core_busy = (mb_ready_mask != 0);   // M1 placeholder; real wfi at M2
+    // node is busy if the worker says so OR it has unprocessed incoming
+    assign core_busy = busy_reg | (mb_ready_mask != 0);
 
 endmodule
