@@ -42,3 +42,8 @@ m3c/m3c2.map
 m3c/place*.txt
 m3c/__pycache__/
 m3c/golden_raccel
+mesh/obj_*/
+mesh/sim_*
+mesh/*.elf
+mesh/*.bin
+mesh/*.hex
