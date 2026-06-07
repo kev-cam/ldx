@@ -15,8 +15,8 @@ m2/*.hex
 m2/tb_dbg.sv
 m2/obj_dbg/
 m2/sim_dbg
-m3/obj_m3a/
-m3/sim_m3a
+m3/obj_*/
+m3/sim_*
 m3/*.elf
 m3/*.bin
 m3/*.hex
