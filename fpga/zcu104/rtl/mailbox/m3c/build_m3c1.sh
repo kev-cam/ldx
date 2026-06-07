@@ -8,8 +8,8 @@ GSM=/usr/local/src/sv2ghdl/yosys/gen_statemachine
 cd "$D"
 cc -O2 golden_drv1.c -o golden_drv1; ./golden_drv1 > golden1.txt
 echo "golden: $(tr '\n' ' ' < golden1.txt)"
-python3 genmap.py m3c1.map > m3c1_map.h
-echo "--- m3c1_map.h ---"; cat m3c1_map.h
+python3 genmap.py m3c1.map > m3c_map.h
+echo "--- m3c_map.h ---"; cat m3c_map.h
 riscv64-unknown-elf-gcc -march=rv32i -mabi=ilp32 -Os -fno-builtin -nostdlib -ffreestanding \
   -I../m1 -I. -T ../m1/ldx.ld -Wl,--gc-sections -o mb_m3c1.elf ../m1/start.S mb_m3c1.c
 riscv64-unknown-elf-objcopy -O binary mb_m3c1.elf mb_m3c1.bin
