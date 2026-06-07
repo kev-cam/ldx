@@ -1,10 +1,10 @@
 `timescale 1ns/1ps
-module tb_relay #(parameter AY=4, AX=4, parameter [7:0] DEST=8'h33);
+module tb_relay #(parameter AY=4, AX=4, parameter [7:0] DEST=8'h33, parameter USE_MESH=0);
   logic clk=0, reset=1; always #5 clk=~clk;
   logic load_we=0; logic [9:0] load_addr=0; logic [31:0] load_data=0; logic cpu_rst_req=1;
   logic egr_valid, egr_ready=1, egr_last; logic [31:0] egr_data;
   logic cyc_par, cyc_adv, quiesc;
-  mb_array_soc #(.ARRAY_Y(AY), .ARRAY_X(AX)) dut(
+  mb_array_soc #(.ARRAY_Y(AY), .ARRAY_X(AX), .USE_MESH(USE_MESH)) dut(
     .clk,.reset,.load_we,.load_addr,.load_data,.cpu_rst_req,
     .egr_valid,.egr_ready,.egr_data,.egr_last,
     .cycle_parity(cyc_par),.cycle_advance(cyc_adv),.quiescent(quiesc));
