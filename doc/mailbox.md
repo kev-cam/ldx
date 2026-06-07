@@ -130,7 +130,9 @@ Off-array packets address the **host-bridge process** — a process whose handle
 - `$finish/$stop` — op-only control to the host-bridge.
 - DPI — function handle in `(y,x)`, args as payload, result returned as an inbound message.
 
-Pure-compute functions (`$urandom`, `$random`) do **not** go off-array — they are local per-thread or shared-stream processes on the array (see Integration). Multicycle egress is fine: these are monitor-region effects deferred to end-of-timestep; the host-bridge serializer reorders by source-timestamp before emitting.
+Pure-compute functions (`$urandom`, `$random`) stay **on-array** but are **placed on their own dedicated RNG core**: a consumer requests a value over the mailbox and the RNG core returns it. That core owns the seed tree — per-thread seeds for `$urandom`, the single shared stream for `$random` — and serializes same-cycle requests in a deterministic order, so the sequence matches the reference. Keeping the RNG off the compute cores also keeps the design partitions purely synthesizable.
+
+For `$display` and the monitor-region family, multicycle egress is fine: these are end-of-timestep effects; the ARM host-bridge serializer reorders by source-timestamp before emitting.
 
 ## Backpressure
 

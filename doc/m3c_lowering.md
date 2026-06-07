@@ -39,6 +39,12 @@ So "making the FPGA code" = generating these per-core programs (state-machine C 
 processes) for the fixed core array. The placement map assigns each partition a code path as well as a
 location; the mailbox NIF looks the same from either side of any cut.
 
+Some processes are fixed-placement **services**, not design partitions: the **ARM PS** is the
+host-bridge for off-array `$display`/`$write`, and `$urandom`/`$random` live on a **dedicated RNG
+core** that answers value requests over the mailbox (it owns the seed tree and serializes same-cycle
+requests deterministically). Keeping the RNG off the compute cores keeps those partitions purely
+synthesizable. See [mailbox.md](mailbox.md).
+
 ## What the accel generator emits (grounded in /tmp/*_nvc.c)
 
 Two parts:
@@ -109,9 +115,10 @@ runtime config, and the FPGA-build wrapper all read from this one map.
   golden. Proves the accel-C → RV32 → event-loop path end to end.
 - **M3c.1 — split one design across 2 cores.** A design with a real net crossing the cut (e.g. a
   producer block on A feeding a consumer block on B). Generate `sm_eval` per partition; route the
-  crossing signal over the mailbox using the placement map. **Gap to close:** the generator currently
-  maps only registers as boundary signals — extend it to also map the chosen cut's **I/O ports** so a
-  net can be a cross-core edge (or pick a cut where the crossing signal is already a register).
+  crossing signal over the mailbox using the placement map. The generator now emits **`sm_ports[]`**
+  (every input/register/output with `dir`, `width`, and packed `off`set) so the placement map binds
+  each port to a BRAM location and matches cross-core edges by name — the producer's output `X` posts
+  to the consumer's input `X` (commit `dbe7b7e` in sv2ghdl).
 - **M3c.2 — partitioner + a real DUT.** A signal-graph min-cut (start hand-partitioned) generates the
   placement map + the per-core state-machine code; lower a real DUT (Yuri `a_plus_b`) across the array.
   The TB and system tasks ride the same fabric (`$display` off-array; the non-synthesizable TB either
@@ -119,8 +126,8 @@ runtime config, and the FPGA-build wrapper all read from this one map.
 
 ## Open issues / unknowns
 
-- **I/O-port boundary mapping** in gen_statemachine (needed for M3c.1 cross-core nets; today it maps
-  registers only).
+- ~~I/O-port boundary mapping in gen_statemachine~~ **DONE** (`sm_ports[]`, commit `dbe7b7e`): inputs +
+  registers + outputs with dir/width/packed-offset, alongside the unchanged register-only `sm_reg_*`.
 - **Bit storage**: keep NVC's byte-per-bit (simple, wasteful) or pack to words on-core (the mailbox
   payload is word-oriented — likely pack at the boundary).
 - **Partitioner**: min-cut over the nexus/driver graph (`rt_nexus_t->outputs` → driver proc, per the
