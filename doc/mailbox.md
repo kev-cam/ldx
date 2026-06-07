@@ -121,9 +121,9 @@ Hold `quiescent` for one barrier-tree depth (~log N cycles) to absorb the last i
 
 ## Off-array routing
 
-Off-array packets address the **host-bridge process** — a process whose handle lies outside the on-array `(y,x)` range. `op.off_array == 1` (or a `(dst_y,dst_x)` out of range) routes the whole packet, undecoded, to the egress NIF. This is not a list of fabric-handled tasks: host-effecting system tasks are *compiled* into messages to that process carrying only their **runtime args**; everything static is registered host-side at compile/boot and keyed by the handle.
+Off-array packets address the **host-bridge process** — a process whose handle lies outside the on-array `(y,x)` range. `op.off_array == 1` (or a `(dst_y,dst_x)` out of range) routes the whole packet, undecoded, to the egress NIF. This is not a list of fabric-handled tasks: host-effecting system tasks are *compiled* into messages to that process carrying only their **runtime args**; everything static is registered host-side at compile/boot and keyed by the handle. On the ZCU104 the host-bridge **is the ARM PS**: egress packets cross PL→PS (AXI/DMA), and the ARM — holding the static per-handle tables — performs the actual effect (e.g. `printf`). In simulation the testbench plays this ARM role (captures egress, formats, prints).
 
-`$display(format, args)` lowers to an off-array message whose payload is just `{args}`; the `(dst_y,dst_x)` handle names the call site, and the host holds that site's format string and file. The format never ships at runtime — only the values. The same shape covers the family:
+`$display(format, args)` lowers to an off-array message whose payload is just `{args}` (size = arg-word count); the `(dst_y,dst_x)` handle names the call site, and the **ARM** holds that site's format string and file and runs the actual `printf`. The format never ships at runtime — only the values. The same shape covers the family:
 
 - `$write/$strobe/$monitor/$fwrite` — call-site handle (format + file) + arg payload.
 - `$fatal/$error/$warning` — severity in op, message handle + args.

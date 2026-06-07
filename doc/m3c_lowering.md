@@ -67,12 +67,18 @@ each simulated cycle:
   1. drain mailbox: each msg = a remote boundary signal's new value -> write its BRAM input mirror
   2. sm_eval_mapped()            // reads inputs + regs from BRAM, writes regs + outputs to BRAM
   3. for each output consumed on another core -> mb_post(consumer, value)
-  4. $display outputs -> off-array to the host-bridge
+  4. $display outputs -> off-array (handle + arg words) to the ARM PS host-bridge
   5. CORE_BUSY=0; wait barrier
 ```
 The barrier + in-flight credits already guarantee every cross-core value lands before the next cycle
 (M3a/M3b). Cross-core signals get the active/inactive discipline for free: a posted value is deposited
 to the consumer's input mirror and read on its *next* `sm_eval` — i.e. value-as-of-cycle-start.
+
+`$display`/`$write`/`$fwrite`/… lower the same way but **off-array to the ARM PS**: the runtime ships
+the **args** + a call-site **handle** (size = arg-word count), and the ARM — which holds the format
+strings and files keyed by handle — runs the actual `printf`. Only values ship, never the format. On
+the board that's egress → PL→PS (AXI/DMA); in sim the TB plays the ARM. The current `mb_display` ships
+one arg; the general form ships N arg words behind one handle (see [mailbox.md](mailbox.md)).
 
 ## The placement map comes first (the prerequisite artifact)
 
