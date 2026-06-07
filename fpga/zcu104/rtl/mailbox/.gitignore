@@ -30,3 +30,10 @@ m3c/golden.txt
 m3c/array.txt
 m3c/sim_out.txt
 m3c/m3c0_map.h
+m3c/*_sm.c
+m3c/*_sm_nvc.c
+m3c/m3c1_map.h
+m3c/golden_drv1
+m3c/golden*.txt
+m3c/array*.txt
+m3c/sim_out*.txt
