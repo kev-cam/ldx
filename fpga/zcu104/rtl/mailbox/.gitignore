@@ -20,3 +20,13 @@ m3/sim_*
 m3/*.elf
 m3/*.bin
 m3/*.hex
+m3c/obj_*/
+m3c/sim_*
+m3c/*.elf
+m3c/*.bin
+m3c/*.hex
+m3c/golden_drv
+m3c/golden.txt
+m3c/array.txt
+m3c/sim_out.txt
+m3c/m3c0_map.h
