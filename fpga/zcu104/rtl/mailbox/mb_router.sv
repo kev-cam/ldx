@@ -7,24 +7,30 @@
 // TODO round-robin for fairness), lock to the winner until its packet's last
 // beat passes, then release. Outputs 0..N_CORES-1 = tiles; index N_CORES =
 // egress (host-bridge).
+//
+// HOST_INGRESS (0/1): when 1, input index N_CORES is the host (ARM) ingress —
+// the ARM injects packets to cores by (dst_y,dst_x), symmetric with egress. So
+// the input count is N_IN = N_CORES + HOST_INGRESS; outputs are unchanged.
 
 `include "mailbox_pkg.sv"
 
 module mb_router
   import mailbox_pkg::*;
 #(
-  parameter int N_CORES = 64,
-  parameter int ARRAY_Y = 8,
-  parameter int ARRAY_X = 8
+  parameter int N_CORES      = 64,
+  parameter int ARRAY_Y      = 8,
+  parameter int ARRAY_X      = 8,
+  parameter int HOST_INGRESS = 0,
+  parameter int N_IN         = N_CORES + HOST_INGRESS   // derived; do not override
 ) (
   input  logic                              clk,
   input  logic                              rst,
 
-  input  logic [N_CORES-1:0]                in_valid,
-  output logic [N_CORES-1:0]                in_ready,
-  input  logic [N_CORES-1:0][WORD_W-1:0]    in_data,
-  input  logic [N_CORES-1:0]                in_last,
-  input  logic [N_CORES-1:0]                in_off,
+  input  logic [N_IN-1:0]                in_valid,
+  output logic [N_IN-1:0]                in_ready,
+  input  logic [N_IN-1:0][WORD_W-1:0]    in_data,
+  input  logic [N_IN-1:0]                in_last,
+  input  logic [N_IN-1:0]                in_off,
 
   output logic [N_CORES-1:0]                out_valid,
   input  logic [N_CORES-1:0]                out_ready,
@@ -37,18 +43,18 @@ module mb_router
   output logic                              egr_last
 );
 
-  localparam int N_OUT  = N_CORES + 1;        // + egress
+  localparam int N_OUT  = N_CORES + 1;              // + egress
   localparam int EGR    = N_CORES;
   localparam int OW     = $clog2(N_OUT);
-  localparam int IW     = (N_CORES > 1) ? $clog2(N_CORES) : 1;
+  localparam int IW     = (N_IN > 1) ? $clog2(N_IN) : 1;
 
   // ---- per-input header tracking + latched route --------------------------
-  logic [N_CORES-1:0]        hdr_phase;       // 1 => current/next beat is header
-  logic [OW-1:0]             route_reg [N_CORES];
-  logic [OW-1:0]             cur_dst   [N_CORES];
+  logic [N_IN-1:0]           hdr_phase;       // 1 => current/next beat is header
+  logic [OW-1:0]             route_reg [N_IN];
+  logic [OW-1:0]             cur_dst   [N_IN];
 
   always_comb begin
-    for (int i = 0; i < N_CORES; i++) begin
+    for (int i = 0; i < N_IN; i++) begin
       word0_t w0 = unpack_w0(in_data[i]);
       logic   off = in_off[i] | w0.off_array |
                     (w0.dst_y >= ARRAY_Y[DST_W-1:0]) | (w0.dst_x >= ARRAY_X[DST_W-1:0]);
@@ -63,7 +69,7 @@ module mb_router
   logic [IW-1:0]     lk_src [N_OUT];
 
   // which inputs are currently locked somewhere
-  logic [N_CORES-1:0] in_locked;
+  logic [N_IN-1:0] in_locked;
   always_comb begin
     in_locked = '0;
     for (int o = 0; o < N_OUT; o++)
@@ -89,7 +95,7 @@ module mb_router
             lk_valid[o] <= 1'b0;
         end else begin
           // arbitrate: lowest-index requesting, unlocked input wins
-          for (int i = N_CORES-1; i >= 0; i--)
+          for (int i = N_IN-1; i >= 0; i--)
             if (in_valid[i] && !in_locked[i] && (cur_dst[i] == o[OW-1:0])) begin
               lk_valid[o] <= 1'b1;
               lk_src[o]   <= i[IW-1:0];
@@ -104,7 +110,7 @@ module mb_router
     if (rst) begin
       hdr_phase <= '1;
     end else begin
-      for (int i = 0; i < N_CORES; i++)
+      for (int i = 0; i < N_IN; i++)
         if (in_valid[i] && in_ready[i]) begin
           hdr_phase[i] <= in_last[i];
           if (hdr_phase[i]) route_reg[i] <= cur_dst[i];
@@ -131,7 +137,7 @@ module mb_router
     end
 
     // an input is ready only once its target output is locked to it
-    for (int i = 0; i < N_CORES; i++)
+    for (int i = 0; i < N_IN; i++)
       if (lk_valid[cur_dst[i]] && (lk_src[cur_dst[i]] == i[IW-1:0]))
         in_ready[i] = ord[cur_dst[i]];
   end
