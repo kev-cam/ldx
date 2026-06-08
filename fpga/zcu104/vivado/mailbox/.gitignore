@@ -4,3 +4,4 @@ build/
 util_*.rpt
 timing_*.rpt
 .Xil/
+host/mb_run
