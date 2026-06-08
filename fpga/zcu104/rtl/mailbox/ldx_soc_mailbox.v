@@ -26,7 +26,8 @@ module ldx_soc_mailbox
   import mailbox_pkg::*;
 #(
     parameter [3:0] MY_X = 0,
-    parameter [3:0] MY_Y = 0
+    parameter [3:0] MY_Y = 0,
+    parameter int   MEM_WORDS = 4096          // per-core BRAM (16 KB = 4 BRAM36); was 1024
 ) (
     input  wire        clk,
     input  wire        reset,
@@ -126,16 +127,19 @@ module ldx_soc_mailbox
     assign ibus_cmd_ready = 1'b1;
     assign dbus_cmd_ready  = 1'b1;          // (gate stall omitted in M1 build)
 
-    // ----- 4 KB program/data BRAM (ibus RO port A, dbus port B) -------------
-    reg [31:0] dpram [0:1023] /* verilator public_flat_rd */;
+    // ----- program/data BRAM (ibus RO port A, dbus port B), MEM_WORDS deep ----
+    localparam int AW = $clog2(MEM_WORDS);    // word-address width (10=4KB, 12=16KB)
+    reg [31:0] dpram [0:MEM_WORDS-1] /* verilator public_flat_rd */;
     wire        cpu_ram_wr = dbus_cmd_valid && dbus_cmd_payload_wr && dbus_is_ram && !cpu_rst;
     wire        ram_b_we   = load_we || cpu_ram_wr;
-    wire [9:0]  ram_b_addr = load_we ? load_addr : dbus_cmd_payload_address[11:2];
+    // program load uses the low 1024 words ([9:0]); the CPU reaches all MEM_WORDS
+    wire [AW-1:0] ram_b_addr = load_we ? {{(AW-10){1'b0}}, load_addr}
+                                       : dbus_cmd_payload_address[AW+1:2];
     wire [31:0] ram_b_wdata= load_we ? load_data : dbus_cmd_payload_data;
 
     reg [31:0] ram_a_q, ram_a_q_d1, ram_b_q;
     always @(posedge clk) begin
-        ram_a_q    <= dpram[ibus_cmd_payload_pc[11:2]];
+        ram_a_q    <= dpram[ibus_cmd_payload_pc[AW+1:2]];
         ram_a_q_d1 <= ram_a_q;
         if (ram_b_we) dpram[ram_b_addr] <= ram_b_wdata;
         ram_b_q    <= dpram[ram_b_addr];

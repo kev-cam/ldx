@@ -47,3 +47,10 @@ mesh/sim_*
 mesh/*.elf
 mesh/*.bin
 mesh/*.hex
+pipe/obj_*/
+pipe/sim_*
+pipe/*.elf
+pipe/*.bin
+pipe/*.hex
+pipe/*_sm.c
+pipe/*_sm_nvc.c
