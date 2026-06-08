@@ -54,3 +54,14 @@ pipe/*.bin
 pipe/*.hex
 pipe/*_sm.c
 pipe/*_sm_nvc.c
+dut/obj_*/
+dut/sim_*
+dut/*.elf
+dut/*.bin
+dut/*.hex
+dut/*_sm.c
+dut/*_sm_nvc.c
+dut/golden_dut
+dut/golden_d.txt
+dut/arrayd.txt
+dut/sim_outd.txt
