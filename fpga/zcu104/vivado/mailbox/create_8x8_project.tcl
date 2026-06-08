@@ -20,6 +20,9 @@ add_files -norecurse [list \
   $mb/mb_mesh.sv $mb/mb_barrier.sv $mb/ldx_soc_mailbox.v $mb/mb_array_soc.v \
   $rtl/VexRiscv.v $mb/m1/ldx_cfu_stub.v $script_dir/mb_array_top.v ]
 foreach f [get_files *.sv] { set_property file_type "SystemVerilog" $f }
+# these are .v but use SystemVerilog (import mailbox_pkg::*, logic, ...)
+set_property file_type "SystemVerilog" [get_files ldx_soc_mailbox.v]
+set_property file_type "SystemVerilog" [get_files mb_array_soc.v]
 update_compile_order -fileset sources_1
 
 proc ipdef {pat} { return [lindex [get_ipdefs $pat] 0] }
@@ -61,6 +64,9 @@ assign_bd_address
 regenerate_bd_layout
 validate_bd_design
 set bd [get_files system.bd]
+# synthesize the BD in the GLOBAL flow so the module-reference (mb_array_top) sees
+# its RTL deps (mb_array_soc, mb_mesh, VexRiscv, ...) — OOC per-module can't find them
+set_property synth_checkpoint_mode None $bd
 make_wrapper -files $bd -top
 add_files -norecurse [glob -nocomplain $proj_dir/$proj_name.gen/sources_1/bd/system/hdl/system_wrapper.*]
 set_property top system_wrapper [current_fileset]
