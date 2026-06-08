@@ -13,7 +13,8 @@ module mb_array_soc
   parameter int ARRAY_Y = 4,
   parameter int ARRAY_X = 4,
   parameter int HOST_INGRESS = 0,         // 1 => ARM can inject packets to cores
-  parameter int USE_MESH = 0              // 0 = flat mb_router; 1 = nearest-neighbor mb_mesh
+  parameter int USE_MESH = 0,             // 0 = flat mb_router; 1 = nearest-neighbor mb_mesh
+  parameter int MEM_WORDS = 4096          // per-core BRAM words (passed to each node)
 ) (
   input  logic clk,
   input  logic reset,
@@ -55,7 +56,7 @@ module mb_array_soc
     for (gy = 0; gy < ARRAY_Y; gy++) begin : row
       for (gx = 0; gx < ARRAY_X; gx++) begin : col
         localparam int I = gy*ARRAY_X + gx;
-        ldx_soc_mailbox #(.MY_X(gx[3:0]), .MY_Y(gy[3:0])) node (
+        ldx_soc_mailbox #(.MY_X(gx[3:0]), .MY_Y(gy[3:0]), .MEM_WORDS(MEM_WORDS)) node (
           .clk(clk), .reset(reset),
           .load_we(load_we), .load_addr(load_addr), .load_data(load_data),
           .cpu_rst_req(cpu_rst_req),
