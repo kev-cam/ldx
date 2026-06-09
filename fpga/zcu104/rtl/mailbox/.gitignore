@@ -65,3 +65,10 @@ dut/golden_dut
 dut/golden_d.txt
 dut/arrayd.txt
 dut/sim_outd.txt
+sha/obj_*/
+sha/sim_*
+sha/*.elf
+sha/*.bin
+sha/*.hex
+sha/*_sm.c
+sha/*_sm_nvc.c

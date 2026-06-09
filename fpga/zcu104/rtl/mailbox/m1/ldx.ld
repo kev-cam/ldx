@@ -1,9 +1,9 @@
 /* ldx.ld — bare-metal linker for ldx_soc_axi.
- * 4 KB ITCM/DTCM at 0x80000000. Stack at top.
+ * 16 KB BRAM at 0x80000000 (matches ldx_soc_mailbox MEM_WORDS=4096). Stack at top.
  * I/O at 0xF0000000+. _start must be at 0x80000000 (VexRiscv reset vector).
  */
 MEMORY {
-    RAM (rwx) : ORIGIN = 0x80000000, LENGTH = 4K
+    RAM (rwx) : ORIGIN = 0x80000000, LENGTH = 16K
 }
 ENTRY(_start)
 SECTIONS {

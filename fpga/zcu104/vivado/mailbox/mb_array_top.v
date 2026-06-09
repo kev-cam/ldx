@@ -34,7 +34,7 @@ module mb_array_top #(
 
   // ---- registers (written only by the AXI write block) ------------------
   reg        arr_reset, cpu_rst_req;
-  reg [9:0]  load_addr;
+  reg [11:0] load_addr;
   reg [31:0] load_data;  reg load_we;
   reg [31:0] ingr_w0, ingr_pay;
   reg        ingr_fire;                 // 1-cycle pulse -> ingress FSM
@@ -57,15 +57,23 @@ module mb_array_top #(
   always @(posedge clk) if (!rstn) cyc_cnt<=0; else if (cycle_advance) cyc_cnt<=cyc_cnt+1;
 
   // ---- egress FIFO (driven only here) -----------------------------------
+  // Each off-array message is word0 (routing header, last=0) followed by its
+  // payload words (last on the final one). The ARM wants the DATA, so push only
+  // payload beats and drop the word0 header. egr_hdr=1 means the next accepted
+  // beat is a header; it re-arms after each packet's last beat.
   localparam EAW = 10;
   reg [WORD_W-1:0] efifo [0:(1<<EAW)-1];
   reg [EAW-1:0] ehead, etail;
+  reg egr_hdr;
   wire efull  = ((etail+1'b1) == ehead);
   wire eempty = (ehead == etail);
   assign egr_ready = !efull;
   wire egr_pop;                          // from the read block
-  always @(posedge clk) if (!rstn) begin ehead<=0; etail<=0; end else begin
-    if (egr_valid && egr_ready) begin efifo[etail]<=egr_data; etail<=etail+1'b1; end
+  always @(posedge clk) if (!rstn) begin ehead<=0; etail<=0; egr_hdr<=1'b1; end else begin
+    if (egr_valid && egr_ready) begin
+      if (!egr_hdr) begin efifo[etail]<=egr_data; etail<=etail+1'b1; end  // payload only
+      egr_hdr <= egr_last;               // re-arm header after the packet's last beat
+    end
     if (egr_pop && !eempty) ehead<=ehead+1'b1;
   end
 
@@ -100,7 +108,7 @@ module mb_array_top #(
     if (aw_seen && w_seen && !s_axi_bvalid) begin
       case (awaddr_q[7:2])
         6'h00: begin arr_reset<=wdata_q[0]; cpu_rst_req<=wdata_q[1]; end
-        6'h01: load_addr<=wdata_q[9:0];
+        6'h01: load_addr<=wdata_q[11:0];
         6'h02: begin load_data<=wdata_q; load_we<=1'b1; load_addr<=load_addr+1'b1; end
         6'h03: ingr_w0<=wdata_q;
         6'h04: begin ingr_pay<=wdata_q; ingr_fire<=1'b1; end

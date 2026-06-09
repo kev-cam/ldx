@@ -21,7 +21,7 @@ module mb_array_soc
 
   // broadcast program load (host writes every node's BRAM while held in reset)
   input  logic        load_we,
-  input  logic [9:0]  load_addr,
+  input  logic [11:0] load_addr,
   input  logic [31:0] load_data,
   input  logic        cpu_rst_req,
 

@@ -33,7 +33,7 @@ module ldx_soc_mailbox
     input  wire        reset,
 
     input  wire        load_we,
-    input  wire [9:0]  load_addr,
+    input  wire [11:0] load_addr,
     input  wire [31:0] load_data,
     input  wire        cpu_rst_req,
 
@@ -132,8 +132,9 @@ module ldx_soc_mailbox
     reg [31:0] dpram [0:MEM_WORDS-1] /* verilator public_flat_rd */;
     wire        cpu_ram_wr = dbus_cmd_valid && dbus_cmd_payload_wr && dbus_is_ram && !cpu_rst;
     wire        ram_b_we   = load_we || cpu_ram_wr;
-    // program load uses the low 1024 words ([9:0]); the CPU reaches all MEM_WORDS
-    wire [AW-1:0] ram_b_addr = load_we ? {{(AW-10){1'b0}}, load_addr}
+    // program load addresses all MEM_WORDS (load_addr is 12b, 4096 words = 16KB);
+    // the CPU reaches the same range via the dbus word index.
+    wire [AW-1:0] ram_b_addr = load_we ? load_addr[AW-1:0]
                                        : dbus_cmd_payload_address[AW+1:2];
     wire [31:0] ram_b_wdata= load_we ? load_data : dbus_cmd_payload_data;
 

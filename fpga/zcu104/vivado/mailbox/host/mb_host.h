@@ -74,4 +74,32 @@ static inline uint32_t mb_egr_pop(mb_t *m)  { return mb_rd(m, R_EGR); }
 static inline uint32_t mb_cyccnt(mb_t *m)   { return mb_rd(m, R_CYCCNT); }
 static inline int      mb_quiescent(mb_t *m){ return mb_rd(m, R_STATUS) & ST_QUIESC; }
 
+/* ---- multi-word DUT I/O -------------------------------------------------- *
+ * A DUT whose top input is wider than 32 bits (e.g. SHA256's 512-bit block)
+ * receives it as n in-order 1-word packets; a wide top output (the 256-bit
+ * digest) leaves as n in-order egress payload words. The on-array worker
+ * collects/emits in word order (see rtl/mailbox/sha/mb_sha.c). */
+
+/* send the n words of a wide top-input to core (y,x), in order. */
+static void mb_send_words(mb_t *m, int y, int x, const uint32_t *w, int n) {
+    for (int i = 0; i < n; i++) mb_inject(m, y, x, w[i]);
+}
+
+/* read n egress payload words (a wide top-output) into buf, in order. Spins on
+ * STATUS.egr_ne; the FIFO holds payloads only (headers are dropped in HW). */
+static void mb_recv_words(mb_t *m, uint32_t *buf, int n) {
+    for (int i = 0; i < n; i++) {
+        while (!(mb_rd(m, R_STATUS) & ST_EGR_NE)) ;
+        buf[i] = mb_egr_pop(m);
+    }
+}
+
+/* one SHA256 block: feed 16 words (w[0]=block[31:0]…w[15]=block[511:480]) to
+ * core (y,x) and read back the 8 digest words (h0..h7, MSB first). */
+static void mb_sha256_block(mb_t *m, int y, int x,
+                            const uint32_t blk[16], uint32_t digest[8]) {
+    mb_send_words(m, y, x, blk, 16);
+    mb_recv_words(m, digest, 8);
+}
+
 #endif /* MB_HOST_H */
