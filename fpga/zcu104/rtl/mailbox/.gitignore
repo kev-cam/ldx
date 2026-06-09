@@ -72,3 +72,5 @@ sha/*.bin
 sha/*.hex
 sha/*_sm.c
 sha/*_sm_nvc.c
+obj_hwrt/
+sim_hwrt
