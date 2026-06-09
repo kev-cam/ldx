@@ -39,9 +39,10 @@ set_property -dict [list \
   CONFIG.PSU__FPGA_PL0_ENABLE {1} \
   CONFIG.PSU__CRL_APB__PL0_REF_CTRL__FREQMHZ {200} ] $ps
 
-# ---- the array (8 KB/core: 128 BRAM36 = 41%, leaves placement margin) -------
+# ---- the array (16 KB/core: 256 BRAM36 = 82%, needed for the SHA accel-C +
+# 16 KB stack from ldx.ld; load_addr is 12b so the 1.4Kword program loads) -----
 create_bd_cell -type module -reference mb_array_top arr
-set_property CONFIG.MEM_WORDS {2048} [get_bd_cells arr]
+set_property CONFIG.MEM_WORDS {4096} [get_bd_cells arr]
 
 # ---- interconnect + reset ---------------------------------------------------
 set sc  [create_bd_cell -type ip -vlnv [ipdef xilinx.com:ip:smartconnect:*] sc]

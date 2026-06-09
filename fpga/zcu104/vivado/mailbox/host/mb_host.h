@@ -80,9 +80,17 @@ static inline int      mb_quiescent(mb_t *m){ return mb_rd(m, R_STATUS) & ST_QUI
  * digest) leaves as n in-order egress payload words. The on-array worker
  * collects/emits in word order (see rtl/mailbox/sha/mb_sha.c). */
 
-/* send the n words of a wide top-input to core (y,x), in order. */
+/* send the n words of a wide top-input to core (y,x), in order. The worker reads
+ * the in-order stream with mb_lowbit(MB_READY), which returns the lowest READY
+ * slot — that equals arrival order only while ≤1 packet is in flight (else a
+ * freed+reused low slot can jump ahead of an older higher slot). MB_SEND_GAP_US
+ * paces injects so the free-running worker drains each word before the next
+ * arrives, keeping it 1-in-flight and the stream ordered. */
+#ifndef MB_SEND_GAP_US
+#define MB_SEND_GAP_US 100
+#endif
 static void mb_send_words(mb_t *m, int y, int x, const uint32_t *w, int n) {
-    for (int i = 0; i < n; i++) mb_inject(m, y, x, w[i]);
+    for (int i = 0; i < n; i++) { mb_inject(m, y, x, w[i]); if (MB_SEND_GAP_US) usleep(MB_SEND_GAP_US); }
 }
 
 /* read n egress payload words (a wide top-output) into buf, in order. Spins on

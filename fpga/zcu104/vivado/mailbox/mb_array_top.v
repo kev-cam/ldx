@@ -54,7 +54,7 @@ module mb_array_top #(
     .ingr_valid(ingr_valid), .ingr_ready(ingr_ready), .ingr_data(ingr_data), .ingr_last(ingr_last),
     .cycle_parity(cycle_parity), .cycle_advance(cycle_advance), .quiescent(quiescent)
   );
-  always @(posedge clk) if (!rstn) cyc_cnt<=0; else if (cycle_advance) cyc_cnt<=cyc_cnt+1;
+  always @(posedge clk) if (!rstn || arr_reset) cyc_cnt<=0; else if (cycle_advance) cyc_cnt<=cyc_cnt+1;
 
   // ---- egress FIFO (driven only here) -----------------------------------
   // Each off-array message is word0 (routing header, last=0) followed by its
@@ -69,7 +69,7 @@ module mb_array_top #(
   wire eempty = (ehead == etail);
   assign egr_ready = !efull;
   wire egr_pop;                          // from the read block
-  always @(posedge clk) if (!rstn) begin ehead<=0; etail<=0; egr_hdr<=1'b1; end else begin
+  always @(posedge clk) if (!rstn || arr_reset) begin ehead<=0; etail<=0; egr_hdr<=1'b1; end else begin
     if (egr_valid && egr_ready) begin
       if (!egr_hdr) begin efifo[etail]<=egr_data; etail<=etail+1'b1; end  // payload only
       egr_hdr <= egr_last;               // re-arm header after the packet's last beat
@@ -78,16 +78,23 @@ module mb_array_top #(
   end
 
   // ---- ingress FSM (drives ingr_*; reads ingr_fire) ---------------------
+  // word0 (st1) then payload (st2). The beat outputs are COMBINATIONAL from the
+  // state so each beat is held STABLE until accepted (valid && ready); a
+  // registered output would lag the state by a cycle, re-presenting word0 and
+  // dropping the payload's last so the NIF never commits (the bug that blocked
+  // host ingress on hardware).
   reg [1:0] ingr_st;                     // 0 idle, 1 word0, 2 payload
   wire ingr_busy = (ingr_st != 2'd0) || ingr_fire;
-  always @(posedge clk) if (!rstn) begin
-    ingr_st<=0; ingr_valid<=0; ingr_last<=0; ingr_data<=0;
-  end else case (ingr_st)
-    2'd0: begin ingr_valid<=1'b0; ingr_last<=1'b0; if (ingr_fire) ingr_st<=2'd1; end
-    2'd1: begin ingr_valid<=1'b1; ingr_data<=ingr_w0;  ingr_last<=1'b0;
-                if (ingr_ready) ingr_st<=2'd2; end
-    2'd2: begin ingr_valid<=1'b1; ingr_data<=ingr_pay; ingr_last<=1'b1;
-                if (ingr_ready) begin ingr_st<=2'd0; ingr_valid<=1'b0; ingr_last<=1'b0; end end
+  always @(*) begin
+    ingr_valid = (ingr_st == 2'd1) || (ingr_st == 2'd2);
+    ingr_data  = (ingr_st == 2'd2) ? ingr_pay : ingr_w0;
+    ingr_last  = (ingr_st == 2'd2);
+  end
+  always @(posedge clk) if (!rstn || arr_reset) ingr_st<=2'd0;
+  else case (ingr_st)
+    2'd0: if (ingr_fire)               ingr_st<=2'd1;
+    2'd1: if (ingr_valid && ingr_ready) ingr_st<=2'd2;
+    2'd2: if (ingr_valid && ingr_ready) ingr_st<=2'd0;
     default: ingr_st<=2'd0;
   endcase
 
