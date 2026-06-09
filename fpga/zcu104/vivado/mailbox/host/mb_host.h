@@ -95,11 +95,43 @@ static void mb_recv_words(mb_t *m, uint32_t *buf, int n) {
 }
 
 /* one SHA256 block: feed 16 words (w[0]=block[31:0]…w[15]=block[511:480]) to
- * core (y,x) and read back the 8 digest words (h0..h7, MSB first). */
+ * core (y,x) and read back the 8 digest words (h0..h7, MSB first). Targets the
+ * single-block worker (rtl/mailbox/sha/mb_sha.c). */
 static void mb_sha256_block(mb_t *m, int y, int x,
                             const uint32_t blk[16], uint32_t digest[8]) {
     mb_send_words(m, y, x, blk, 16);
     mb_recv_words(m, digest, 8);
+}
+
+/* SHA-256 pad `msg` into big-endian 512-bit block words. `blocks` is a caller
+ * buffer of at least ((len+8)/64 + 1)*16 words; returns the block count. */
+static int mb_sha256_pad(const uint8_t *msg, uint32_t len, uint32_t *blocks) {
+    int nb = (int)((len + 8) / 64 + 1);
+    for (int i = 0; i < nb*16; i++) blocks[i] = 0;
+    for (uint32_t i = 0; i < len; i++)
+        blocks[i>>2] |= (uint32_t)msg[i] << (24 - 8*(i & 3));   /* big-endian word */
+    blocks[len>>2] |= (uint32_t)0x80u << (24 - 8*(len & 3));    /* 0x80 terminator */
+    uint64_t bl = (uint64_t)len * 8u;                          /* bit length, last 64b */
+    blocks[nb*16 - 2] = (uint32_t)(bl >> 32);
+    blocks[nb*16 - 1] = (uint32_t)(bl & 0xffffffffu);
+    return nb;
+}
+
+/* multi-block SHA256: stream the block count then nblk*16 block words to core
+ * (y,x), read back the digest. Targets the multi-block worker (mb_shamb.c). */
+static void mb_sha256(mb_t *m, int y, int x,
+                      const uint32_t *blocks, int nblk, uint32_t digest[8]) {
+    mb_inject(m, y, x, (uint32_t)nblk);
+    mb_send_words(m, y, x, blocks, nblk*16);
+    mb_recv_words(m, digest, 8);
+}
+
+/* hash an arbitrary byte message on the array (pad + stream + read digest).
+ * `blocks` is a caller scratch buffer of ((len+8)/64 + 1)*16 words. */
+static void mb_sha256_msg(mb_t *m, int y, int x, const uint8_t *msg, uint32_t len,
+                          uint32_t *blocks, uint32_t digest[8]) {
+    int nb = mb_sha256_pad(msg, len, blocks);
+    mb_sha256(m, y, x, blocks, nb, digest);
 }
 
 #endif /* MB_HOST_H */
