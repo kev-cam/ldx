@@ -127,8 +127,14 @@ module ldx_soc_mailbox
     assign ibus_cmd_ready = 1'b1;
     assign dbus_cmd_ready  = 1'b1;          // (gate stall omitted in M1 build)
 
-    // ----- program/data BRAM (ibus RO port A, dbus port B), MEM_WORDS deep ----
+    // ----- program/data RAM (ibus RO port A, dbus port B), MEM_WORDS deep -------
+    // This is PRIVATE per-core memory (code + data + stack) — not shared with any
+    // other agent — so it does not need the true-dual-port BRAM; map it to URAM
+    // (ram_style="ultra") to free the scarce dual-port BRAM for the sharing fabric
+    // (mailbox slots / router buffers). URAM's extra read latency is absorbed by
+    // the iBus 2-stage pipe (ram_a_q→ram_a_q_d1) and the dBus read register.
     localparam int AW = $clog2(MEM_WORDS);    // word-address width (10=4KB, 12=16KB)
+    (* ram_style = "ultra" *)
     reg [31:0] dpram [0:MEM_WORDS-1] /* verilator public_flat_rd */;
     wire        cpu_ram_wr = dbus_cmd_valid && dbus_cmd_payload_wr && dbus_is_ram && !cpu_rst;
     wire        ram_b_we   = load_we || cpu_ram_wr;
@@ -142,8 +148,11 @@ module ldx_soc_mailbox
     always @(posedge clk) begin
         ram_a_q    <= dpram[ibus_cmd_payload_pc[AW+1:2]];
         ram_a_q_d1 <= ram_a_q;
+        // port B in NO_CHANGE mode (read only when not writing) so URAM can map it
+        // — a store never uses ram_b_q, and a load is a separate cycle, so this is
+        // functionally identical to read-first but URAM-legal.
         if (ram_b_we) dpram[ram_b_addr] <= ram_b_wdata;
-        ram_b_q    <= dpram[ram_b_addr];
+        else          ram_b_q <= dpram[ram_b_addr];
     end
     assign ibus_rdata = ram_a_q_d1;         // (gate-vtable hook omitted in M1 build)
 
