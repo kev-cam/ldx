@@ -29,8 +29,8 @@ then point `create_8x8_project.tcl`'s `set rtl` core file at it.
 ### Memory (per-core program/data) — `MEM_WORDS` + `ram_style`
 | option | when / cost |
 |---|---|
-| **URAM** (`ram_style="ultra"`, default) | private code+data → URAM, **frees ALL dual-port BRAM** for the fabric. 1 URAM/core → caps ~96 cores. |
-| BRAM | per-core dpram in BRAM (4 RAMB36 at 16 KB) — use to push past the 96-URAM cap (LUT-bound ~128) or on parts with little URAM. |
+| **URAM** (`ram_style="ultra"`, default) | private code+data → URAM, **frees ALL dual-port BRAM** for the fabric. 1 URAM/core → caps ~96 cores. **But URAM read latency costs ~2× per-core on compute/data-heavy designs** (measured on the FPGA: SHA256 110 K cyc/block vs 55 K in the 1-cycle sim model; the trivial xorshift was unaffected). Verilator doesn't model this — trust FPGA numbers for large designs. |
+| BRAM | per-core dpram in BRAM (4 RAMB36 at 16 KB), 1-cycle — **~2× faster per-core than URAM on compute-heavy designs (e.g. SHA)**. Use for fast compute-heavy cores, or to push past the 96-URAM cap (LUT-bound ~128). Costs the BRAM budget (competes with the router's link FIFOs). |
 | `MEM_WORDS` | 1024 / 2048 / 4096. Size to the program. SHA accel-C (`-O2`) needs ~2.5 Kword → 4096 (16 KB). |
 | **bank-switching** | per-cycle double-buffer of the signal region (read active / write next, parity-flip at the barrier — **no data movement**). HW always supports it (`addr_mode`/`region_base`/`cycle_parity` in `ldx_soc_mailbox`); selecting it **doubles the signal-region memory** (bump `MEM_WORDS`) and the codegen/worker emits banked access. **Measured (bank/mb_bank.c, N=256 stencil): 1.5× vs naive memcpy** (6158→4115 cyc/sim-cycle — eliminates the ~33% spent copying state back). Approaches **~2× for copy-dominated** designs (pipelines, FIFOs, line buffers, regfiles), less for compute-heavy. The on-array HW addr_mode makes the swap free in the address path, so ≥ that. The key per-cycle feature for PARTITIONED designs with a large cross-core signal state — not exercised by the single-core SHA/DUT benchmarks. |
 
