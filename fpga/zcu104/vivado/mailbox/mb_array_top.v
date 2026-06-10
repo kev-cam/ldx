@@ -46,7 +46,7 @@ module mb_array_top #(
   wire cycle_parity, cycle_advance, quiescent;
 
   mb_array_soc #(.ARRAY_Y(ARRAY_Y), .ARRAY_X(ARRAY_X),
-                 .HOST_INGRESS(1), .USE_MESH(1), .MEM_WORDS(MEM_WORDS)) u_array (
+                 .HOST_INGRESS(1), .USE_HWROUTER(1), .MEM_WORDS(MEM_WORDS)) u_array (
     .clk(clk), .reset(arr_reset || !rstn),
     .load_we(load_we), .load_addr(load_addr), .load_data(load_data),
     .cpu_rst_req(cpu_rst_req),

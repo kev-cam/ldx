@@ -17,7 +17,8 @@ catch { set_property board_part $board [current_project] }
 
 add_files -norecurse [list \
   $mb/mailbox_pkg.sv $mb/mb_slot_file.sv $mb/mb_nif.sv $mb/mb_router.sv \
-  $mb/mb_mesh.sv $mb/mb_barrier.sv $mb/ldx_soc_mailbox.v $mb/mb_array_soc.v \
+  $mb/mb_mesh.sv $mb/mb_fifo.sv $mb/mb_xyrt.sv $mb/mb_mesh_hw.sv \
+  $mb/mb_barrier.sv $mb/ldx_soc_mailbox.v $mb/mb_array_soc.v \
   $rtl/VexRiscv.v $mb/m1/ldx_cfu_stub.v $script_dir/mb_array_top.v ]
 foreach f [get_files *.sv] { set_property file_type "SystemVerilog" $f }
 # these are .v but use SystemVerilog (import mailbox_pkg::*, logic, ...)
