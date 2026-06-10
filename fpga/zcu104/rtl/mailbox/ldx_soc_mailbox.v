@@ -144,23 +144,19 @@ module ldx_soc_mailbox
                                        : dbus_cmd_payload_address[AW+1:2];
     wire [31:0] ram_b_wdata= load_we ? load_data : dbus_cmd_payload_data;
 
-    reg [31:0] ram_a_q, ram_a_q_d1, ram_b_q;
+    reg [31:0] ram_a_q, ram_b_q;
     always @(posedge clk) begin
-        ram_a_q    <= dpram[ibus_cmd_payload_pc[AW+1:2]];
-        ram_a_q_d1 <= ram_a_q;
+        ram_a_q    <= dpram[ibus_cmd_payload_pc[AW+1:2]];   // 1-cycle fetch read
         // port B in NO_CHANGE mode (read only when not writing) so URAM can map it
         // — a store never uses ram_b_q, and a load is a separate cycle, so this is
         // functionally identical to read-first but URAM-legal.
         if (ram_b_we) dpram[ram_b_addr] <= ram_b_wdata;
         else          ram_b_q <= dpram[ram_b_addr];
     end
-    assign ibus_rdata = ram_a_q_d1;         // (gate-vtable hook omitted in M1 build)
+    assign ibus_rdata = ram_a_q;            // 1-cycle (dropped the vestigial 2nd stage)
 
-    reg ibus_rsp_valid_d1;
-    always @(posedge clk) begin
-        ibus_rsp_valid_d1 <= ibus_cmd_valid & !cpu_rst;
-        ibus_rsp_valid_r  <= ibus_rsp_valid_d1;
-    end
+    always @(posedge clk)
+        ibus_rsp_valid_r <= ibus_cmd_valid & !cpu_rst;       // rsp aligned to the 1-cycle read
     always @(posedge clk)
         dbus_rsp_valid_r <= dbus_cmd_valid & !dbus_cmd_payload_wr & !cpu_rst;
 
