@@ -74,3 +74,8 @@ sha/*_sm.c
 sha/*_sm_nvc.c
 obj_hwrt/
 sim_hwrt
+gather/obj_*/
+gather/sim_*
+gather/*.elf
+gather/*.bin
+gather/*.hex
