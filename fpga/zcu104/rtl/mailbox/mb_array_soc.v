@@ -14,6 +14,7 @@ module mb_array_soc
   parameter int ARRAY_X = 4,
   parameter int HOST_INGRESS = 0,         // 1 => ARM can inject packets to cores
   parameter int USE_MESH = 0,             // 0 = flat mb_router; 1 = nearest-neighbor mb_mesh
+  parameter int USE_HWROUTER = 0,         // 1 = hardware XY-routing fabric (mb_mesh_hw); overrides USE_MESH
   parameter int MEM_WORDS = 4096          // per-core BRAM words (passed to each node)
 ) (
   input  logic clk,
@@ -91,7 +92,17 @@ module mb_array_soc
     assign ingr_ready = 1'b0;
   end endgenerate
 
-  generate if (USE_MESH) begin : g_mesh
+  generate if (USE_HWROUTER) begin : g_hwmesh
+    mb_mesh_hw #(.N_CORES(N_CORES), .ARRAY_Y(ARRAY_Y), .ARRAY_X(ARRAY_X),
+                 .HOST_INGRESS(HOST_INGRESS)) u_fabric (
+      .clk(clk), .rst(reset),
+      .in_valid(r_in_valid), .in_ready(r_in_ready), .in_data(r_in_data),
+      .in_last(r_in_last),   .in_off(r_in_off),
+      .out_valid(t_s_valid), .out_ready(t_s_ready), .out_data(t_s_data),
+      .out_last(t_s_last),
+      .egr_valid(egr_valid), .egr_ready(egr_ready), .egr_data(egr_data), .egr_last(egr_last)
+    );
+  end else if (USE_MESH) begin : g_mesh
     mb_mesh #(.N_CORES(N_CORES), .ARRAY_Y(ARRAY_Y), .ARRAY_X(ARRAY_X),
               .HOST_INGRESS(HOST_INGRESS)) u_fabric (
       .clk(clk), .rst(reset),
