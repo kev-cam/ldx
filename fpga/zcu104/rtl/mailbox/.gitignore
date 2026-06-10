@@ -79,3 +79,8 @@ gather/sim_*
 gather/*.elf
 gather/*.bin
 gather/*.hex
+bank/obj_*/
+bank/sim_*
+bank/*.elf
+bank/*.bin
+bank/*.hex
