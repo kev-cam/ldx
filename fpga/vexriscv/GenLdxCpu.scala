@@ -39,7 +39,7 @@ object GenLdxCpu extends App {
           separatedAddSub = false,
           executeInsertion = true
         ),
-        new LightShifterPlugin,
+        new FullBarrelShifterPlugin,
         new HazardSimplePlugin(
           bypassExecute = true,
           bypassMemory = true,
