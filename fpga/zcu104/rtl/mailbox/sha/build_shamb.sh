@@ -4,7 +4,7 @@
 set -e
 D="$(cd "$(dirname "$0")" && pwd)"; cd "$D"
 /usr/local/src/sv2ghdl/yosys/gen_statemachine "$D/Sha256mb.v" Sha256mb "$D/shamb_sm.c" >/dev/null 2>&1
-riscv64-unknown-elf-gcc -march=rv32i -mabi=ilp32 -Os -fno-builtin -nostdlib -ffreestanding \
+riscv64-unknown-elf-gcc -march=rv32i -mabi=ilp32 -O2 -fno-builtin -nostdlib -ffreestanding \
   -I../m1 -I. -T ../m1/ldx.ld -Wl,--gc-sections -o mb_shamb.elf ../m1/start.S mb_shamb.c 2>&1 | grep -aiE 'error|undefined' | head || true
 riscv64-unknown-elf-objcopy -O binary mb_shamb.elf mb_shamb.bin
 echo "program bytes: $(wc -c < mb_shamb.bin)"

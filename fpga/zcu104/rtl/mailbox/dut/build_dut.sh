@@ -6,7 +6,7 @@ AY=${1:-4}; AX=${2:-4}; EP=${3:-16}
 /usr/local/src/sv2ghdl/yosys/gen_statemachine "$D/stage.v" stage "$D/stage_sm.c" >/dev/null 2>&1
 cc -O2 -DEGR_PERIOD=$EP golden_dut.c -o golden_dut; ./golden_dut > golden_d.txt
 echo "golden: $(tr '\n' ' ' < golden_d.txt)"
-riscv64-unknown-elf-gcc -march=rv32i -mabi=ilp32 -Os -fno-builtin -nostdlib -ffreestanding \
+riscv64-unknown-elf-gcc -march=rv32i -mabi=ilp32 -O2 -fno-builtin -nostdlib -ffreestanding \
   -DEGR_PERIOD=${EP}u -I../m1 -I. -T ../m1/ldx.ld -Wl,--gc-sections -o mb_dut.elf ../m1/start.S mb_dut.c
 riscv64-unknown-elf-objcopy -O binary mb_dut.elf mb_dut.bin
 hexdump -v -e '1/4 "%08x\n"' mb_dut.bin > mb_dut.hex

@@ -3,7 +3,7 @@ set -e
 D="$(cd "$(dirname "$0")" && pwd)"; cd "$D"
 SHA=/usr/local/src/ldx/examples/verilator-bench/sha256
 /usr/local/src/sv2ghdl/yosys/gen_statemachine "$SHA/Sha256.v" Sha256 "$D/sha_sm.c" >/dev/null 2>&1
-riscv64-unknown-elf-gcc -march=rv32i -mabi=ilp32 -Os -fno-builtin -nostdlib -ffreestanding \
+riscv64-unknown-elf-gcc -march=rv32i -mabi=ilp32 -O2 -fno-builtin -nostdlib -ffreestanding \
   -I../m1 -I. -T ../m1/ldx.ld -Wl,--gc-sections -o mb_sha.elf ../m1/start.S mb_sha.c 2>&1 | grep -aiE 'error|undefined' | head || true
 riscv64-unknown-elf-objcopy -O binary mb_sha.elf mb_sha.bin
 echo "program bytes: $(wc -c < mb_sha.bin)"
