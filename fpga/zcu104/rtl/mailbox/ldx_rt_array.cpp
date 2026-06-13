@@ -192,7 +192,7 @@ void ldx_fail(ldx_hal_t *hal)
 void *ldx_alloc(ldx_hal_t *hal, int64_t nbytes)
 {
    (void)hal;
-   static unsigned char arena[16384];
+   static unsigned char arena[2048];   // small: one 16KB core's RAM is tight
    static unsigned long top = 0;
    if (nbytes <= 0) nbytes = 8;
    unsigned long n = ((unsigned long)nbytes + 7u) & ~7ul;   // 8-byte align
@@ -205,7 +205,7 @@ void *ldx_alloc(ldx_hal_t *hal, int64_t nbytes)
 
 void *ldx_scratch(void)
 {
-   static unsigned char buf[2048];   // zeroed placeholder for unlowered pointers
+   static unsigned char buf[512];    // zeroed placeholder for unlowered pointers
    return buf;
 }
 
