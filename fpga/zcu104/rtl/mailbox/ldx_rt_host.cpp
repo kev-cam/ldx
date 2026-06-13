@@ -129,6 +129,14 @@ void ldx_io_emit(ldx_hal_t *hal, uint32_t string_id,
    int k = 0;
    for (const char *p = s; *p; p++) {
       if (*p == '\x01' && p[1]) {
+         if (p[1] == 'S') {                          // computed string: ptr,len bytes
+            const int64_t ptr = k < nargs ? args[k++] : 0;
+            const int64_t len = k < nargs ? args[k++] : 0;
+            if (ptr && len > 0 && len < (1 << 20))
+               fwrite((const void *)(intptr_t)ptr, 1, (size_t)len, stdout);
+            p++;
+            continue;
+         }
          const int64_t v = k < nargs ? args[k++] : 0;
          switch (p[1]) {
          case 'C': printf("'%c'", (int)(v & 0xff)); break;            // character'image
