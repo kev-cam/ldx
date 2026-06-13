@@ -40,6 +40,7 @@ void    ldx_sched_event(ldx_hal_t *hal, void *sig, int64_t count);
 
 // Time / wakeup.
 void    ldx_sched_process(ldx_hal_t *hal, int64_t delay);        // wait for
+int64_t ldx_now(ldx_hal_t *hal);                                 // 'now' (fs)
 
 // Edge / value sensitivity triggers (must be honoured, not no-ops).
 int32_t ldx_cmp_trigger(ldx_hal_t *hal, void *sig, int64_t value);

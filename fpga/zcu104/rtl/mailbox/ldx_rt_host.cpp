@@ -99,6 +99,11 @@ void ldx_sched_process(ldx_hal_t *hal, int64_t delay)
    hal->sch->procs[hal->cur].wake_time = hal->sch->now + (uint64_t)delay;
 }
 
+int64_t ldx_now(ldx_hal_t *hal)        // VHDL 'now' in fs
+{
+   return (int64_t)hal->sch->now;
+}
+
 int32_t ldx_cmp_trigger(ldx_hal_t *hal, void *sig, int64_t value)
 {
    if (sig == nullptr) return 0;        // unknown signal: don't arm a dead trigger

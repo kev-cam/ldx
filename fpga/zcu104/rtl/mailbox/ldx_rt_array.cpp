@@ -133,6 +133,8 @@ void ldx_sched_event(ldx_hal_t *hal, void *sig, int64_t count)
    if (s->nwait < MAXWAIT) s->waiters[s->nwait++] = HAL.cur;
 }
 
+int64_t ldx_now(ldx_hal_t *hal) { (void)hal; return (int64_t)g_now; }
+
 void ldx_sched_process(ldx_hal_t *hal, int64_t delay)
 {
    (void)hal; g_proc[HAL.cur].wake_time = g_now + (uint32_t)delay;
