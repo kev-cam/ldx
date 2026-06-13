@@ -116,21 +116,25 @@ extern "C" const char *const ldx_strtab[];
 extern "C" const char        ldx_strkind[];
 extern "C" const unsigned    ldx_strtab_n;
 
-void ldx_io_emit(ldx_hal_t *hal, uint32_t string_id, int64_t arg0)
+void ldx_io_emit(ldx_hal_t *hal, uint32_t string_id,
+                 const int64_t *args, int32_t nargs)
 {
    const unsigned long long t = (unsigned long long)(hal->sch->now / 1000000ull);
    printf("@%lluns id=%u: ", t, string_id);
-   if (string_id >= ldx_strtab_n) { printf("%lld\n", (long long)arg0); return; }
+   const int64_t a0 = nargs > 0 ? args[0] : 0;
+   if (string_id >= ldx_strtab_n) { printf("%lld\n", (long long)a0); return; }
    const char *s = ldx_strtab[string_id];
    if (ldx_strkind[string_id] == 'L') { fputs(s, stdout); printf("\n"); return; }
-   // 'F': literal bytes verbatim; \x01<typecode> renders the value per VHDL 'image
+   // 'F': literal bytes verbatim; \x01<typecode> renders args[k] per VHDL 'image
+   int k = 0;
    for (const char *p = s; *p; p++) {
       if (*p == '\x01' && p[1]) {
+         const int64_t v = k < nargs ? args[k++] : 0;
          switch (p[1]) {
-         case 'C': printf("'%c'", (int)(arg0 & 0xff)); break;         // character'image
-         case 'B': fputs(arg0 ? "true" : "false", stdout); break;     // boolean'image
-         case 'T': printf("%lld fs", (long long)arg0); break;         // time'image
-         default:  printf("%lld", (long long)arg0); break;            // 'I' integer'image
+         case 'C': printf("'%c'", (int)(v & 0xff)); break;            // character'image
+         case 'B': fputs(v ? "true" : "false", stdout); break;        // boolean'image
+         case 'T': printf("%lld fs", (long long)v); break;            // time'image
+         default:  printf("%lld", (long long)v); break;               // 'I' integer'image
          }
          p++;
       }

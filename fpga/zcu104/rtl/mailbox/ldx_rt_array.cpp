@@ -153,19 +153,24 @@ int32_t ldx_cmp_trigger(ldx_hal_t *hal, void *sig, int64_t value)
 
 void ldx_add_trigger(ldx_hal_t *hal, int32_t trig) { (void)hal; (void)trig; }
 
-void ldx_io_emit(ldx_hal_t *hal, uint32_t string_id, int64_t arg0)
+void ldx_io_emit(ldx_hal_t *hal, uint32_t string_id,
+                 const int64_t *args, int32_t nargs)
 {
    (void)hal;
+   const long long a0 = nargs > 0 ? (long long)args[0] : 0;
 #ifdef __riscv
    // Broadcast-load runs this sim on every core; only the egress-reachable tile
    // (0,0) reports, so the host sees one clean sequence.  (No egress FIFO on the
    // single-tile loopback, so spin briefly to let the NIF drain each message.)
+   // Multi-value formats ship each arg in order; the host reassembles.
    if (mb_my_x()==TILE_X && mb_my_y()==TILE_Y) {
-      mb_display(string_id, (uint32_t)arg0);
-      for (volatile int d = 0; d < 600; d++) { }
+      for (int32_t k = 0; k < (nargs > 0 ? nargs : 1); k++) {
+         mb_display(string_id, (uint32_t)(nargs > 0 ? args[k] : 0));
+         for (volatile int d = 0; d < 600; d++) { }
+      }
    }
 #else
-   printf("id=%u: %lld\n", string_id, (long long)arg0);
+   printf("id=%u: %lld\n", string_id, a0);
 #endif
 }
 

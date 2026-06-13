@@ -47,7 +47,8 @@ void    ldx_add_trigger(ldx_hal_t *hal, int32_t trig);
 
 // Fire-and-forget host I/O ($display/report): string_id resolves to a format
 // in the host registry; raw args ship as scalars.  Never blocks the core.
-void    ldx_io_emit(ldx_hal_t *hal, uint32_t string_id, int64_t arg0);
+void    ldx_io_emit(ldx_hal_t *hal, uint32_t string_id,
+                    const int64_t *args, int32_t nargs);
 void    ldx_fail(ldx_hal_t *hal);   // assertion failure (>= ERROR): stop the sim
 
 // Heap for VHDL composite temporaries / access types (new, alloc).  Returns a
