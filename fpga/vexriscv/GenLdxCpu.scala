@@ -22,6 +22,28 @@ object GenLdxCpu extends App {
   val shifter = o.getOrElse("shifter", "barrel")
   val muldiv  = o.getOrElse("muldiv", "on")
   val cfu     = o.getOrElse("cfu", "on")
+  val align   = o.getOrElse("align", "off")   // on = trap on misaligned/illegal (debug + safety)
+  val catchA  = align == "on"
+  val rf      = o.getOrElse("rf", "sync")      // sync = registered-read regfile Mem (read-under-write
+                                               //   = dontCare → can differ sim vs synthesis);
+                                               // async = combinational LUTRAM read + zeroBoot (no
+                                               //   read-under-write gap, deterministic, matches sim)
+  val rfAsync = rf == "async"
+  val persist = o.getOrElse("persist", "off")  // on = cmdForkPersistence (iBus cmd held when
+                                               //   cmd_ready is low) => the SoC can safely
+                                               //   backpressure / run a latency-tracked handshake
+  val cmdPersist = persist == "on"
+  val hazard  = o.getOrElse("hazard", "fast")  // safe = no reg bypass + pessimistic hazard
+                                               //   detection (robust against a marginal Xilinx
+                                               //   bypass-mux path; slower); fast = full bypass
+  val hzSafe  = hazard == "safe"
+  val alu     = o.getOrElse("alu", "wide")     // wide   = 32-bit IntAluPlugin (baseline)
+                                               // narrow = 24-bit fast / 2-cycle wide ALU
+                                               //   (NarrowAluPlugin) — shortens the regfile-write
+                                               //   bypass critical path; 95%+ hit rate when the
+                                               //   workload's pointers fit signed-24 (e.g. local
+                                               //   memory based at 0).
+  val aluNarrow = alu == "narrow"
 
   def cfuPlugin = new CfuPlugin(
     stageCount = 0, allowZeroLatency = true,
@@ -38,25 +60,29 @@ object GenLdxCpu extends App {
 
   def cpu() = new VexRiscv(config = VexRiscvConfig(plugins =
     List[Plugin[VexRiscv]](
-      new IBusSimplePlugin(resetVector = 0x80000000L, cmdForkOnSecondStage = false,
-        cmdForkPersistence = false, prediction = NONE, catchAccessFault = false, compressedGen = false),
-      new DBusSimplePlugin(catchAddressMisaligned = false, catchAccessFault = false),
-      new CsrPlugin(CsrPluginConfig.smallest),
-      new DecoderSimplePlugin(catchIllegalInstruction = false),
-      new RegFilePlugin(regFileReadyKind = plugin.SYNC, zeroBoot = false),
-      new IntAluPlugin,
+      new IBusSimplePlugin(resetVector = 0x80000000L, cmdForkOnSecondStage = cmdPersist,
+        cmdForkPersistence = cmdPersist, prediction = NONE, catchAccessFault = catchA, compressedGen = false),
+      new DBusSimplePlugin(catchAddressMisaligned = catchA, catchAccessFault = catchA),
+      new CsrPlugin(if (catchA) CsrPluginConfig.small(0x80000010L) else CsrPluginConfig.smallest),
+      new DecoderSimplePlugin(catchIllegalInstruction = catchA),
+      new RegFilePlugin(regFileReadyKind = if (rfAsync) plugin.ASYNC else plugin.SYNC, zeroBoot = rfAsync),
+      (if (aluNarrow) new NarrowAluPlugin else new IntAluPlugin),
       new SrcPlugin(separatedAddSub = false, executeInsertion = true),
       (if (shifter == "light") new LightShifterPlugin else new FullBarrelShifterPlugin),
-      new HazardSimplePlugin(bypassExecute = true, bypassMemory = true, bypassWriteBack = true,
-        bypassWriteBackBuffer = true, pessimisticUseSrc = false,
+      // hzSafe: keep the short execute-stage bypass (needed for correctness/perf), but
+      // drop the long memory/writeback bypass muxes (force a stall + regfile read) —
+      // those long combinational forward paths are the marginal Xilinx timing suspect
+      // for "lw-after-call returns stale".
+      new HazardSimplePlugin(bypassExecute = true, bypassMemory = !hzSafe, bypassWriteBack = !hzSafe,
+        bypassWriteBackBuffer = !hzSafe, pessimisticUseSrc = false,
         pessimisticWriteRegFile = false, pessimisticAddressMatch = false),
-      new BranchPlugin(earlyBranch = false, catchAddressMisaligned = false)
+      new BranchPlugin(earlyBranch = false, catchAddressMisaligned = catchA)
     )
     ++ (if (muldiv == "on") List[Plugin[VexRiscv]](new MulPlugin, new DivPlugin) else Nil)
     ++ (if (cfu    == "on") List[Plugin[VexRiscv]](cfuPlugin) else Nil)
     ++ List[Plugin[VexRiscv]](new YamlPlugin("cpu0.yaml"))
   ))
 
-  println(s"## GenLdxCpu: shifter=$shifter muldiv=$muldiv cfu=$cfu")
+  println(s"## GenLdxCpu: shifter=$shifter muldiv=$muldiv cfu=$cfu alu=$alu hazard=$hazard persist=$persist")
   SpinalVerilog(cpu())
 }
