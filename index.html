@@ -110,6 +110,11 @@ compiler flags, 1-cycle fetch, and a barrel shifter took the xorshift kernel fro
 18&nbsp;cycles/eval (13×). Known cost: URAM private memory adds ~2× latency on data-heavy
 workloads versus the cycle-accurate simulation model — FPGA numbers are the ones quoted.</p>
 
+<p>Where this beats a CPU as designs scale — and where it honestly doesn't — is charted with
+measured anchor points and labeled model lines on the
+<a href="scaling.html">scaling outlook page</a>, including how much of a full IC fits at each
+array size.</p>
+
 <h2>nvc <code>--accel</code> — compiled DUT inside a live simulation</h2>
 <p>The same compiled-state-machine engine, hot-swapped into a running nvc simulation so the
 testbench stays fully standard. Measured, output-checked:</p>

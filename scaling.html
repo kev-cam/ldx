@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ldx — FPGA vs CPU scaling outlook</title>
+<style>
+  :root { --bg:#ffffff; --fg:#1a1d21; --muted:#5c6570; --line:#e3e6ea; --card:#f6f7f9; --accent:#2563eb; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#14171a; --fg:#e6e9ec; --muted:#9aa4ae; --line:#2b3138; --card:#1c2126; --accent:#6ea8fe; }
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; background:var(--bg);
+         color:var(--fg); line-height:1.55; padding:2rem 1rem; }
+  .wrap { max-width:62rem; margin:0 auto; }
+  h1 { font-size:1.6rem; margin-bottom:.3rem; }
+  h2 { font-size:1.2rem; margin:2rem 0 .6rem; }
+  .muted { color:var(--muted); }
+  .note { background:var(--card); border-left:3px solid var(--accent); padding:.7rem 1rem;
+          border-radius:0 6px 6px 0; margin:1rem 0; font-size:.95rem; }
+  .chart { margin:1.5rem 0; overflow-x:auto; }
+  .chart svg { min-width:720px; width:100%; height:auto; }
+  .tablebox { overflow-x:auto; margin:.8rem 0; }
+  table { border-collapse:collapse; width:100%; font-size:.92rem; }
+  th { text-align:left; border-bottom:2px solid var(--line); padding:.4rem .6rem; font-weight:600; }
+  td { border-bottom:1px solid var(--line); padding:.4rem .6rem; }
+  code { background:var(--card); padding:.1rem .35rem; border-radius:4px; font-size:.88em;
+         font-family:ui-monospace,"SF Mono",Consolas,monospace; }
+  a { color:var(--accent); }
+  footer { margin-top:3rem; padding-top:1rem; border-top:1px solid var(--line); font-size:.85rem; color:var(--muted); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>FPGA array vs CPU — scaling outlook</h1>
+<p class="muted">Where a mesh-of-RISC-V-cores simulator beats a CPU, as a function of design size —
+measured anchor points (dots) plus clearly-labeled model lines (dashes). This replaces an earlier
+"linear scaling validated" chart whose data was projected, not measured.</p>
+
+<div class="chart">
+<svg viewBox="0 0 900 640" xmlns="http://www.w3.org/2000/svg" font-family="-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif" font-size="13">
+<style>text{fill:currentColor} .mut{opacity:.65} .tick{stroke:currentColor;opacity:.15} .axis{stroke:currentColor;opacity:.5}</style>
+<rect x="347.2" y="40" width="199.5" height="450" fill="#2563eb" opacity="0.07"/>
+<line class="tick" x1="78.0" y1="40" x2="78.0" y2="490"/>
+<text x="78.0" y="508" text-anchor="middle" class="mut">10<tspan dy="-4" font-size="9">1</tspan></text>
+<line class="tick" x1="177.8" y1="40" x2="177.8" y2="490"/>
+<text x="177.8" y="508" text-anchor="middle" class="mut">10<tspan dy="-4" font-size="9">2</tspan></text>
+<line class="tick" x1="277.5" y1="40" x2="277.5" y2="490"/>
+<text x="277.5" y="508" text-anchor="middle" class="mut">10<tspan dy="-4" font-size="9">3</tspan></text>
+<line class="tick" x1="377.2" y1="40" x2="377.2" y2="490"/>
+<text x="377.2" y="508" text-anchor="middle" class="mut">10<tspan dy="-4" font-size="9">4</tspan></text>
+<line class="tick" x1="477.0" y1="40" x2="477.0" y2="490"/>
+<text x="477.0" y="508" text-anchor="middle" class="mut">10<tspan dy="-4" font-size="9">5</tspan></text>
+<line class="tick" x1="576.8" y1="40" x2="576.8" y2="490"/>
+<text x="576.8" y="508" text-anchor="middle" class="mut">10<tspan dy="-4" font-size="9">6</tspan></text>
+<line class="tick" x1="676.5" y1="40" x2="676.5" y2="490"/>
+<text x="676.5" y="508" text-anchor="middle" class="mut">10<tspan dy="-4" font-size="9">7</tspan></text>
+<line class="tick" x1="776.2" y1="40" x2="776.2" y2="490"/>
+<text x="776.2" y="508" text-anchor="middle" class="mut">10<tspan dy="-4" font-size="9">8</tspan></text>
+<line class="tick" x1="876.0" y1="40" x2="876.0" y2="490"/>
+<text x="876.0" y="508" text-anchor="middle" class="mut">10<tspan dy="-4" font-size="9">9</tspan></text>
+<line class="tick" x1="78" y1="490.0" x2="876" y2="490.0"/>
+<text x="70" y="494.0" text-anchor="end" class="mut">10<tspan dy="-4" font-size="9">2</tspan></text>
+<line class="tick" x1="78" y1="428.4" x2="876" y2="428.4"/>
+<text x="70" y="432.4" text-anchor="end" class="mut">10<tspan dy="-4" font-size="9">3</tspan></text>
+<line class="tick" x1="78" y1="366.7" x2="876" y2="366.7"/>
+<text x="70" y="370.7" text-anchor="end" class="mut">10<tspan dy="-4" font-size="9">4</tspan></text>
+<line class="tick" x1="78" y1="305.1" x2="876" y2="305.1"/>
+<text x="70" y="309.1" text-anchor="end" class="mut">10<tspan dy="-4" font-size="9">5</tspan></text>
+<line class="tick" x1="78" y1="243.4" x2="876" y2="243.4"/>
+<text x="70" y="247.4" text-anchor="end" class="mut">10<tspan dy="-4" font-size="9">6</tspan></text>
+<line class="tick" x1="78" y1="181.8" x2="876" y2="181.8"/>
+<text x="70" y="185.8" text-anchor="end" class="mut">10<tspan dy="-4" font-size="9">7</tspan></text>
+<line class="tick" x1="78" y1="120.1" x2="876" y2="120.1"/>
+<text x="70" y="124.1" text-anchor="end" class="mut">10<tspan dy="-4" font-size="9">8</tspan></text>
+<line class="tick" x1="78" y1="58.5" x2="876" y2="58.5"/>
+<text x="70" y="62.5" text-anchor="end" class="mut">10<tspan dy="-4" font-size="9">9</tspan></text>
+<rect x="78" y="40" width="798" height="450" fill="none" class="axis"/>
+<text x="477.0" y="530" text-anchor="middle">design size (synthesized cells, log)</text>
+<text x="20" y="265.0" text-anchor="middle" transform="rotate(-90 20 265.0)">simulated throughput (DUT cycles/s, log)</text>
+<polyline points="78.0,90.7 107.9,109.2 177.8,152.4 227.6,183.2 277.5,214.0 327.4,244.8 377.2,275.7 427.1,306.5 477.0,337.3 526.9,368.1 576.8,398.9 576.8,460.6 624.3,490.0" fill="none" stroke="#d97706" stroke-width="2.2" stroke-dasharray="7 4"/>
+<polyline points="357.9,237.5 457.7,299.1" fill="none" stroke="#2563eb" stroke-width="2.2" stroke-dasharray="7 4"/>
+<line x1="457.7" y1="299.1" x2="457.7" y2="325.1" stroke="#2563eb" stroke-width="2.2" stroke-dasharray="2 3"/>
+<polyline points="447.0,268.0 546.7,329.6" fill="none" stroke="#9333ea" stroke-width="2.2" stroke-dasharray="3 5"/>
+<line x1="546.7" y1="329.6" x2="546.7" y2="355.6" stroke="#9333ea" stroke-width="2" stroke-dasharray="2 3"/>
+<circle cx="108.0" cy="94.8" r="5" fill="#d97706" stroke="#d97706" stroke-width="2"/>
+<text x="116.0" y="98.8" font-size="11.5" text-anchor="start">xorshift · x86 1-thread</text>
+<circle cx="185.6" cy="158.7" r="5" fill="#d97706" stroke="#d97706" stroke-width="2"/>
+<text x="193.6" y="162.7" font-size="11.5" text-anchor="start">bet FIFO · x86</text>
+<circle cx="185.6" cy="190.0" r="5" fill="#d97706" stroke="#d97706" stroke-width="2"/>
+<text x="193.6" y="194.0" font-size="11.5" text-anchor="start">bet FIFO · A53 (on ZCU104)</text>
+<circle cx="185.6" cy="253.9" r="5" fill="#d97706" stroke="#d97706" stroke-width="2"/>
+<text x="193.6" y="257.9" font-size="11.5" text-anchor="start">bet FIFO · Verilator+TB x86</text>
+<circle cx="108.0" cy="181.9" r="5" fill="#2563eb" stroke="#2563eb" stroke-width="2"/>
+<text x="118.0" y="185.9" font-size="11.5" text-anchor="start">xorshift · 1 array core</text>
+<circle cx="108.0" cy="70.6" r="5" fill="none" stroke="#2563eb" stroke-width="2"/>
+<text x="118.0" y="74.6" font-size="11.5" text-anchor="start">xorshift · 64 independent sims (aggregate)</text>
+<circle cx="337.6" cy="299.5" r="5" fill="#2563eb" stroke="#2563eb" stroke-width="2"/>
+<text x="345.6" y="303.5" font-size="11.5" text-anchor="start">SHA-256 · 1 array core (~4k cells est.)</text>
+<line x1="457.7" y1="40" x2="457.7" y2="490" stroke="#2563eb" stroke-width="1.2" stroke-dasharray="2 4" opacity="0.55"/>
+<text x="457.7" y="546" text-anchor="middle" font-size="10.5" class="mut">ZCU104 array full</text>
+<text x="457.7" y="559" text-anchor="middle" font-size="10.5" class="mut">~64k cells ≈ 0.06%</text>
+<text x="457.7" y="572" text-anchor="middle" font-size="10.5" class="mut">of a 100M-gate IC</text>
+<line x1="546.7" y1="40" x2="546.7" y2="490" stroke="#9333ea" stroke-width="1.2" stroke-dasharray="2 4" opacity="0.55"/>
+<text x="546.7" y="590" text-anchor="middle" font-size="10.5" class="mut">D5005 array full</text>
+<text x="546.7" y="603" text-anchor="middle" font-size="10.5" class="mut">~0.5M cells ≈ 0.5% of IC</text>
+<line x1="576.8" y1="40" x2="576.8" y2="490" stroke="#d97706" stroke-width="1.2" stroke-dasharray="2 4" opacity="0.55"/>
+<text x="576.8" y="546" text-anchor="middle" font-size="10.5" class="mut">≈ one x86 LLC</text>
+<text x="576.8" y="559" text-anchor="middle" font-size="10.5" class="mut">(CPU cache cliff)</text>
+<line x1="776.2" y1="40" x2="776.2" y2="490" stroke="#888888" stroke-width="1.2" stroke-dasharray="2 4" opacity="0.55"/>
+<text x="776.2" y="546" text-anchor="middle" font-size="10.5" class="mut">full 100M-gate IC</text>
+<text x="776.2" y="559" text-anchor="middle" font-size="10.5" class="mut">(emulator / multi-FPGA territory)</text>
+<text x="347.2" y="30" font-size="11.5" fill="#2563eb">crossover: design partitions across ≥64 cores → array wins</text>
+<line x1="347.2" y1="40" x2="347.2" y2="490" stroke="#2563eb" stroke-width="1.4" stroke-dasharray="6 3" opacity="0.6"/>
+<rect x="588" y="50" width="278" height="92" fill="none" class="axis" rx="6"/>
+<line x1="598" y1="66" x2="628" y2="66" stroke="#d97706" stroke-width="2.2" stroke-dasharray="7 4"/><text x="636" y="70" font-size="11.5">CPU, 1 thread, compiled model (model)</text>
+<line x1="598" y1="86" x2="628" y2="86" stroke="#2563eb" stroke-width="2.2" stroke-dasharray="7 4"/><text x="636" y="90" font-size="11.5">ZCU104 8×8 array, partitioned (model)</text>
+<line x1="598" y1="106" x2="628" y2="106" stroke="#9333ea" stroke-width="2" stroke-dasharray="3 5"/><text x="636" y="110" font-size="11.5">D5005-class array (projection)</text>
+<circle cx="613" cy="126" r="5" fill="currentColor" opacity=".7"/><text x="636" y="130" font-size="11.5">measured run (○ = aggregate of 64 sims)</text>
+</svg>
+
+</div>
+
+<h2>How to read it</h2>
+<p>Both platforms slow down linearly as the design grows — more cells to evaluate per simulated
+cycle — so on a log-log plot every simulator is a descending line, and what matters is (a) the
+line&rsquo;s height (cell-evaluations per second) and (b) where it ends (capacity). A single CPU
+thread is individually much faster than one soft core (measured: 258&nbsp;M vs 9.96&nbsp;M evals/s on the
+same tiny design — 26×). The array wins by width, not height: 64 cores with all state in local
+memory. Left of the crossover a design can&rsquo;t use enough cores to close that 26× gap (measured:
+the bet FIFO tops out at ~1.9× over one core no matter how many are offered). Right of it, the
+aggregate line sits ~2.7× above the CPU (ZCU104) or ~7× (projected D5005-class), until the array
+runs out of room.</p>
+<p>The capacity markers are the honest part: a full ZCU104 holds ≈&nbsp;0.06% of a 100M-gate IC and a
+D5005-class part ≈&nbsp;0.5%. Full-chip simulation on this architecture means racks of FPGAs — the
+same math that makes commercial emulators the size they are. The realistic near-term claims are
+the shaded band (blocks and subsystems up to ~0.5M cells) and the aggregate-throughput case
+(64 independent sims at once, measured 637&nbsp;M evals/s = 2.47× one x86 thread).</p>
+
+<h2>What is measured vs modeled</h2>
+<div class="tablebox">
+<table>
+  <tr><th>Element</th><th>Basis</th></tr>
+  <tr><td>All dots</td><td>Measured wall-clock runs (ZCU104 silicon, x86, A53); outputs checked against references</td></tr>
+  <tr><td>CPU line</td><td>Model: ~3&nbsp;G cell-evals/s per thread in-cache (anchored on the xorshift and bet-FIFO compiled runs), 10× cliff past ~1M cells when state exceeds the last-level cache</td></tr>
+  <tr><td>ZCU104 array line</td><td>Model: 64 cores × ~250&nbsp;M cell-evals/s each (anchored on xorshift 9.96&nbsp;M evals/s and SHA-256 122&nbsp;k cyc/s measurements, URAM cost included) × 0.5 partition efficiency — cross-core settling measured functional in sim, efficiency factor is an estimate, silicon partitioned-throughput run still TBD</td></tr>
+  <tr><td>D5005 line</td><td>Projection: ~450 cores from measured per-core area (~2k ALM-equiv), 1.5× clock, same efficiency — labeled projection, no silicon</td></tr>
+  <tr><td>Capacity marks</td><td>~1k cells/core from measured program+state footprints (SHA-256 ≈ 1.4k words in 16&nbsp;KB/core)</td></tr>
+</table>
+</div>
+
+<div class="note">
+What would move these lines: a measured partitioned-design silicon run (fixes the 0.5 efficiency
+guess), a real cell count for the SHA-256 netlist (the ~4k estimate), and per-core memory scaling
+(more URAM per core trades core count for capacity). All three are planned measurements, not
+unknowns of principle.
+</div>
+
+<footer>
+Updated 2026-07-14 · <a href="index.html">back to measured results</a>
+</footer>
+
+</div>
+</body>
+</html>
