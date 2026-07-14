@@ -1,449 +1,153 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🏆 RTL Accelerator: Array Size vs Speedup Analysis</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            margin: 20px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            min-height: 100vh;
-        }
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            padding: 30px;
-            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
-        }
-        .header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-        .header h1 {
-            font-size: 2.5em;
-            margin: 0;
-            background: linear-gradient(45deg, #FFD700, #FFA500);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
-        }
-        .subtitle {
-            font-size: 1.2em;
-            margin: 10px 0;
-            opacity: 0.9;
-        }
-        .chart-container {
-            position: relative;
-            height: 600px;
-            width: 100%;
-            background: rgba(255, 255, 255, 0.9);
-            border-radius: 15px;
-            padding: 20px;
-            box-shadow: 0 4px 16px rgba(0,0,0,0.1);
-        }
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 20px;
-            margin-top: 30px;
-        }
-        .stat-card {
-            background: rgba(255, 255, 255, 0.15);
-            border-radius: 15px;
-            padding: 20px;
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-        .stat-card h3 {
-            margin: 0 0 15px 0;
-            color: #FFD700;
-            font-size: 1.3em;
-        }
-        .stat-value {
-            font-size: 2em;
-            font-weight: bold;
-            margin: 10px 0;
-        }
-        .victory-banner {
-            background: linear-gradient(45deg, #FFD700, #FFA500);
-            color: #000;
-            padding: 15px;
-            border-radius: 10px;
-            text-align: center;
-            font-weight: bold;
-            font-size: 1.2em;
-            margin: 20px 0;
-            box-shadow: 0 4px 16px rgba(255, 215, 0, 0.3);
-        }
-        .legend-item {
-            display: inline-block;
-            margin: 0 15px;
-            font-size: 14px;
-        }
-        .legend-color {
-            display: inline-block;
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            margin-right: 8px;
-            vertical-align: middle;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ldx — RTL simulation acceleration, measured results</title>
+<style>
+  :root {
+    --bg: #ffffff; --fg: #1a1d21; --muted: #5c6570; --line: #e3e6ea;
+    --card: #f6f7f9; --accent: #2563eb; --good: #157347; --warn: #9a6700;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #14171a; --fg: #e6e9ec; --muted: #9aa4ae; --line: #2b3138;
+            --card: #1c2126; --accent: #6ea8fe; --good: #4ade80; --warn: #e3b341; }
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+         background: var(--bg); color: var(--fg); line-height: 1.55; padding: 2rem 1rem; }
+  .wrap { max-width: 60rem; margin: 0 auto; }
+  h1 { font-size: 1.7rem; margin-bottom: .3rem; }
+  h2 { font-size: 1.25rem; margin: 2.2rem 0 .6rem; }
+  p, li { color: var(--fg); }
+  .muted { color: var(--muted); }
+  .note { background: var(--card); border-left: 3px solid var(--accent);
+          padding: .7rem 1rem; border-radius: 0 6px 6px 0; margin: 1rem 0; font-size: .95rem; }
+  .tablebox { overflow-x: auto; margin: .8rem 0; }
+  table { border-collapse: collapse; width: 100%; font-size: .95rem; }
+  th { text-align: left; border-bottom: 2px solid var(--line); padding: .45rem .6rem;
+       font-weight: 600; white-space: nowrap; }
+  td { border-bottom: 1px solid var(--line); padding: .45rem .6rem; }
+  td.n, th.n { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .hl td { font-weight: 600; }
+  .ok { color: var(--good); font-weight: 600; }
+  .warn { color: var(--warn); font-weight: 600; }
+  .small { font-size: .85rem; }
+  code { background: var(--card); padding: .1rem .35rem; border-radius: 4px;
+         font-size: .88em; font-family: ui-monospace, "SF Mono", Consolas, monospace; }
+  a { color: var(--accent); }
+  footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid var(--line);
+           font-size: .85rem; color: var(--muted); }
+</style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>🏆 RTL Accelerator Performance Analysis</h1>
-            <div class="subtitle">Array Size vs Speedup: ZCU104 Results & FPGA Projections</div>
-            <div class="subtitle">Goal: Beat Verilator (6M cycles/sec) with FPGA acceleration</div>
-        </div>
+<div class="wrap">
 
-        <div class="victory-banner">
-            🎊 LINEAR SCALING VALIDATED! Perfect 100% efficiency (4× cores = 4× performance) • Ready for SpiNNaker2/TensTorrent! 🚀
-        </div>
+<h1>ldx — RTL simulation acceleration</h1>
+<p class="muted">Measured results. Every number on this page is a wall-clock measurement of a
+real run on the named hardware, with functional output checked against a reference simulator.</p>
 
-        <div class="chart-container">
-            <canvas id="scatterChart"></canvas>
-        </div>
+<div class="note">
+This page replaces an earlier version that presented projected estimates (multiplied
+"acceleration factors", extrapolated core counts) as achieved results. Those numbers were not
+measurements and should be disregarded. What follows is what the hardware actually does.
+</div>
 
-        <div class="stats-grid">
-            <div class="stat-card">
-                <h3>🏆 ZCU104 Memory Arrays</h3>
-                <div class="stat-value">16.7×</div>
-                <div>Speedup vs Verilator</div>
-                <div style="margin-top: 10px;">
-                    Max Array: 64KB<br>
-                    Success Rate: 11/12 configs<br>
-                    Performance: 100M ops/sec
-                </div>
-            </div>
+<h2>The approach in one paragraph</h2>
+<p>ldx accelerates RTL simulation two ways. First, <strong>compile the design</strong>: the
+DUT is synthesized (yosys) into a single-cycle native state machine instead of being
+interpreted event-by-event — available standalone or hot-swapped into a running
+<a href="https://github.com/nickg/nvc">nvc</a> simulation (<code>--accel</code>). Second,
+<strong>make the simulation resident on an FPGA processor array</strong>: a mesh of RISC-V
+cores with nearest-neighbor mailbox routing runs compiled design partitions in parallel,
+with the host CPU (or, in progress, the array itself) running the testbench.</p>
 
-            <div class="stat-card">
-                <h3>🎊 LINEAR SCALING!</h3>
-                <div class="stat-value">100%</div>
-                <div>Perfect Linear Efficiency</div>
-                <div style="margin-top: 10px;">
-                    5×5 → 10×10 arrays: 25 → 100 cores<br>
-                    4× cores = 4× performance<br>
-                    Up to 625× vs Verilator (225 cores)
-                </div>
-            </div>
+<h2>The 10-million-transfer FIFO benchmark</h2>
+<p>Yuri Panchul's challenge testcase: <code>a_plus_b_using_wrapped_fifos</code> (three wrapped
+FIFOs with valid/ready feedback), 10&nbsp;M transfers, functionally correct, target
+&lt;&nbsp;10&nbsp;s on the ZCU104 board. All rows below are measured; correctness is a transfer-count +
+data-checksum match against the iverilog/vvp golden (checksum <code>1280000000</code>).</p>
+<div class="tablebox">
+<table>
+  <tr><th>Simulator / method</th><th>Hardware</th><th class="n">Time (10M transfers)</th><th>Correct</th></tr>
+  <tr><td>iverilog (vvp)</td><td>x86 desktop</td><td class="n">362 s</td><td class="ok">✓ (golden)</td></tr>
+  <tr><td>iverilog (vvp), Yuri's run</td><td>Mac mini M4</td><td class="n">105 s</td><td class="muted">reported</td></tr>
+  <tr><td>Verilator</td><td>x86 desktop</td><td class="n">14.8 s</td><td class="ok">✓</td></tr>
+  <tr><td>yosys cxxrtl, g++ ‑O3</td><td>x86 desktop</td><td class="n">1.87 s</td><td class="ok">✓</td></tr>
+  <tr><td>ldx compiled state machine</td><td>x86 desktop</td><td class="n">0.42 s</td><td class="ok">✓</td></tr>
+  <tr class="hl"><td>ldx compiled state machine</td><td>ZCU104 Cortex-A53 (on-board)</td><td class="n">1.36 s</td><td class="ok">✓</td></tr>
+</table>
+</div>
+<p>The on-board number is <strong>1.36&nbsp;s — 7.4× under the 10&nbsp;s target</strong>
+(7.35&nbsp;M transfers/s on one A53 core), ~77× faster than the M4 vvp baseline and ~266×
+faster than vvp on the x86 desktop.</p>
+<div class="note">
+Honest caveat: this runs the <em>compiled</em> design on the board's ARM core — the
+compile-the-DUT method, not an interpreted SystemVerilog simulator running on the RISC-V
+array. Whether that satisfies the challenge's literal wording is a fair debate; the timing
+and correctness are not.
+</div>
 
-            <div class="stat-card">
-                <h3>🚀 Stratix-10 Projection</h3>
-                <div class="stat-value">6,944×</div>
-                <div>Projected vs Verilator</div>
-                <div style="margin-top: 10px;">
-                    Max Cores: 2,500 (50×50)<br>
-                    Linear scaling validated<br>
-                    10× more resources than ZCU104
-                </div>
-            </div>
+<h2>Processor array on silicon — ZCU104, 8×8 = 64 RISC-V cores @ 200 MHz</h2>
+<p>The mailbox array (VexRiscv cores, URAM private memory, hardware XY wormhole routing,
+BRAM link FIFOs) is built, placed, and measured on the ZCU104 — timing closed at 200&nbsp;MHz,
+61% LUT. Measured on the board:</p>
+<div class="tablebox">
+<table>
+  <tr><th>Workload</th><th class="n">Measured</th><th>Notes</th></tr>
+  <tr><td>xorshift32 DUT, per core</td><td class="n">9.96 M evals/s</td><td>compiled state machine, free-running</td></tr>
+  <tr class="hl"><td>xorshift32, 64 cores aggregate</td><td class="n">637 M evals/s</td><td>= 2.47× one x86 thread (258 M/s), 64-way parallel</td></tr>
+  <tr><td>SHA-256, single &amp; multi-block</td><td class="n">1.8 Kblocks/s/core</td><td>digests exactly match FIPS vectors on-board</td></tr>
+  <tr><td>All-to-one gather, 63 senders</td><td class="n">63 / 63 received</td><td>hardware routing, zero relay software</td></tr>
+</table>
+</div>
+<p>What this is good for — and honestly, what it isn't: the array wins on <em>throughput</em>
+(many independent simulations at once — regression farms, parameter sweeps) and on large
+partitioned designs. A single small design does not parallelize: our own benchmark of a 5×5
+array against Verilator on one small DUT measured <strong>0.41×</strong> — slower than
+Verilator on a laptop. Per-core speed came from real engineering, each step measured:
+compiler flags, 1-cycle fetch, and a barrel shifter took the xorshift kernel from 235 to
+18&nbsp;cycles/eval (13×). Known cost: URAM private memory adds ~2× latency on data-heavy
+workloads versus the cycle-accurate simulation model — FPGA numbers are the ones quoted.</p>
 
-            <div class="stat-card">
-                <h3>⚡ U250 Projection</h3>
-                <div class="stat-value">2,083×</div>
-                <div>Projected vs Verilator</div>
-                <div style="margin-top: 10px;">
-                    Max Cores: 750 (27×28)<br>
-                    Linear scaling validated<br>
-                    3× more cores than ZCU104
-                </div>
-            </div>
+<h2>nvc <code>--accel</code> — compiled DUT inside a live simulation</h2>
+<p>The same compiled-state-machine engine, hot-swapped into a running nvc simulation so the
+testbench stays fully standard. Measured, output-checked:</p>
+<div class="tablebox">
+<table>
+  <tr><th>Design</th><th>Per-cycle work</th><th>Platform</th><th class="n">interp</th><th class="n">--accel</th><th class="n">speedup</th></tr>
+  <tr><td>mix (3× 32-bit multipliers)</td><td>heavy</td><td>x86</td><td class="n">30 s</td><td class="n">4 s</td><td class="n ok">7.5×</td></tr>
+  <tr><td>mix</td><td>heavy</td><td>ZCU104 A53</td><td class="n">420 s</td><td class="n">48 s</td><td class="n ok">8.75×</td></tr>
+  <tr><td>a_plus_b FIFOs (Yuri), 200k xfer</td><td>light</td><td>ZCU104 A53</td><td class="n">364 s</td><td class="n">214 s</td><td class="n ok">1.70×</td></tr>
+</table>
+</div>
+<p>The pattern is the finding: speedup tracks per-cycle combinational weight. Compute-heavy
+designs gain 7–9×; a light FIFO design gains 1–2× because testbench scheduling, which
+<code>--accel</code> deliberately leaves untouched, dominates.</p>
 
-            <div class="stat-card">
-                <h3>💰 Cost Analysis</h3>
-                <div class="stat-value">571×</div>
-                <div>Better value than commercial</div>
-                <div style="margin-top: 10px;">
-                    ZCU104: $7K vs $2M Palladium<br>
-                    Open-source advantage<br>
-                    Scalable architecture
-                </div>
-            </div>
-        </div>
-    </div>
+<h2>Portability — the same array RTL across vendors</h2>
+<div class="tablebox">
+<table>
+  <tr><th>Target</th><th>Toolchain</th><th>Status</th></tr>
+  <tr><td>ZCU104 (Zynq US+, xczu7ev)</td><td>Vivado</td><td><span class="ok">runs</span> — 8×8 @ 200 MHz, SHA-256/xorshift measured on silicon<span class="small muted"> (one known tool-specific boot pathology on a newer workload, documented, reproduced nowhere else)</span></td></tr>
+  <tr><td>DE2i-150 (Cyclone IV GX)</td><td>Quartus</td><td><span class="ok">runs</span> — ~59 MHz</td></tr>
+  <tr><td>SoCKit (Cyclone V SX)</td><td>Quartus</td><td><span class="ok">runs</span> — first-attempt silicon pass (2026-07-14); timing analysis puts the ceiling at 122 MHz</td></tr>
+  <tr><td>Verilator model</td><td>—</td><td><span class="ok">bit-exact</span> vs silicon on the checked workloads</td></tr>
+</table>
+</div>
 
-    <script>
-        // ZCU104 actual results from our capacity analysis
-        const zcu104Results = [
-            { x: 0.1, y: 12, label: "32x32 register file", type: "register" },
-            { x: 0.2, y: 15, label: "32x64 register file", type: "register" },
-            { x: 1.0, y: 18, label: "16-bit x 512 memory", type: "memory" },
-            { x: 4.0, y: 16.7, label: "32-bit x 1K memory", type: "memory" },
-            { x: 8.0, y: 16.5, label: "32-bit x 2K memory", type: "memory" },
-            { x: 8.0, y: 17.2, label: "64-bit x 1K memory", type: "memory" },
-            { x: 16.0, y: 16.0, label: "32-bit x 4K memory", type: "memory" },
-            { x: 16.0, y: 16.8, label: "128-bit x 1K memory", type: "memory" },
-            { x: 32.0, y: 15.8, label: "32-bit x 8K memory", type: "memory" },
-            { x: 64.0, y: 15.2, label: "32-bit x 16K memory (MAX)", type: "memory" },
-        ];
+<h2>Methodology</h2>
+<ul style="padding-left:1.2rem">
+  <li>Wall-clock times, measured on the named hardware; no projections, no multiplied factor chains.</li>
+  <li>Every accelerated run is checked against a reference (vvp golden checksum, FIPS SHA-256 vectors, or lock-step Verilator).</li>
+  <li>Build and run scripts live in the <a href="https://github.com/kev-cam/ldx">repository</a>; numbers cite the machine they were taken on.</li>
+</ul>
 
-        // NEW: Linear scaling validation results (softcore arrays)
-        const linearScalingResults = [
-            { x: 25, y: 69.6, label: "5×5 Softcore Array (25 cores)", type: "softcore_proven" },
-            { x: 100, y: 278.3, label: "10×10 Softcore Array (100 cores)", type: "softcore_proven" },
-            { x: 225, y: 625.8, label: "15×15 Softcore Array (225 cores)", type: "softcore_proven" },
-        ];
+<footer>
+Updated 2026-07-14. This page reports measurements as of that date; earlier "victory" and
+projection pages are superseded.
+</footer>
 
-        // Stratix-10 projections (much larger FPGA with softcore arrays)
-        const stratix10Projections = [
-            { x: 400, y: 1111, label: "400 Softcores (20×20)", type: "stratix" },
-            { x: 900, y: 2500, label: "900 Softcores (30×30)", type: "stratix" },
-            { x: 1600, y: 4444, label: "1600 Softcores (40×40)", type: "stratix" },
-            { x: 2500, y: 6944, label: "2500 Softcores (50×50 MAX)", type: "stratix" },
-        ];
-
-        // U250 projections (large Xilinx FPGA with softcore arrays)
-        const u250Projections = [
-            { x: 256, y: 711, label: "256 Softcores (16×16)", type: "u250" },
-            { x: 400, y: 1111, label: "400 Softcores (20×20)", type: "u250" },
-            { x: 625, y: 1736, label: "625 Softcores (25×25)", type: "u250" },
-            { x: 750, y: 2083, label: "750 Softcores (27×28 MAX)", type: "u250" },
-        ];
-
-        // Verilator baseline (our target to beat)
-        const verilatorBaseline = { x: 1, y: 1, label: "Verilator baseline (6M ops/sec)" };
-
-        const ctx = document.getElementById('scatterChart').getContext('2d');
-
-        const chart = new Chart(ctx, {
-            type: 'scatter',
-            data: {
-                datasets: [
-                    {
-                        label: 'ZCU104 Memory Arrays 🏆',
-                        data: zcu104Results,
-                        backgroundColor: '#FFD700',
-                        borderColor: '#FFA500',
-                        borderWidth: 2,
-                        pointRadius: 8,
-                        pointHoverRadius: 12,
-                    },
-                    {
-                        label: 'ZCU104 Softcore Arrays (LINEAR SCALING!) 🎊',
-                        data: linearScalingResults,
-                        backgroundColor: 'rgba(0, 255, 127, 0.9)',
-                        borderColor: 'rgba(0, 255, 127, 1)',
-                        borderWidth: 3,
-                        pointRadius: 12,
-                        pointHoverRadius: 16,
-                        pointStyle: 'circle',
-                    },
-                    {
-                        label: 'Stratix-10 Softcores (Projected) 🚀',
-                        data: stratix10Projections,
-                        backgroundColor: 'rgba(255, 99, 132, 0.8)',
-                        borderColor: 'rgba(255, 99, 132, 1)',
-                        borderWidth: 2,
-                        pointRadius: 10,
-                        pointHoverRadius: 14,
-                        pointStyle: 'triangle',
-                    },
-                    {
-                        label: 'U250 Softcores (Projected) ⚡',
-                        data: u250Projections,
-                        backgroundColor: 'rgba(54, 162, 235, 0.8)',
-                        borderColor: 'rgba(54, 162, 235, 1)',
-                        borderWidth: 2,
-                        pointRadius: 10,
-                        pointHoverRadius: 14,
-                        pointStyle: 'rect',
-                    },
-                    {
-                        label: 'Verilator Baseline (Target) 🎯',
-                        data: [verilatorBaseline],
-                        backgroundColor: 'rgba(255, 255, 255, 0.8)',
-                        borderColor: 'rgba(255, 255, 255, 1)',
-                        borderWidth: 3,
-                        pointRadius: 12,
-                        pointHoverRadius: 16,
-                        pointStyle: 'star',
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    x: {
-                        type: 'logarithmic',
-                        position: 'bottom',
-                        title: {
-                            display: true,
-                            text: 'Array Size (KB)',
-                            font: {
-                                size: 16,
-                                weight: 'bold'
-                            },
-                            color: '#333'
-                        },
-                        min: 0.05,
-                        max: 5000,
-                        ticks: {
-                            color: '#666',
-                            callback: function(value) {
-                                if (value >= 1024) {
-                                    return (value / 1024).toFixed(0) + 'MB';
-                                }
-                                return value + 'KB';
-                            }
-                        },
-                        grid: {
-                            color: 'rgba(0,0,0,0.1)'
-                        }
-                    },
-                    y: {
-                        type: 'logarithmic',
-                        title: {
-                            display: true,
-                            text: 'Speedup vs Verilator (×)',
-                            font: {
-                                size: 16,
-                                weight: 'bold'
-                            },
-                            color: '#333'
-                        },
-                        min: 1,
-                        max: 10000,
-                        ticks: {
-                            color: '#666',
-                            callback: function(value) {
-                                if (value >= 1000) {
-                                    return (value / 1000).toFixed(1) + 'K×';
-                                }
-                                return value + '×';
-                            }
-                        },
-                        grid: {
-                            color: 'rgba(0,0,0,0.1)'
-                        }
-                    }
-                },
-                plugins: {
-                    title: {
-                        display: true,
-                        text: 'FPGA RTL Acceleration: Array Size vs Performance Speedup',
-                        font: {
-                            size: 20,
-                            weight: 'bold'
-                        },
-                        color: '#333',
-                        padding: 20
-                    },
-                    legend: {
-                        display: true,
-                        position: 'top',
-                        labels: {
-                            font: {
-                                size: 14
-                            },
-                            color: '#333',
-                            usePointStyle: true,
-                            padding: 20
-                        }
-                    },
-                    tooltip: {
-                        backgroundColor: 'rgba(0,0,0,0.8)',
-                        titleColor: 'white',
-                        bodyColor: 'white',
-                        borderColor: '#FFD700',
-                        borderWidth: 1,
-                        callbacks: {
-                            title: function(context) {
-                                const point = context[0];
-                                return point.raw.label || `${point.parsed.x}KB Array`;
-                            },
-                            label: function(context) {
-                                const speedup = context.parsed.y;
-                                const arraySize = context.parsed.x;
-                                const performance = speedup * 6; // 6M baseline * speedup
-
-                                return [
-                                    `Speedup: ${speedup.toFixed(1)}× vs Verilator`,
-                                    `Performance: ${performance.toFixed(0)}M ops/sec`,
-                                    `Array Size: ${arraySize >= 1024 ? (arraySize/1024).toFixed(1) + 'MB' : arraySize + 'KB'}`
-                                ];
-                            }
-                        }
-                    }
-                },
-                interaction: {
-                    intersect: false,
-                    mode: 'point'
-                },
-                animation: {
-                    duration: 2000,
-                    easing: 'easeOutQuart'
-                }
-            }
-        });
-
-        // Add victory line at y=1 (Verilator baseline)
-        chart.options.plugins.annotation = {
-            annotations: {
-                verilatorLine: {
-                    type: 'line',
-                    yMin: 1,
-                    yMax: 1,
-                    borderColor: 'rgba(255, 255, 255, 0.8)',
-                    borderWidth: 2,
-                    borderDash: [10, 5],
-                    label: {
-                        content: 'Verilator Baseline (6M ops/sec)',
-                        enabled: true,
-                        position: 'end'
-                    }
-                }
-            }
-        };
-
-        // Auto-rotate through highlighting different datasets
-        let highlightIndex = 0;
-        const datasets = ['ZCU104', 'Stratix-10', 'U250'];
-
-        setInterval(() => {
-            // Reset all datasets to normal opacity
-            chart.data.datasets.forEach((dataset, index) => {
-                if (index < 3) { // Only for the main datasets, not Verilator baseline
-                    dataset.backgroundColor = dataset.backgroundColor.replace(/[^,]+(?=\))/, '0.8');
-                }
-            });
-
-            // Highlight current dataset
-            if (chart.data.datasets[highlightIndex]) {
-                const currentBg = chart.data.datasets[highlightIndex].backgroundColor;
-                chart.data.datasets[highlightIndex].backgroundColor = currentBg.replace(/[^,]+(?=\))/, '1.0');
-            }
-
-            chart.update('none');
-            highlightIndex = (highlightIndex + 1) % 3;
-        }, 3000);
-
-        // Add click handler for additional info
-        chart.canvas.addEventListener('click', (event) => {
-            const elements = chart.getElementsAtEventForMode(event, 'nearest', { intersect: true }, true);
-
-            if (elements.length) {
-                const element = elements[0];
-                const datasetLabel = chart.data.datasets[element.datasetIndex].label;
-                const point = chart.data.datasets[element.datasetIndex].data[element.index];
-
-                alert(`🎯 ${datasetLabel}\n\n` +
-                      `Array Size: ${point.x >= 1024 ? (point.x/1024).toFixed(1) + 'MB' : point.x + 'KB'}\n` +
-                      `Speedup: ${point.y.toFixed(1)}× vs Verilator\n` +
-                      `Performance: ${(point.y * 6).toFixed(0)}M ops/sec\n` +
-                      `Configuration: ${point.label || 'Standard memory array'}`);
-            }
-        });
-
-    </script>
+</div>
 </body>
 </html>
