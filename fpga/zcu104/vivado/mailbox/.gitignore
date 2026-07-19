@@ -1,0 +1,11 @@
+build/
+*.jou
+*.log
+util_*.rpt
+timing_*.rpt
+.Xil/
+obj_*/
+sim_*
+host/mb_run
+host/mb_sha_run
+host/mb_diag

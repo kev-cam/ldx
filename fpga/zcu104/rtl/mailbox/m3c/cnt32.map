@@ -1,0 +1,17 @@
+{
+  "design": "cnt32",
+  "comment": "M3c.0 — one synthesizable design, one core. Accel/yosys state machine (cnt32_sm.c) recompiled for the RISC core; its boundary signals bound to BRAM per this map. No cross-core edges yet.",
+  "cores": [
+    {
+      "yx": [0, 0],
+      "substrate": "accelC",
+      "state_addr": "0x80000F10",
+      "region_base": "0x80000F10",
+      "mailbox_base": "0xF0000800",
+      "slot_limit": 8,
+      "input_drives": { "_inc": 1 },
+      "display": { "expr": "_acc", "handle": 0 },
+      "edges": []
+    }
+  ]
+}

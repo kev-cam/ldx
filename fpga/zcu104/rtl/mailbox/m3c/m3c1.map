@@ -1,0 +1,12 @@
+{
+  "design": "prodcons",
+  "comment": "M3c.1 — one design split across 2 cores. Crossing net X: producer output -> consumer input, over the mailbox. Field offsets come from each partition's sm_ports[] (the generator); this map gives placement + topology.",
+  "cores": [
+    { "yx": [0,0], "module": "producer",
+      "state_addr": "0x80000F10", "in_addr": "0x80000F18", "out_addr": "0x80000F30" },
+    { "yx": [0,1], "module": "consumer",
+      "state_addr": "0x80000F20", "in_addr": "0x80000F40", "out_addr": "0x80000F50",
+      "display": { "signal": "RESULT", "handle": 0 } }
+  ],
+  "edges": [ { "signal": "X", "producer": [0,0], "consumer": [0,1] } ]
+}

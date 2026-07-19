@@ -1,0 +1,4 @@
+core_lib/
+VexRiscv.v
+target/
+project/
