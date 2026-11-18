@@ -59,10 +59,12 @@ VU = 400 * 250e6 * (125/200) * 0.5
 polyline([(4e4, VU/4e4), (4e5, VU/4e5)], BUILT, "7 4")
 s.append(f'<line x1="{xp(4e5):.1f}" y1="{yp(VU/4e5):.1f}" x2="{xp(4e5):.1f}" y2="{yp(VU/4e5)+26:.1f}" stroke="{BUILT}" stroke-width="2.2" stroke-dasharray="2 3"/>')
 # Agilex 27 (Agilex 2X portfolio, announced 2026-10-30; samples expected 2H 2027) -- PURE SPECULATION, no silicon:
-# largest device 17.6M LEs (press figure) ~ 6M ALMs at Agilex 7's ~2.95 LE/ALM; two thirds of it at ~2k ALM/core
-# -> ~2,000 cores; 1.5x the ZCU104 clock (assumed; Altera states 1.8x performance per watt, no fMAX figure);
-# 32 KB/core (~2k cells/core); same 0.5 partition efficiency  =>  3.75e11/N, capacity ~4M cells
-AG_CORES = 2000
+# largest device A27F180 = 17.6M LEs, 5,683,872 ALMs, 42,096 M20K + 14,032 M80K = 1,918 Mb block memory (Altera
+# Agilex 27 product table v2026.10.28); two thirds of the ALMs at ~2k ALM/core -> ~1,900 cores; 1.5x the ZCU104
+# clock (ASSUMED: Altera's white paper gives fabric Fmax >15% above Agilex 7 and >1.8x performance per watt, nothing
+# for this design); 32 KB/core (~2k cells/core, about a quarter of the block memory); same 0.5 partition efficiency
+#   =>  3.56e11/N, capacity ~3.8M cells
+AG_CORES = 1900
 AG = AG_CORES * 250e6 * 1.5 * 0.5
 AG_CAP = AG_CORES * 2e3
 polyline([(AG_CAP/10, AG/(AG_CAP/10)), (AG_CAP, AG/AG_CAP)], PROJ, "3 5")
@@ -92,7 +94,7 @@ def marker(cells, lines, color=GRAY, row=0):
 
 marker(6.4e4, ["ZCU104 array full", "~64k cells ≈ 0.06%", "of a 100M-gate IC"], ARR, row=0)
 marker(4e5,  ["VU47P 20×20 built", "400 cores, ~0.4M cells", "≈ 0.4% of IC (not yet run)"], BUILT, row=1)
-marker(AG_CAP, ["Agilex 27 largest (speculative)", "~2,000 cores, ~4M cells ≈ 4% of IC"], PROJ, row=2)
+marker(AG_CAP, ["Agilex 27 largest (speculative)", "~1,900 cores, ~4M cells ≈ 4% of IC"], PROJ, row=2)
 marker(1e6,  ["≈ one x86 LLC", "(CPU cache cliff)"], CPU, row=0)
 marker(1e8,  ["full 100M-gate IC", "(emulator / multi-FPGA territory)"], row=0)
 
