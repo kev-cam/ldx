@@ -3,8 +3,8 @@
 # Measured points = solid dots; model lines = dashed; capacity/IC markers on the x-axis.
 import math
 
-W, H = 900, 640
-ML, MR, MT, MB = 78, 24, 40, 150
+W, H = 900, 684
+ML, MR, MT, MB = 78, 24, 40, 194
 PW, PH = W-ML-MR, H-MT-MB
 X0, X1 = 1.0, 9.0     # log10 cells: 10 .. 1e9
 Y0, Y1 = 2.0, 9.3     # log10 cyc/s: 1e2 .. 2e9
@@ -15,14 +15,15 @@ def yp(rate):  return MT + PH - (math.log10(rate)-Y0)/(Y1-Y0)*PH
 CPU   = "#d97706"   # amber
 ARR   = "#2563eb"   # blue
 PROJ  = "#9333ea"   # purple
+BUILT = "#0d9488"   # teal
 GRAY  = "#888888"
 
 s = []
 s.append(f'<svg viewBox="0 0 {W} {H}" xmlns="http://www.w3.org/2000/svg" font-family="-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif" font-size="13">')
 s.append(f'<style>text{{fill:currentColor}} .mut{{opacity:.65}} .tick{{stroke:currentColor;opacity:.15}} .axis{{stroke:currentColor;opacity:.5}}</style>')
 
-# win band: where the array model sits above the CPU model (5e3 .. 5e5 cells)
-s.append(f'<rect x="{xp(5e3):.1f}" y="{MT}" width="{xp(5e5)-xp(5e3):.1f}" height="{PH}" fill="{ARR}" opacity="0.07"/>')
+# win band: where an array model sits above the CPU model (5e3 .. 4e6 cells)
+s.append(f'<rect x="{xp(5e3):.1f}" y="{MT}" width="{xp(4e6)-xp(5e3):.1f}" height="{PH}" fill="{ARR}" opacity="0.07"/>')
 
 # gridlines + tick labels
 for e in range(int(X0), int(X1)+1):
@@ -52,9 +53,20 @@ polyline(cpu, CPU, "7 4")
 # ZCU104 64-core array, partitioned design: 64 x 250M cell-cyc/s x 0.5 eff = 8e9/N, capacity ~64k cells
 polyline([(6.4e3, 8e9/6.4e3), (6.4e4, 8e9/6.4e4)], ARR, "7 4")
 s.append(f'<line x1="{xp(6.4e4):.1f}" y1="{yp(8e9/6.4e4):.1f}" x2="{xp(6.4e4):.1f}" y2="{yp(8e9/6.4e4)+26:.1f}" stroke="{ARR}" stroke-width="2.2" stroke-dasharray="2 3"/>')
-# D5005-class projection: ~450 cores x 250M x 1.5 clk x 0.5 eff ~ 2e10/N, capacity ~0.5M cells
-polyline([(5e4, 2e10/5e4), (5e5, 2e10/5e5)], PROJ, "3 5")
-s.append(f'<line x1="{xp(5e5):.1f}" y1="{yp(2e10/5e5):.1f}" x2="{xp(5e5):.1f}" y2="{yp(2e10/5e5)+26:.1f}" stroke="{PROJ}" stroke-width="2" stroke-dasharray="2 3"/>')
+# VU47P (AWS F2) 20x20 array, BUILT 2026-11-17 (timing met at 125 MHz), not yet run:
+# 400 cores x 250M cell-cyc/s x 0.625 clk (125/200 MHz) x 0.5 eff = 3.1e10/N, capacity ~0.4M cells at 16 KB/core
+VU = 400 * 250e6 * (125/200) * 0.5
+polyline([(4e4, VU/4e4), (4e5, VU/4e5)], BUILT, "7 4")
+s.append(f'<line x1="{xp(4e5):.1f}" y1="{yp(VU/4e5):.1f}" x2="{xp(4e5):.1f}" y2="{yp(VU/4e5)+26:.1f}" stroke="{BUILT}" stroke-width="2.2" stroke-dasharray="2 3"/>')
+# Agilex 27 (Agilex 2X portfolio, announced 2026-10-30; samples expected 2H 2027) -- PURE SPECULATION, no silicon:
+# largest device 17.6M LEs (press figure) ~ 6M ALMs at Agilex 7's ~2.95 LE/ALM; two thirds of it at ~2k ALM/core
+# -> ~2,000 cores; 1.5x the ZCU104 clock (assumed; Altera states 1.8x performance per watt, no fMAX figure);
+# 32 KB/core (~2k cells/core); same 0.5 partition efficiency  =>  3.75e11/N, capacity ~4M cells
+AG_CORES = 2000
+AG = AG_CORES * 250e6 * 1.5 * 0.5
+AG_CAP = AG_CORES * 2e3
+polyline([(AG_CAP/10, AG/(AG_CAP/10)), (AG_CAP, AG/AG_CAP)], PROJ, "3 5")
+s.append(f'<line x1="{xp(AG_CAP):.1f}" y1="{yp(AG/AG_CAP):.1f}" x2="{xp(AG_CAP):.1f}" y2="{yp(AG/AG_CAP)+26:.1f}" stroke="{PROJ}" stroke-width="2" stroke-dasharray="2 3"/>')
 
 # --- measured points ---
 def pt(cells, rate, color, label, dx=8, dy=4, open_=False, anchor="start"):
@@ -74,12 +86,13 @@ pt(4000, 1.23e5, ARR, "SHA-256 · 1 array core (~4k cells est.)")
 def marker(cells, lines, color=GRAY, row=0):
     x = xp(cells)
     s.append(f'<line x1="{x:.1f}" y1="{MT}" x2="{x:.1f}" y2="{MT+PH}" stroke="{color}" stroke-width="1.2" stroke-dasharray="2 4" opacity="0.55"/>')
-    base = MT+PH+56+row*44
+    base = MT+PH+56+row*46
     for i, t in enumerate(lines):
         s.append(f'<text x="{x:.1f}" y="{base+i*13}" text-anchor="middle" font-size="10.5" class="mut">{t}</text>')
 
 marker(6.4e4, ["ZCU104 array full", "~64k cells ≈ 0.06%", "of a 100M-gate IC"], ARR, row=0)
-marker(5e5,  ["D5005 array full", "~0.5M cells ≈ 0.5% of IC"], PROJ, row=1)
+marker(4e5,  ["VU47P 20×20 built", "400 cores, ~0.4M cells", "≈ 0.4% of IC (not yet run)"], BUILT, row=1)
+marker(AG_CAP, ["Agilex 27 largest (speculative)", "~2,000 cores, ~4M cells ≈ 4% of IC"], PROJ, row=2)
 marker(1e6,  ["≈ one x86 LLC", "(CPU cache cliff)"], CPU, row=0)
 marker(1e8,  ["full 100M-gate IC", "(emulator / multi-FPGA territory)"], row=0)
 
@@ -88,12 +101,13 @@ s.append(f'<text x="{xp(5e3):.1f}" y="{MT-10}" font-size="11.5" fill="{ARR}">cro
 s.append(f'<line x1="{xp(5e3):.1f}" y1="{MT}" x2="{xp(5e3):.1f}" y2="{MT+PH}" stroke="{ARR}" stroke-width="1.4" stroke-dasharray="6 3" opacity="0.6"/>')
 
 # legend
-lx, ly = ML+PW-278, MT+26
-s.append(f'<rect x="{lx-10}" y="{ly-16}" width="278" height="92" fill="none" class="axis" rx="6"/>')
+lx, ly = ML+PW-292, MT+26
+s.append(f'<rect x="{lx-10}" y="{ly-16}" width="292" height="112" fill="none" class="axis" rx="6"/>')
 s.append(f'<line x1="{lx}" y1="{ly}" x2="{lx+30}" y2="{ly}" stroke="{CPU}" stroke-width="2.2" stroke-dasharray="7 4"/><text x="{lx+38}" y="{ly+4}" font-size="11.5">CPU, 1 thread, compiled model (model)</text>')
 s.append(f'<line x1="{lx}" y1="{ly+20}" x2="{lx+30}" y2="{ly+20}" stroke="{ARR}" stroke-width="2.2" stroke-dasharray="7 4"/><text x="{lx+38}" y="{ly+24}" font-size="11.5">ZCU104 8×8 array, partitioned (model)</text>')
-s.append(f'<line x1="{lx}" y1="{ly+40}" x2="{lx+30}" y2="{ly+40}" stroke="{PROJ}" stroke-width="2" stroke-dasharray="3 5"/><text x="{lx+38}" y="{ly+44}" font-size="11.5">D5005-class array (projection)</text>')
-s.append(f'<circle cx="{lx+15}" cy="{ly+60}" r="5" fill="currentColor" opacity=".7"/><text x="{lx+38}" y="{ly+64}" font-size="11.5">measured run (○ = aggregate of 64 sims)</text>')
+s.append(f'<line x1="{lx}" y1="{ly+40}" x2="{lx+30}" y2="{ly+40}" stroke="{BUILT}" stroke-width="2.2" stroke-dasharray="7 4"/><text x="{lx+38}" y="{ly+44}" font-size="11.5">VU47P 20×20 array, built not run (model)</text>')
+s.append(f'<line x1="{lx}" y1="{ly+60}" x2="{lx+30}" y2="{ly+60}" stroke="{PROJ}" stroke-width="2" stroke-dasharray="3 5"/><text x="{lx+38}" y="{ly+64}" font-size="11.5">Agilex 27 (Agilex 2X) array, speculation</text>')
+s.append(f'<circle cx="{lx+15}" cy="{ly+80}" r="5" fill="currentColor" opacity=".7"/><text x="{lx+38}" y="{ly+84}" font-size="11.5">measured run (○ = aggregate of 64 sims)</text>')
 
 s.append('</svg>')
 print("\n".join(s))
