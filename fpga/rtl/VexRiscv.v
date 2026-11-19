@@ -238,6 +238,10 @@ module VexRiscv (
   wire                _zz_decode_RegFilePlugin_rs1Data;
   wire                _zz_RegFilePlugin_regFile_port_1;
   wire                _zz_decode_RegFilePlugin_rs2Data;
+  wire       [24:0]   _zz_execute_NarrowAluPlugin_lowAddU;
+  wire       [7:0]    _zz_execute_NarrowAluPlugin_hiAddU;
+  wire       [7:0]    _zz_execute_NarrowAluPlugin_hiAddU_1;
+  wire       [0:0]    _zz_execute_NarrowAluPlugin_hiAddU_2;
   wire       [0:0]    _zz__zz_execute_REGFILE_WRITE_DATA;
   wire       [2:0]    _zz__zz_execute_SRC1;
   wire       [4:0]    _zz__zz_execute_SRC1_1;
@@ -391,7 +395,6 @@ module VexRiscv (
   wire       [1:0]    _zz_execute_SHIFT_CTRL;
   wire                execute_SRC_LESS_UNSIGNED;
   wire                execute_SRC2_FORCE_ZERO;
-  wire                execute_SRC_USE_SUB_LESS;
   wire       [31:0]   _zz_execute_to_memory_PC;
   wire       [1:0]    execute_SRC2_CTRL;
   wire       [1:0]    _zz_execute_SRC2_CTRL;
@@ -399,13 +402,14 @@ module VexRiscv (
   wire       [1:0]    _zz_execute_SRC1_CTRL;
   wire                decode_SRC_USE_SUB_LESS;
   wire                decode_SRC_ADD_ZERO;
-  wire       [31:0]   execute_SRC_ADD_SUB;
   wire                execute_SRC_LESS;
   wire       [1:0]    execute_ALU_CTRL;
   wire       [1:0]    _zz_execute_ALU_CTRL;
-  wire       [31:0]   execute_SRC2;
   wire       [1:0]    execute_ALU_BITWISE_CTRL;
   wire       [1:0]    _zz_execute_ALU_BITWISE_CTRL;
+  wire                execute_SRC_ADD_ZERO;
+  wire                execute_SRC_USE_SUB_LESS;
+  wire       [31:0]   execute_SRC2;
   wire       [31:0]   _zz_lastStageRegFileWrite_payload_address;
   wire                _zz_lastStageRegFileWrite_valid;
   reg                 _zz_1;
@@ -756,7 +760,32 @@ module VexRiscv (
   reg        [4:0]    lastStageRegFileWrite_payload_address /* verilator public */ ;
   reg        [31:0]   lastStageRegFileWrite_payload_data /* verilator public */ ;
   reg                 _zz_5;
-  reg        [31:0]   execute_IntAluPlugin_bitwise;
+  wire                execute_NarrowAluPlugin_zeroSrc2;
+  wire       [31:0]   execute_NarrowAluPlugin_effSrc2;
+  reg        [31:0]   execute_NarrowAluPlugin_bitwise;
+  wire                execute_NarrowAluPlugin_isAddSub;
+  wire       [8:0]    _zz_execute_NarrowAluPlugin_narrowOk;
+  wire       [8:0]    _zz_execute_NarrowAluPlugin_narrowOk_1;
+  wire                execute_NarrowAluPlugin_narrowOk;
+  wire                execute_NarrowAluPlugin_needsWide;
+  wire       [23:0]   execute_NarrowAluPlugin_src2LowEff;
+  wire       [24:0]   execute_NarrowAluPlugin_lowAddU;
+  wire       [23:0]   execute_NarrowAluPlugin_lowSum24;
+  wire                execute_NarrowAluPlugin_lowSumCarry;
+  wire                execute_NarrowAluPlugin_s2effSignBit;
+  wire                execute_NarrowAluPlugin_narrowSignBit;
+  wire       [31:0]   execute_NarrowAluPlugin_narrowResult32;
+  reg                 execute_NarrowAluPlugin_wideActive;
+  reg        [23:0]   execute_NarrowAluPlugin_savedLow24;
+  reg                 execute_NarrowAluPlugin_savedLowCarry;
+  wire       [7:0]    execute_NarrowAluPlugin_src2HiEff;
+  wire       [7:0]    execute_NarrowAluPlugin_hiAddU;
+  wire       [31:0]   execute_NarrowAluPlugin_wideResult32;
+  wire       [31:0]   execute_NarrowAluPlugin_addSubResult;
+  wire                execute_NarrowAluPlugin_wideStarting;
+  wire                execute_NarrowAluPlugin_wideFinishing;
+  wire                when_NarrowAluPlugin_l159;
+  wire                when_NarrowAluPlugin_l164;
   reg        [31:0]   _zz_execute_REGFILE_WRITE_DATA;
   reg        [31:0]   _zz_execute_SRC1;
   wire                _zz_execute_SRC2;
@@ -950,66 +979,68 @@ module VexRiscv (
   wire                when_Pipeline_l124_35;
   reg        [1:0]    decode_to_execute_ALU_BITWISE_CTRL;
   wire                when_Pipeline_l124_36;
-  reg        [1:0]    decode_to_execute_SHIFT_CTRL;
+  reg                 decode_to_execute_SRC_ADD_ZERO;
   wire                when_Pipeline_l124_37;
-  reg        [1:0]    execute_to_memory_SHIFT_CTRL;
+  reg        [1:0]    decode_to_execute_SHIFT_CTRL;
   wire                when_Pipeline_l124_38;
-  reg        [1:0]    decode_to_execute_BRANCH_CTRL;
+  reg        [1:0]    execute_to_memory_SHIFT_CTRL;
   wire                when_Pipeline_l124_39;
-  reg                 decode_to_execute_IS_MUL;
+  reg        [1:0]    decode_to_execute_BRANCH_CTRL;
   wire                when_Pipeline_l124_40;
-  reg                 execute_to_memory_IS_MUL;
+  reg                 decode_to_execute_IS_MUL;
   wire                when_Pipeline_l124_41;
-  reg                 memory_to_writeBack_IS_MUL;
+  reg                 execute_to_memory_IS_MUL;
   wire                when_Pipeline_l124_42;
-  reg                 decode_to_execute_IS_DIV;
+  reg                 memory_to_writeBack_IS_MUL;
   wire                when_Pipeline_l124_43;
-  reg                 execute_to_memory_IS_DIV;
+  reg                 decode_to_execute_IS_DIV;
   wire                when_Pipeline_l124_44;
-  reg                 decode_to_execute_IS_RS1_SIGNED;
+  reg                 execute_to_memory_IS_DIV;
   wire                when_Pipeline_l124_45;
-  reg                 decode_to_execute_IS_RS2_SIGNED;
+  reg                 decode_to_execute_IS_RS1_SIGNED;
   wire                when_Pipeline_l124_46;
-  reg                 decode_to_execute_CfuPlugin_CFU_ENABLE;
+  reg                 decode_to_execute_IS_RS2_SIGNED;
   wire                when_Pipeline_l124_47;
-  reg        [0:0]    decode_to_execute_CfuPlugin_CFU_INPUT_2_KIND;
+  reg                 decode_to_execute_CfuPlugin_CFU_ENABLE;
   wire                when_Pipeline_l124_48;
-  reg        [31:0]   decode_to_execute_RS1;
+  reg        [0:0]    decode_to_execute_CfuPlugin_CFU_INPUT_2_KIND;
   wire                when_Pipeline_l124_49;
-  reg        [31:0]   decode_to_execute_RS2;
+  reg        [31:0]   decode_to_execute_RS1;
   wire                when_Pipeline_l124_50;
-  reg                 decode_to_execute_SRC2_FORCE_ZERO;
+  reg        [31:0]   decode_to_execute_RS2;
   wire                when_Pipeline_l124_51;
-  reg        [1:0]    execute_to_memory_MEMORY_ADDRESS_LOW;
+  reg                 decode_to_execute_SRC2_FORCE_ZERO;
   wire                when_Pipeline_l124_52;
-  reg        [1:0]    memory_to_writeBack_MEMORY_ADDRESS_LOW;
+  reg        [1:0]    execute_to_memory_MEMORY_ADDRESS_LOW;
   wire                when_Pipeline_l124_53;
-  reg        [31:0]   execute_to_memory_REGFILE_WRITE_DATA;
+  reg        [1:0]    memory_to_writeBack_MEMORY_ADDRESS_LOW;
   wire                when_Pipeline_l124_54;
-  reg        [31:0]   memory_to_writeBack_REGFILE_WRITE_DATA;
+  reg        [31:0]   execute_to_memory_REGFILE_WRITE_DATA;
   wire                when_Pipeline_l124_55;
-  reg        [31:0]   execute_to_memory_SHIFT_RIGHT;
+  reg        [31:0]   memory_to_writeBack_REGFILE_WRITE_DATA;
   wire                when_Pipeline_l124_56;
-  reg                 execute_to_memory_BRANCH_DO;
+  reg        [31:0]   execute_to_memory_SHIFT_RIGHT;
   wire                when_Pipeline_l124_57;
-  reg        [31:0]   execute_to_memory_BRANCH_CALC;
+  reg                 execute_to_memory_BRANCH_DO;
   wire                when_Pipeline_l124_58;
-  reg        [31:0]   execute_to_memory_MUL_LL;
+  reg        [31:0]   execute_to_memory_BRANCH_CALC;
   wire                when_Pipeline_l124_59;
-  reg        [33:0]   execute_to_memory_MUL_LH;
+  reg        [31:0]   execute_to_memory_MUL_LL;
   wire                when_Pipeline_l124_60;
-  reg        [33:0]   execute_to_memory_MUL_HL;
+  reg        [33:0]   execute_to_memory_MUL_LH;
   wire                when_Pipeline_l124_61;
-  reg        [33:0]   execute_to_memory_MUL_HH;
+  reg        [33:0]   execute_to_memory_MUL_HL;
   wire                when_Pipeline_l124_62;
-  reg        [33:0]   memory_to_writeBack_MUL_HH;
+  reg        [33:0]   execute_to_memory_MUL_HH;
   wire                when_Pipeline_l124_63;
-  reg                 execute_to_memory_CfuPlugin_CFU_IN_FLIGHT;
+  reg        [33:0]   memory_to_writeBack_MUL_HH;
   wire                when_Pipeline_l124_64;
-  reg                 memory_to_writeBack_CfuPlugin_CFU_IN_FLIGHT;
+  reg                 execute_to_memory_CfuPlugin_CFU_IN_FLIGHT;
   wire                when_Pipeline_l124_65;
-  reg        [31:0]   memory_to_writeBack_MEMORY_READ_DATA;
+  reg                 memory_to_writeBack_CfuPlugin_CFU_IN_FLIGHT;
   wire                when_Pipeline_l124_66;
+  reg        [31:0]   memory_to_writeBack_MEMORY_READ_DATA;
+  wire                when_Pipeline_l124_67;
   reg        [51:0]   memory_to_writeBack_MUL_LOW;
   wire                when_Pipeline_l151;
   wire                when_Pipeline_l154;
@@ -1155,6 +1186,10 @@ module VexRiscv (
   assign _zz_IBusSimplePlugin_rspJoin_rspBuffer_discardCounter = {2'd0, _zz_IBusSimplePlugin_rspJoin_rspBuffer_discardCounter_1};
   assign _zz_IBusSimplePlugin_rspJoin_rspBuffer_discardCounter_3 = IBusSimplePlugin_pending_dec;
   assign _zz_IBusSimplePlugin_rspJoin_rspBuffer_discardCounter_2 = {2'd0, _zz_IBusSimplePlugin_rspJoin_rspBuffer_discardCounter_3};
+  assign _zz_execute_NarrowAluPlugin_lowAddU = ({1'b0,execute_SRC1[23 : 0]} + {1'b0,execute_NarrowAluPlugin_src2LowEff});
+  assign _zz_execute_NarrowAluPlugin_hiAddU = (execute_SRC1[31 : 24] + execute_NarrowAluPlugin_src2HiEff);
+  assign _zz_execute_NarrowAluPlugin_hiAddU_2 = execute_NarrowAluPlugin_savedLowCarry;
+  assign _zz_execute_NarrowAluPlugin_hiAddU_1 = {7'd0, _zz_execute_NarrowAluPlugin_hiAddU_2};
   assign _zz__zz_execute_REGFILE_WRITE_DATA = execute_SRC_LESS;
   assign _zz__zz_execute_SRC1 = 3'b100;
   assign _zz__zz_execute_SRC1_1 = execute_INSTRUCTION[19 : 15];
@@ -2272,17 +2307,17 @@ module VexRiscv (
   assign execute_SHIFT_CTRL = _zz_execute_SHIFT_CTRL;
   assign execute_SRC_LESS_UNSIGNED = decode_to_execute_SRC_LESS_UNSIGNED;
   assign execute_SRC2_FORCE_ZERO = decode_to_execute_SRC2_FORCE_ZERO;
-  assign execute_SRC_USE_SUB_LESS = decode_to_execute_SRC_USE_SUB_LESS;
   assign _zz_execute_to_memory_PC = execute_PC;
   assign execute_SRC2_CTRL = _zz_execute_SRC2_CTRL;
   assign execute_SRC1_CTRL = _zz_execute_SRC1_CTRL;
   assign decode_SRC_USE_SUB_LESS = _zz_decode_CfuPlugin_CFU_ENABLE[2];
   assign decode_SRC_ADD_ZERO = _zz_decode_CfuPlugin_CFU_ENABLE[20];
-  assign execute_SRC_ADD_SUB = execute_SrcPlugin_addSub;
   assign execute_SRC_LESS = execute_SrcPlugin_less;
   assign execute_ALU_CTRL = _zz_execute_ALU_CTRL;
-  assign execute_SRC2 = _zz_execute_SRC2_4;
   assign execute_ALU_BITWISE_CTRL = _zz_execute_ALU_BITWISE_CTRL;
+  assign execute_SRC_ADD_ZERO = decode_to_execute_SRC_ADD_ZERO;
+  assign execute_SRC_USE_SUB_LESS = decode_to_execute_SRC_USE_SUB_LESS;
+  assign execute_SRC2 = _zz_execute_SRC2_4;
   assign _zz_lastStageRegFileWrite_payload_address = writeBack_INSTRUCTION;
   assign _zz_lastStageRegFileWrite_valid = writeBack_REGFILE_WRITE_VALID;
   always @(*) begin
@@ -2388,6 +2423,9 @@ module VexRiscv (
       if(execute_CsrPlugin_blockedBySideEffects) begin
         execute_arbitration_haltItself = 1'b1;
       end
+    end
+    if(execute_NarrowAluPlugin_wideStarting) begin
+      execute_arbitration_haltItself = 1'b1;
     end
     if(when_CfuPlugin_l196) begin
       execute_arbitration_haltItself = 1'b1;
@@ -3014,30 +3052,52 @@ module VexRiscv (
     end
   end
 
+  assign execute_NarrowAluPlugin_zeroSrc2 = (execute_SRC_ADD_ZERO && (! execute_SRC_USE_SUB_LESS));
+  assign execute_NarrowAluPlugin_effSrc2 = (execute_NarrowAluPlugin_zeroSrc2 ? 32'h0 : execute_SRC2);
   always @(*) begin
     case(execute_ALU_BITWISE_CTRL)
       AluBitwiseCtrlEnum_AND_1 : begin
-        execute_IntAluPlugin_bitwise = (execute_SRC1 & execute_SRC2);
+        execute_NarrowAluPlugin_bitwise = (execute_SRC1 & execute_SRC2);
       end
       AluBitwiseCtrlEnum_OR_1 : begin
-        execute_IntAluPlugin_bitwise = (execute_SRC1 | execute_SRC2);
+        execute_NarrowAluPlugin_bitwise = (execute_SRC1 | execute_SRC2);
       end
       default : begin
-        execute_IntAluPlugin_bitwise = (execute_SRC1 ^ execute_SRC2);
+        execute_NarrowAluPlugin_bitwise = (execute_SRC1 ^ execute_SRC2);
       end
     endcase
   end
 
+  assign execute_NarrowAluPlugin_isAddSub = (execute_ALU_CTRL == AluCtrlEnum_ADD_SUB);
+  assign _zz_execute_NarrowAluPlugin_narrowOk = execute_SRC1[31 : 23];
+  assign _zz_execute_NarrowAluPlugin_narrowOk_1 = execute_NarrowAluPlugin_effSrc2[31 : 23];
+  assign execute_NarrowAluPlugin_narrowOk = (((&_zz_execute_NarrowAluPlugin_narrowOk) || (_zz_execute_NarrowAluPlugin_narrowOk == 9'h0)) && ((&_zz_execute_NarrowAluPlugin_narrowOk_1) || (_zz_execute_NarrowAluPlugin_narrowOk_1 == 9'h0)));
+  assign execute_NarrowAluPlugin_needsWide = ((execute_NarrowAluPlugin_isAddSub && (! execute_NarrowAluPlugin_narrowOk)) && (! execute_NarrowAluPlugin_zeroSrc2));
+  assign execute_NarrowAluPlugin_src2LowEff = (execute_SRC_USE_SUB_LESS ? (~ execute_NarrowAluPlugin_effSrc2[23 : 0]) : execute_NarrowAluPlugin_effSrc2[23 : 0]);
+  assign execute_NarrowAluPlugin_lowAddU = (_zz_execute_NarrowAluPlugin_lowAddU + (execute_SRC_USE_SUB_LESS ? 25'h0000001 : 25'h0));
+  assign execute_NarrowAluPlugin_lowSum24 = execute_NarrowAluPlugin_lowAddU[23 : 0];
+  assign execute_NarrowAluPlugin_lowSumCarry = execute_NarrowAluPlugin_lowAddU[24];
+  assign execute_NarrowAluPlugin_s2effSignBit = (execute_SRC_USE_SUB_LESS ? (! execute_NarrowAluPlugin_effSrc2[23]) : execute_NarrowAluPlugin_effSrc2[23]);
+  assign execute_NarrowAluPlugin_narrowSignBit = ((execute_SRC1[23] ^ execute_NarrowAluPlugin_s2effSignBit) ^ execute_NarrowAluPlugin_lowSumCarry);
+  assign execute_NarrowAluPlugin_narrowResult32 = {(execute_NarrowAluPlugin_narrowSignBit ? 8'hff : 8'h0),execute_NarrowAluPlugin_lowSum24};
+  assign execute_NarrowAluPlugin_src2HiEff = (execute_SRC_USE_SUB_LESS ? (~ execute_NarrowAluPlugin_effSrc2[31 : 24]) : execute_NarrowAluPlugin_effSrc2[31 : 24]);
+  assign execute_NarrowAluPlugin_hiAddU = (_zz_execute_NarrowAluPlugin_hiAddU + _zz_execute_NarrowAluPlugin_hiAddU_1);
+  assign execute_NarrowAluPlugin_wideResult32 = {execute_NarrowAluPlugin_hiAddU[7 : 0],execute_NarrowAluPlugin_savedLow24};
+  assign execute_NarrowAluPlugin_addSubResult = (execute_NarrowAluPlugin_zeroSrc2 ? execute_SRC1 : (execute_NarrowAluPlugin_wideActive ? execute_NarrowAluPlugin_wideResult32 : execute_NarrowAluPlugin_narrowResult32));
+  assign execute_NarrowAluPlugin_wideStarting = ((execute_arbitration_isValid && execute_NarrowAluPlugin_needsWide) && (! execute_NarrowAluPlugin_wideActive));
+  assign execute_NarrowAluPlugin_wideFinishing = ((execute_arbitration_isValid && execute_NarrowAluPlugin_needsWide) && execute_NarrowAluPlugin_wideActive);
+  assign when_NarrowAluPlugin_l159 = (execute_NarrowAluPlugin_wideStarting && (! execute_arbitration_isStuckByOthers));
+  assign when_NarrowAluPlugin_l164 = (execute_NarrowAluPlugin_wideFinishing && execute_arbitration_isFiring);
   always @(*) begin
     case(execute_ALU_CTRL)
       AluCtrlEnum_BITWISE : begin
-        _zz_execute_REGFILE_WRITE_DATA = execute_IntAluPlugin_bitwise;
+        _zz_execute_REGFILE_WRITE_DATA = execute_NarrowAluPlugin_bitwise;
       end
       AluCtrlEnum_SLT_SLTU : begin
         _zz_execute_REGFILE_WRITE_DATA = {31'd0, _zz__zz_execute_REGFILE_WRITE_DATA};
       end
       default : begin
-        _zz_execute_REGFILE_WRITE_DATA = execute_SRC_ADD_SUB;
+        _zz_execute_REGFILE_WRITE_DATA = execute_NarrowAluPlugin_addSubResult;
       end
     endcase
   end
@@ -3615,48 +3675,49 @@ module VexRiscv (
   assign _zz_decode_ALU_BITWISE_CTRL = _zz_decode_ALU_BITWISE_CTRL_1;
   assign when_Pipeline_l124_35 = (! execute_arbitration_isStuck);
   assign _zz_execute_ALU_BITWISE_CTRL = decode_to_execute_ALU_BITWISE_CTRL;
+  assign when_Pipeline_l124_36 = (! execute_arbitration_isStuck);
   assign _zz_decode_to_execute_SHIFT_CTRL_1 = decode_SHIFT_CTRL;
   assign _zz_execute_to_memory_SHIFT_CTRL_1 = execute_SHIFT_CTRL;
   assign _zz_decode_SHIFT_CTRL = _zz_decode_SHIFT_CTRL_1;
-  assign when_Pipeline_l124_36 = (! execute_arbitration_isStuck);
+  assign when_Pipeline_l124_37 = (! execute_arbitration_isStuck);
   assign _zz_execute_SHIFT_CTRL = decode_to_execute_SHIFT_CTRL;
-  assign when_Pipeline_l124_37 = (! memory_arbitration_isStuck);
+  assign when_Pipeline_l124_38 = (! memory_arbitration_isStuck);
   assign _zz_memory_SHIFT_CTRL = execute_to_memory_SHIFT_CTRL;
   assign _zz_decode_to_execute_BRANCH_CTRL_1 = decode_BRANCH_CTRL;
   assign _zz_decode_BRANCH_CTRL = _zz_decode_BRANCH_CTRL_1;
-  assign when_Pipeline_l124_38 = (! execute_arbitration_isStuck);
-  assign _zz_execute_BRANCH_CTRL = decode_to_execute_BRANCH_CTRL;
   assign when_Pipeline_l124_39 = (! execute_arbitration_isStuck);
-  assign when_Pipeline_l124_40 = (! memory_arbitration_isStuck);
-  assign when_Pipeline_l124_41 = (! writeBack_arbitration_isStuck);
-  assign when_Pipeline_l124_42 = (! execute_arbitration_isStuck);
-  assign when_Pipeline_l124_43 = (! memory_arbitration_isStuck);
-  assign when_Pipeline_l124_44 = (! execute_arbitration_isStuck);
+  assign _zz_execute_BRANCH_CTRL = decode_to_execute_BRANCH_CTRL;
+  assign when_Pipeline_l124_40 = (! execute_arbitration_isStuck);
+  assign when_Pipeline_l124_41 = (! memory_arbitration_isStuck);
+  assign when_Pipeline_l124_42 = (! writeBack_arbitration_isStuck);
+  assign when_Pipeline_l124_43 = (! execute_arbitration_isStuck);
+  assign when_Pipeline_l124_44 = (! memory_arbitration_isStuck);
   assign when_Pipeline_l124_45 = (! execute_arbitration_isStuck);
   assign when_Pipeline_l124_46 = (! execute_arbitration_isStuck);
+  assign when_Pipeline_l124_47 = (! execute_arbitration_isStuck);
   assign _zz_decode_to_execute_CfuPlugin_CFU_INPUT_2_KIND_1 = decode_CfuPlugin_CFU_INPUT_2_KIND;
   assign _zz_decode_CfuPlugin_CFU_INPUT_2_KIND = _zz_decode_CfuPlugin_CFU_INPUT_2_KIND_1;
-  assign when_Pipeline_l124_47 = (! execute_arbitration_isStuck);
-  assign _zz_execute_CfuPlugin_CFU_INPUT_2_KIND = decode_to_execute_CfuPlugin_CFU_INPUT_2_KIND;
   assign when_Pipeline_l124_48 = (! execute_arbitration_isStuck);
+  assign _zz_execute_CfuPlugin_CFU_INPUT_2_KIND = decode_to_execute_CfuPlugin_CFU_INPUT_2_KIND;
   assign when_Pipeline_l124_49 = (! execute_arbitration_isStuck);
   assign when_Pipeline_l124_50 = (! execute_arbitration_isStuck);
-  assign when_Pipeline_l124_51 = (! memory_arbitration_isStuck);
-  assign when_Pipeline_l124_52 = (! writeBack_arbitration_isStuck);
-  assign when_Pipeline_l124_53 = (! memory_arbitration_isStuck);
-  assign when_Pipeline_l124_54 = (! writeBack_arbitration_isStuck);
-  assign when_Pipeline_l124_55 = (! memory_arbitration_isStuck);
+  assign when_Pipeline_l124_51 = (! execute_arbitration_isStuck);
+  assign when_Pipeline_l124_52 = (! memory_arbitration_isStuck);
+  assign when_Pipeline_l124_53 = (! writeBack_arbitration_isStuck);
+  assign when_Pipeline_l124_54 = (! memory_arbitration_isStuck);
+  assign when_Pipeline_l124_55 = (! writeBack_arbitration_isStuck);
   assign when_Pipeline_l124_56 = (! memory_arbitration_isStuck);
   assign when_Pipeline_l124_57 = (! memory_arbitration_isStuck);
   assign when_Pipeline_l124_58 = (! memory_arbitration_isStuck);
   assign when_Pipeline_l124_59 = (! memory_arbitration_isStuck);
   assign when_Pipeline_l124_60 = (! memory_arbitration_isStuck);
   assign when_Pipeline_l124_61 = (! memory_arbitration_isStuck);
-  assign when_Pipeline_l124_62 = (! writeBack_arbitration_isStuck);
-  assign when_Pipeline_l124_63 = (! memory_arbitration_isStuck);
-  assign when_Pipeline_l124_64 = (! writeBack_arbitration_isStuck);
+  assign when_Pipeline_l124_62 = (! memory_arbitration_isStuck);
+  assign when_Pipeline_l124_63 = (! writeBack_arbitration_isStuck);
+  assign when_Pipeline_l124_64 = (! memory_arbitration_isStuck);
   assign when_Pipeline_l124_65 = (! writeBack_arbitration_isStuck);
   assign when_Pipeline_l124_66 = (! writeBack_arbitration_isStuck);
+  assign when_Pipeline_l124_67 = (! writeBack_arbitration_isStuck);
   assign decode_arbitration_isFlushed = ((|{writeBack_arbitration_flushNext,{memory_arbitration_flushNext,execute_arbitration_flushNext}}) || (|{writeBack_arbitration_flushIt,{memory_arbitration_flushIt,{execute_arbitration_flushIt,decode_arbitration_flushIt}}}));
   assign execute_arbitration_isFlushed = ((|{writeBack_arbitration_flushNext,memory_arbitration_flushNext}) || (|{writeBack_arbitration_flushIt,{memory_arbitration_flushIt,execute_arbitration_flushIt}}));
   assign memory_arbitration_isFlushed = ((|writeBack_arbitration_flushNext) || (|{writeBack_arbitration_flushIt,memory_arbitration_flushIt}));
@@ -3774,6 +3835,7 @@ module VexRiscv (
       CsrPlugin_hadException <= 1'b0;
       execute_CsrPlugin_wfiWake <= 1'b0;
       _zz_5 <= 1'b1;
+      execute_NarrowAluPlugin_wideActive <= 1'b0;
       HazardSimplePlugin_writeBackBuffer_valid <= 1'b0;
       memory_DivPlugin_div_counter_value <= 6'h0;
       CfuPlugin_en <= 1'b0;
@@ -3923,6 +3985,15 @@ module VexRiscv (
       end
       execute_CsrPlugin_wfiWake <= ((|{_zz_when_CsrPlugin_l1302_2,{_zz_when_CsrPlugin_l1302_1,_zz_when_CsrPlugin_l1302}}) || CsrPlugin_thirdPartyWake);
       _zz_5 <= 1'b0;
+      if(when_NarrowAluPlugin_l159) begin
+        execute_NarrowAluPlugin_wideActive <= 1'b1;
+      end
+      if(when_NarrowAluPlugin_l164) begin
+        execute_NarrowAluPlugin_wideActive <= 1'b0;
+      end
+      if(execute_arbitration_removeIt) begin
+        execute_NarrowAluPlugin_wideActive <= 1'b0;
+      end
       HazardSimplePlugin_writeBackBuffer_valid <= HazardSimplePlugin_writeBackWrites_valid;
       memory_DivPlugin_div_counter_value <= memory_DivPlugin_div_counter_valueNext;
       if(execute_CfuPlugin_schedule) begin
@@ -4022,6 +4093,10 @@ module VexRiscv (
           end
         endcase
       end
+    end
+    if(when_NarrowAluPlugin_l159) begin
+      execute_NarrowAluPlugin_savedLow24 <= execute_NarrowAluPlugin_lowSum24;
+      execute_NarrowAluPlugin_savedLowCarry <= execute_NarrowAluPlugin_lowSumCarry;
     end
     HazardSimplePlugin_writeBackBuffer_payload_address <= HazardSimplePlugin_writeBackWrites_payload_address;
     HazardSimplePlugin_writeBackBuffer_payload_data <= HazardSimplePlugin_writeBackWrites_payload_data;
@@ -4155,96 +4230,99 @@ module VexRiscv (
       decode_to_execute_ALU_BITWISE_CTRL <= _zz_decode_to_execute_ALU_BITWISE_CTRL;
     end
     if(when_Pipeline_l124_36) begin
-      decode_to_execute_SHIFT_CTRL <= _zz_decode_to_execute_SHIFT_CTRL;
+      decode_to_execute_SRC_ADD_ZERO <= decode_SRC_ADD_ZERO;
     end
     if(when_Pipeline_l124_37) begin
-      execute_to_memory_SHIFT_CTRL <= _zz_execute_to_memory_SHIFT_CTRL;
+      decode_to_execute_SHIFT_CTRL <= _zz_decode_to_execute_SHIFT_CTRL;
     end
     if(when_Pipeline_l124_38) begin
-      decode_to_execute_BRANCH_CTRL <= _zz_decode_to_execute_BRANCH_CTRL;
+      execute_to_memory_SHIFT_CTRL <= _zz_execute_to_memory_SHIFT_CTRL;
     end
     if(when_Pipeline_l124_39) begin
-      decode_to_execute_IS_MUL <= decode_IS_MUL;
+      decode_to_execute_BRANCH_CTRL <= _zz_decode_to_execute_BRANCH_CTRL;
     end
     if(when_Pipeline_l124_40) begin
-      execute_to_memory_IS_MUL <= execute_IS_MUL;
+      decode_to_execute_IS_MUL <= decode_IS_MUL;
     end
     if(when_Pipeline_l124_41) begin
-      memory_to_writeBack_IS_MUL <= memory_IS_MUL;
+      execute_to_memory_IS_MUL <= execute_IS_MUL;
     end
     if(when_Pipeline_l124_42) begin
-      decode_to_execute_IS_DIV <= decode_IS_DIV;
+      memory_to_writeBack_IS_MUL <= memory_IS_MUL;
     end
     if(when_Pipeline_l124_43) begin
-      execute_to_memory_IS_DIV <= execute_IS_DIV;
+      decode_to_execute_IS_DIV <= decode_IS_DIV;
     end
     if(when_Pipeline_l124_44) begin
-      decode_to_execute_IS_RS1_SIGNED <= decode_IS_RS1_SIGNED;
+      execute_to_memory_IS_DIV <= execute_IS_DIV;
     end
     if(when_Pipeline_l124_45) begin
-      decode_to_execute_IS_RS2_SIGNED <= decode_IS_RS2_SIGNED;
+      decode_to_execute_IS_RS1_SIGNED <= decode_IS_RS1_SIGNED;
     end
     if(when_Pipeline_l124_46) begin
-      decode_to_execute_CfuPlugin_CFU_ENABLE <= decode_CfuPlugin_CFU_ENABLE;
+      decode_to_execute_IS_RS2_SIGNED <= decode_IS_RS2_SIGNED;
     end
     if(when_Pipeline_l124_47) begin
-      decode_to_execute_CfuPlugin_CFU_INPUT_2_KIND <= _zz_decode_to_execute_CfuPlugin_CFU_INPUT_2_KIND;
+      decode_to_execute_CfuPlugin_CFU_ENABLE <= decode_CfuPlugin_CFU_ENABLE;
     end
     if(when_Pipeline_l124_48) begin
-      decode_to_execute_RS1 <= decode_RS1;
+      decode_to_execute_CfuPlugin_CFU_INPUT_2_KIND <= _zz_decode_to_execute_CfuPlugin_CFU_INPUT_2_KIND;
     end
     if(when_Pipeline_l124_49) begin
-      decode_to_execute_RS2 <= decode_RS2;
+      decode_to_execute_RS1 <= decode_RS1;
     end
     if(when_Pipeline_l124_50) begin
-      decode_to_execute_SRC2_FORCE_ZERO <= decode_SRC2_FORCE_ZERO;
+      decode_to_execute_RS2 <= decode_RS2;
     end
     if(when_Pipeline_l124_51) begin
-      execute_to_memory_MEMORY_ADDRESS_LOW <= execute_MEMORY_ADDRESS_LOW;
+      decode_to_execute_SRC2_FORCE_ZERO <= decode_SRC2_FORCE_ZERO;
     end
     if(when_Pipeline_l124_52) begin
-      memory_to_writeBack_MEMORY_ADDRESS_LOW <= memory_MEMORY_ADDRESS_LOW;
+      execute_to_memory_MEMORY_ADDRESS_LOW <= execute_MEMORY_ADDRESS_LOW;
     end
     if(when_Pipeline_l124_53) begin
-      execute_to_memory_REGFILE_WRITE_DATA <= _zz_decode_RS2_1;
+      memory_to_writeBack_MEMORY_ADDRESS_LOW <= memory_MEMORY_ADDRESS_LOW;
     end
     if(when_Pipeline_l124_54) begin
-      memory_to_writeBack_REGFILE_WRITE_DATA <= _zz_decode_RS2;
+      execute_to_memory_REGFILE_WRITE_DATA <= _zz_decode_RS2_1;
     end
     if(when_Pipeline_l124_55) begin
-      execute_to_memory_SHIFT_RIGHT <= execute_SHIFT_RIGHT;
+      memory_to_writeBack_REGFILE_WRITE_DATA <= _zz_decode_RS2;
     end
     if(when_Pipeline_l124_56) begin
-      execute_to_memory_BRANCH_DO <= execute_BRANCH_DO;
+      execute_to_memory_SHIFT_RIGHT <= execute_SHIFT_RIGHT;
     end
     if(when_Pipeline_l124_57) begin
-      execute_to_memory_BRANCH_CALC <= execute_BRANCH_CALC;
+      execute_to_memory_BRANCH_DO <= execute_BRANCH_DO;
     end
     if(when_Pipeline_l124_58) begin
-      execute_to_memory_MUL_LL <= execute_MUL_LL;
+      execute_to_memory_BRANCH_CALC <= execute_BRANCH_CALC;
     end
     if(when_Pipeline_l124_59) begin
-      execute_to_memory_MUL_LH <= execute_MUL_LH;
+      execute_to_memory_MUL_LL <= execute_MUL_LL;
     end
     if(when_Pipeline_l124_60) begin
-      execute_to_memory_MUL_HL <= execute_MUL_HL;
+      execute_to_memory_MUL_LH <= execute_MUL_LH;
     end
     if(when_Pipeline_l124_61) begin
-      execute_to_memory_MUL_HH <= execute_MUL_HH;
+      execute_to_memory_MUL_HL <= execute_MUL_HL;
     end
     if(when_Pipeline_l124_62) begin
-      memory_to_writeBack_MUL_HH <= memory_MUL_HH;
+      execute_to_memory_MUL_HH <= execute_MUL_HH;
     end
     if(when_Pipeline_l124_63) begin
-      execute_to_memory_CfuPlugin_CFU_IN_FLIGHT <= _zz_execute_to_memory_CfuPlugin_CFU_IN_FLIGHT;
+      memory_to_writeBack_MUL_HH <= memory_MUL_HH;
     end
     if(when_Pipeline_l124_64) begin
-      memory_to_writeBack_CfuPlugin_CFU_IN_FLIGHT <= _zz_memory_to_writeBack_CfuPlugin_CFU_IN_FLIGHT;
+      execute_to_memory_CfuPlugin_CFU_IN_FLIGHT <= _zz_execute_to_memory_CfuPlugin_CFU_IN_FLIGHT;
     end
     if(when_Pipeline_l124_65) begin
-      memory_to_writeBack_MEMORY_READ_DATA <= memory_MEMORY_READ_DATA;
+      memory_to_writeBack_CfuPlugin_CFU_IN_FLIGHT <= _zz_memory_to_writeBack_CfuPlugin_CFU_IN_FLIGHT;
     end
     if(when_Pipeline_l124_66) begin
+      memory_to_writeBack_MEMORY_READ_DATA <= memory_MEMORY_READ_DATA;
+    end
+    if(when_Pipeline_l124_67) begin
       memory_to_writeBack_MUL_LOW <= memory_MUL_LOW;
     end
     if(when_CsrPlugin_l1669) begin
