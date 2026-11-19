@@ -108,6 +108,7 @@ module mb_array_top #(
     load_addr<=0; load_we<=0; ingr_w0<=0; ingr_pay<=0; ingr_fire<=0;
   end else begin
     load_we<=1'b0; ingr_fire<=1'b0;
+    if (load_we) load_addr<=load_addr+1'b1;   // post-increment: word i lands at LOADA+i (a LOADA write below overrides)
     if (s_axi_awvalid && !aw_seen) begin s_axi_awready<=1; awaddr_q<=s_axi_awaddr; aw_seen<=1; end
     else s_axi_awready<=0;
     if (s_axi_wvalid && !w_seen)  begin s_axi_wready<=1;  wdata_q<=s_axi_wdata;  w_seen<=1;  end
@@ -116,7 +117,7 @@ module mb_array_top #(
       case (awaddr_q[7:2])
         6'h00: begin arr_reset<=wdata_q[0]; cpu_rst_req<=wdata_q[1]; end
         6'h01: load_addr<=wdata_q[11:0];
-        6'h02: begin load_data<=wdata_q; load_we<=1'b1; load_addr<=load_addr+1'b1; end
+        6'h02: begin load_data<=wdata_q; load_we<=1'b1; end   // LOADA advances the clock after the strobe (below)
         6'h03: ingr_w0<=wdata_q;
         6'h04: begin ingr_pay<=wdata_q; ingr_fire<=1'b1; end
         default: ;
