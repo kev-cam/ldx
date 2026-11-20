@@ -34,14 +34,14 @@
 <div class="wrap">
 
 <h1>FPGA array vs CPU — scaling outlook</h1>
-<p class="muted">Where a mesh-of-RISC-V-cores simulator beats a CPU, as a function of design size —
-measured anchor points (dots) plus clearly-labeled model lines (dashes). This replaces an earlier
-"linear scaling validated" chart whose data was projected, not measured.</p>
+<p class="muted">Where a mesh-of-RISC-V-cores simulator beats a CPU, as a function of design size.
+Solid dots and solid lines are measured runs with checked outputs; dashed lines are speculation or
+hypothetical and are labelled as such. Updated 2026-11-20 with the first runs on AWS F2 silicon.</p>
 
 <div class="chart">
-<svg viewBox="0 0 900 684" xmlns="http://www.w3.org/2000/svg" font-family="-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif" font-size="13">
+<svg viewBox="0 0 900 730" xmlns="http://www.w3.org/2000/svg" font-family="-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif" font-size="13">
 <style>text{fill:currentColor} .mut{opacity:.65} .tick{stroke:currentColor;opacity:.15} .axis{stroke:currentColor;opacity:.5}</style>
-<rect x="347.2" y="40" width="289.6" height="450" fill="#2563eb" opacity="0.07"/>
+<rect x="576.8" y="40" width="137.9" height="450" fill="#0d9488" opacity="0.07"/>
 <line class="tick" x1="78.0" y1="40" x2="78.0" y2="490"/>
 <text x="78.0" y="508" text-anchor="middle" class="mut">10<tspan dy="-4" font-size="9">1</tspan></text>
 <line class="tick" x1="177.8" y1="40" x2="177.8" y2="490"/>
@@ -77,15 +77,39 @@ measured anchor points (dots) plus clearly-labeled model lines (dashes). This re
 <line class="tick" x1="78" y1="58.5" x2="876" y2="58.5"/>
 <text x="70" y="62.5" text-anchor="end" class="mut">10<tspan dy="-4" font-size="9">9</tspan></text>
 <rect x="78" y="40" width="798" height="450" fill="none" class="axis"/>
-<text x="477.0" y="530" text-anchor="middle">design size (synthesized cells, log)</text>
-<text x="20" y="265.0" text-anchor="middle" transform="rotate(-90 20 265.0)">simulated throughput (DUT cycles/s, log)</text>
-<polyline points="78.0,90.7 107.9,109.2 177.8,152.4 227.6,183.2 277.5,214.0 327.4,244.8 377.2,275.7 427.1,306.5 477.0,337.3 526.9,368.1 576.8,398.9 576.8,460.6 624.3,490.0" fill="none" stroke="#d97706" stroke-width="2.2" stroke-dasharray="7 4"/>
-<polyline points="357.9,237.5 457.7,299.1" fill="none" stroke="#2563eb" stroke-width="2.2" stroke-dasharray="7 4"/>
-<line x1="457.7" y1="299.1" x2="457.7" y2="325.1" stroke="#2563eb" stroke-width="2.2" stroke-dasharray="2 3"/>
-<polyline points="437.3,250.0 537.1,311.7" fill="none" stroke="#0d9488" stroke-width="2.2" stroke-dasharray="7 4"/>
-<line x1="537.1" y1="311.7" x2="537.1" y2="337.7" stroke="#0d9488" stroke-width="2.2" stroke-dasharray="2 3"/>
-<polyline points="534.8,245.2 634.6,306.8" fill="none" stroke="#9333ea" stroke-width="2.2" stroke-dasharray="3 5"/>
-<line x1="634.6" y1="306.8" x2="634.6" y2="332.8" stroke="#9333ea" stroke-width="2" stroke-dasharray="2 3"/>
+<text x="477.0" y="530" text-anchor="middle">design size (gates, log)</text>
+<text x="20" y="265.0" text-anchor="middle" transform="rotate(-90 20 265.0)">simulated clocks per second (log)</text>
+<polyline points="546.7,275.7 822.6,275.7 876.0,308.7" fill="none" stroke="#db2777" stroke-width="2" stroke-dasharray="2 5"/>
+<polyline points="546.7,243.4 876.0,243.4" fill="none" stroke="#64748b" stroke-width="2" stroke-dasharray="2 5"/>
+<polyline points="546.1,246.7 785.3,246.7" fill="none" stroke="#9333ea" stroke-width="2.2" stroke-dasharray="3 5"/>
+<line x1="785.3" y1="246.7" x2="785.3" y2="272.7" stroke="#9333ea" stroke-width="2.2" stroke-dasharray="2 3"/>
+<polyline points="625.5,320.4 641.3,335.7 685.5,372.0 714.7,389.9 745.6,412.6" fill="none" stroke="#d97706" stroke-width="1.6"/>
+<polyline points="625.5,285.3 641.3,298.1 685.5,315.1 714.7,337.5 745.6,361.4" fill="none" stroke="#d97706" stroke-width="2.4"/>
+<circle cx="625.5" cy="320.4" r="3" fill="none" stroke="#d97706" stroke-width="2"/>
+<circle cx="641.3" cy="335.7" r="3" fill="none" stroke="#d97706" stroke-width="2"/>
+<circle cx="685.5" cy="372.0" r="3" fill="none" stroke="#d97706" stroke-width="2"/>
+<circle cx="714.7" cy="389.9" r="3" fill="none" stroke="#d97706" stroke-width="2"/>
+<circle cx="745.6" cy="412.6" r="3" fill="none" stroke="#d97706" stroke-width="2"/>
+<circle cx="625.5" cy="285.3" r="3.5" fill="#d97706" stroke="#d97706" stroke-width="2"/>
+<circle cx="641.3" cy="298.1" r="3.5" fill="#d97706" stroke="#d97706" stroke-width="2"/>
+<circle cx="685.5" cy="315.1" r="3.5" fill="#d97706" stroke="#d97706" stroke-width="2"/>
+<circle cx="714.7" cy="337.5" r="3.5" fill="#d97706" stroke="#d97706" stroke-width="2"/>
+<circle cx="745.6" cy="361.4" r="3.5" fill="#d97706" stroke="#d97706" stroke-width="2"/>
+<text x="617.5" y="324.4" font-size="11.5" text-anchor="end">Verilator, 1 thread</text>
+<text x="617.5" y="289.3" font-size="11.5" text-anchor="end">Verilator, best of 1–16 threads</text>
+<polyline points="546.1,257.5 641.3,257.5" fill="none" stroke="#2563eb" stroke-width="1.4"/>
+<polyline points="641.3,258.5 714.7,258.5" fill="none" stroke="#0d9488" stroke-width="1.4"/>
+<line x1="641.3" y1="251.5" x2="641.3" y2="228.5" stroke="#2563eb" stroke-width="1"/>
+<line x1="714.7" y1="252.5" x2="714.7" y2="211.5" stroke="#0d9488" stroke-width="1"/>
+<circle cx="641.3" cy="257.5" r="5" fill="#2563eb" stroke="#2563eb" stroke-width="2"/>
+<text x="645.3" y="223.5" font-size="11.5" text-anchor="end">ZCU104, 3×3 nodes + engines · 591k</text>
+<circle cx="714.7" cy="258.5" r="5" fill="#0d9488" stroke="#0d9488" stroke-width="2"/>
+<text x="718.7" y="206.5" font-size="11.5" text-anchor="end">AWS F2 VU47P, 7×7 nodes + engines · 570k</text>
+<circle cx="714.7" cy="341.5" r="5" fill="#0d9488" stroke="#0d9488" stroke-width="2"/>
+<circle cx="641.3" cy="341.5" r="5" fill="#2563eb" stroke="#2563eb" stroke-width="2"/>
+<text x="631.3" y="347.5" font-size="11.5" text-anchor="end">both arrays, RISC core + logic extension · 25.6k</text>
+<circle cx="641.3" cy="353.8" r="5" fill="#2563eb" stroke="#2563eb" stroke-width="2"/>
+<text x="633.3" y="370.8" font-size="11.5" text-anchor="end">ZCU104, plain RISC core · 16.2k</text>
 <circle cx="108.0" cy="94.8" r="5" fill="#d97706" stroke="#d97706" stroke-width="2"/>
 <text x="116.0" y="98.8" font-size="11.5" text-anchor="start">xorshift · x86 1-thread</text>
 <circle cx="185.6" cy="158.7" r="5" fill="#d97706" stroke="#d97706" stroke-width="2"/>
@@ -95,81 +119,103 @@ measured anchor points (dots) plus clearly-labeled model lines (dashes). This re
 <circle cx="185.6" cy="253.9" r="5" fill="#d97706" stroke="#d97706" stroke-width="2"/>
 <text x="193.6" y="257.9" font-size="11.5" text-anchor="start">bet FIFO · Verilator+TB x86</text>
 <circle cx="108.0" cy="181.9" r="5" fill="#2563eb" stroke="#2563eb" stroke-width="2"/>
-<text x="118.0" y="185.9" font-size="11.5" text-anchor="start">xorshift · 1 array core</text>
+<text x="118.0" y="175.9" font-size="11.5" text-anchor="start">xorshift · 1 array core</text>
 <circle cx="108.0" cy="70.6" r="5" fill="none" stroke="#2563eb" stroke-width="2"/>
 <text x="118.0" y="74.6" font-size="11.5" text-anchor="start">xorshift · 64 independent sims (aggregate)</text>
 <circle cx="337.6" cy="299.5" r="5" fill="#2563eb" stroke="#2563eb" stroke-width="2"/>
-<text x="345.6" y="303.5" font-size="11.5" text-anchor="start">SHA-256 · 1 array core (~4k cells est.)</text>
-<line x1="457.7" y1="40" x2="457.7" y2="490" stroke="#2563eb" stroke-width="1.2" stroke-dasharray="2 4" opacity="0.55"/>
-<text x="457.7" y="546" text-anchor="middle" font-size="10.5" class="mut">ZCU104 array full</text>
-<text x="457.7" y="559" text-anchor="middle" font-size="10.5" class="mut">~64k cells ≈ 0.06%</text>
-<text x="457.7" y="572" text-anchor="middle" font-size="10.5" class="mut">of a 100M-gate IC</text>
-<line x1="537.1" y1="40" x2="537.1" y2="490" stroke="#0d9488" stroke-width="1.2" stroke-dasharray="2 4" opacity="0.55"/>
-<text x="537.1" y="592" text-anchor="middle" font-size="10.5" class="mut">VU47P 20×20 built</text>
-<text x="537.1" y="605" text-anchor="middle" font-size="10.5" class="mut">400 cores, ~0.4M cells</text>
-<text x="537.1" y="618" text-anchor="middle" font-size="10.5" class="mut">≈ 0.4% of IC (not yet run)</text>
-<line x1="634.6" y1="40" x2="634.6" y2="490" stroke="#9333ea" stroke-width="1.2" stroke-dasharray="2 4" opacity="0.55"/>
-<text x="634.6" y="638" text-anchor="middle" font-size="10.5" class="mut">Agilex 27 largest (speculative)</text>
-<text x="634.6" y="651" text-anchor="middle" font-size="10.5" class="mut">~1,900 cores, ~4M cells ≈ 4% of IC</text>
-<line x1="576.8" y1="40" x2="576.8" y2="490" stroke="#d97706" stroke-width="1.2" stroke-dasharray="2 4" opacity="0.55"/>
-<text x="576.8" y="546" text-anchor="middle" font-size="10.5" class="mut">≈ one x86 LLC</text>
-<text x="576.8" y="559" text-anchor="middle" font-size="10.5" class="mut">(CPU cache cliff)</text>
+<text x="345.6" y="303.5" font-size="11.5" text-anchor="start">SHA-256 · 1 array core (~4k gates est.)</text>
 <line x1="776.2" y1="40" x2="776.2" y2="490" stroke="#888888" stroke-width="1.2" stroke-dasharray="2 4" opacity="0.55"/>
-<text x="776.2" y="546" text-anchor="middle" font-size="10.5" class="mut">full 100M-gate IC</text>
-<text x="776.2" y="559" text-anchor="middle" font-size="10.5" class="mut">(emulator / multi-FPGA territory)</text>
-<text x="347.2" y="30" font-size="11.5" fill="#2563eb">crossover: design partitions across ≥64 cores → array wins</text>
-<line x1="347.2" y1="40" x2="347.2" y2="490" stroke="#2563eb" stroke-width="1.4" stroke-dasharray="6 3" opacity="0.6"/>
-<rect x="574" y="50" width="292" height="112" fill="none" class="axis" rx="6"/>
-<line x1="584" y1="66" x2="614" y2="66" stroke="#d97706" stroke-width="2.2" stroke-dasharray="7 4"/><text x="622" y="70" font-size="11.5">CPU, 1 thread, compiled model (model)</text>
-<line x1="584" y1="86" x2="614" y2="86" stroke="#2563eb" stroke-width="2.2" stroke-dasharray="7 4"/><text x="622" y="90" font-size="11.5">ZCU104 8×8 array, partitioned (model)</text>
-<line x1="584" y1="106" x2="614" y2="106" stroke="#0d9488" stroke-width="2.2" stroke-dasharray="7 4"/><text x="622" y="110" font-size="11.5">VU47P 20×20 array, built not run (model)</text>
-<line x1="584" y1="126" x2="614" y2="126" stroke="#9333ea" stroke-width="2" stroke-dasharray="3 5"/><text x="622" y="130" font-size="11.5">Agilex 27 (Agilex 2X) array, speculation</text>
-<circle cx="599" cy="146" r="5" fill="currentColor" opacity=".7"/><text x="622" y="150" font-size="11.5">measured run (○ = aggregate of 64 sims)</text>
+<text x="776.2" y="548" text-anchor="middle" font-size="10.5" class="mut">a 100M-gate IC</text>
+<line x1="641.3" y1="40" x2="641.3" y2="490" stroke="#2563eb" stroke-width="1.2" stroke-dasharray="2 4" opacity="0.55"/>
+<text x="641.3" y="592" text-anchor="middle" font-size="10.5" class="mut">ZCU104 full: 9 nodes, 576 mesh cells</text>
+<text x="641.3" y="605" text-anchor="middle" font-size="10.5" class="mut">≈ 4.4M gates (measured)</text>
+<line x1="714.7" y1="40" x2="714.7" y2="490" stroke="#0d9488" stroke-width="1.2" stroke-dasharray="2 4" opacity="0.55"/>
+<text x="714.7" y="636" text-anchor="middle" font-size="10.5" class="mut">VU47P full: 49 nodes, 3,136 mesh cells</text>
+<text x="714.7" y="649" text-anchor="middle" font-size="10.5" class="mut">≈ 24M gates (measured)</text>
+<line x1="785.3" y1="40" x2="785.3" y2="490" stroke="#9333ea" stroke-width="1.2" stroke-dasharray="2 4" opacity="0.55"/>
+<text x="785.3" y="680" text-anchor="middle" font-size="10.5" class="mut">Agilex 27 largest: ~250 nodes</text>
+<text x="785.3" y="693" text-anchor="middle" font-size="10.5" class="mut">≈ 120M gates (speculation)</text>
+<text x="580.8" y="30" font-size="11.5" fill="#0d9488">engine array above Verilator on all 16 cores</text>
+<rect x="92" y="350" width="302" height="132" fill="none" class="axis" rx="6"/>
+<circle cx="117" cy="366" r="5" fill="currentColor" opacity=".7"/><text x="140" y="370" font-size="11.5">measured, output checked (solid lines too)</text>
+<line x1="102" y1="386" x2="132" y2="386" stroke="#d97706" stroke-width="2.2"/><text x="140" y="390" font-size="11.5">Verilator on x86, measured</text>
+<line x1="102" y1="406" x2="132" y2="406" stroke="#0d9488" stroke-width="1.4"/><text x="140" y="410" font-size="11.5">engine arrays on FPGA, measured</text>
+<line x1="102" y1="426" x2="132" y2="426" stroke="#9333ea" stroke-width="2.2" stroke-dasharray="3 5"/><text x="140" y="430" font-size="11.5">Agilex 27 engine array, speculation</text>
+<line x1="102" y1="446" x2="132" y2="446" stroke="#db2777" stroke-width="2" stroke-dasharray="2 5"/><text x="140" y="450" font-size="11.5">SpiNNaker2 board, hypothetical</text>
+<line x1="102" y1="466" x2="132" y2="466" stroke="#64748b" stroke-width="2" stroke-dasharray="2 5"/><text x="140" y="470" font-size="11.5">Cerebras WSE-3, hypothetical</text>
 </svg>
-
 </div>
 
-<h2>How to read it</h2>
-<p>Both platforms slow down linearly as the design grows — more cells to evaluate per simulated
-cycle — so on a log-log plot every simulator is a descending line, and what matters is (a) the
-line&rsquo;s height (cell-evaluations per second) and (b) where it ends (capacity). A single CPU
-thread is individually much faster than one soft core (measured: 258&nbsp;M vs 9.96&nbsp;M evals/s on the
-same tiny design — 26×). The array wins by width, not height: 64 cores with all state in local
-memory. Left of the crossover a design can&rsquo;t use enough cores to close that 26× gap (measured:
-the bet FIFO tops out at ~1.9× over one core no matter how many are offered). Right of it, the
-aggregate line sits ~2.7× above the CPU (ZCU104), ~10× for the 400-core VU47P array that has been
-built but not yet run, or ~120× for a speculative array on the largest Agilex&nbsp;27 (the Agilex&nbsp;2X portfolio), until the array
-runs out of room. That last line is the only one that reaches past the CPU cache cliff.
-The CPU line is one x86 thread running the same compiled model; Verilator is roughly 12× faster than
-that model on x86, so against Verilator these margins shrink by about that factor.</p>
-<p>The capacity markers are the honest part: a full ZCU104 holds ≈&nbsp;0.06% of a 100M-gate IC, the
-VU47P build ≈&nbsp;0.4% and a speculative Agilex&nbsp;27 array ≈&nbsp;4%. Full-chip simulation on this architecture means racks of FPGAs — the
-same math that makes commercial emulators the size they are. The realistic near-term claims are
-the shaded band (blocks and subsystems up to ~0.5M cells today, a few M cells if Agilex&nbsp;27 delivers) and the aggregate-throughput case
-(64 independent sims at once, measured 637&nbsp;M evals/s = 2.47× one x86 thread).</p>
-
-<h2>What is measured vs modeled</h2>
+<h2>What was measured</h2>
+<p>The benchmark is a torus of SHA-256 round cells (&ldquo;SHA-mesh&rdquo;): every cell does one SHA-256
+round per clock and mixes in the state of its north and west neighbours, so all traffic is local.
+One cell synthesizes to about 7.7k gates (yosys, generic two-input gates plus 1,062 flops, inverters
+not counted). Each array node is a RISC-V core with a wide-word engine beside it: a 128-bit,
+four-lane datapath with its own 4096-word memory that runs a straight-line microprogram and
+evaluates four neighbouring cells at once. A node holds 64 cells.</p>
 <div class="tablebox">
 <table>
-  <tr><th>Element</th><th>Basis</th></tr>
-  <tr><td>All dots</td><td>Measured wall-clock runs (ZCU104 silicon, x86, A53); outputs checked against references</td></tr>
-  <tr><td>CPU line</td><td>Model: ~3&nbsp;G cell-evals/s per thread in-cache (anchored on the xorshift and bet-FIFO compiled runs), 10× cliff past ~1M cells when state exceeds the last-level cache</td></tr>
-  <tr><td>ZCU104 array line</td><td>Model: 64 cores × ~250&nbsp;M cell-evals/s each (anchored on xorshift 9.96&nbsp;M evals/s and SHA-256 122&nbsp;k cyc/s measurements, URAM cost included) × 0.5 partition efficiency — cross-core settling measured functional in sim, efficiency factor is an estimate, silicon partitioned-throughput run still TBD</td></tr>
-  <tr><td>VU47P line</td><td>Model on a measured build: a 20×20 array (400 cores, hardware router, 16&nbsp;KB/core) was placed and routed for the AWS F2 VU47P on 2026-11-17 — 886k LUTs (68%), 400 URAM, timing met at 125&nbsp;MHz, registered as an AFI. It has not run yet (instance quota pending), so the line is the ZCU104 per-core rate × 400 cores × 0.625 clock × the same 0.5 efficiency</td></tr>
-  <tr><td>Agilex&nbsp;27 line</td><td>Speculation only — no silicon exists (Agilex&nbsp;2X was announced 2026-10-30; engineering samples are expected in the second half of 2027). Assumes the largest device, A27F180 (17.6M logic elements, 5.68M ALMs, 1,918&nbsp;Mb of block memory per Altera's product table of 2026-10-28), two thirds of its ALMs filled at ~2k ALM per core ≈ 1,900 cores, 1.5× the ZCU104 clock (an assumption: Altera's architecture white paper claims fabric Fmax more than 15% above Agilex&nbsp;7 and more than 1.8× performance per watt, from its own modelling, and says nothing about this design), 32&nbsp;KB/core, which uses about a quarter of the block memory, and the same 0.5 efficiency — which is untested at 64 cores, let alone 1,900. Replaces the earlier D5005 projection, which was never run and whose drawn line (2×10<sup>10</sup>/N) did not match its stated factors</td></tr>
-  <tr><td>Capacity marks</td><td>~1k cells/core from measured program+state footprints (SHA-256 ≈ 1.4k words in 16&nbsp;KB/core); ~2k cells/core assumed at 32&nbsp;KB</td></tr>
+  <tr><th>Platform</th><th>Design</th><th>Simulated clocks/s</th><th>vs Verilator, all cores</th></tr>
+  <tr><td>AWS F2 (VU47P), 7×7 nodes with engines, 125&nbsp;MHz</td><td>56×56 cells ≈ 24M gates</td><td>569,882</td><td>19×</td></tr>
+  <tr><td>Same array, RISC core + logic extension only</td><td>56×56 cells</td><td>25,625</td><td>0.86×</td></tr>
+  <tr><td>Verilator, best thread count (8 of 16 cores)</td><td>56×56 cells</td><td>29,800</td><td>1×</td></tr>
+  <tr><td>Verilator, 1 thread</td><td>56×56 cells</td><td>4,200</td><td>0.14×</td></tr>
+  <tr><td>Hand-written C model, 1 thread</td><td>56×56 cells</td><td>≈ 64,000</td><td>2.1×</td></tr>
+  <tr><td>ZCU104 (ZU7EV), 3×3 nodes with engines, 125&nbsp;MHz</td><td>24×24 cells ≈ 4.4M gates</td><td>591,455</td><td>4.6×</td></tr>
+  <tr><td>Same array, RISC core + logic extension only</td><td>24×24 cells</td><td>25,678</td><td>0.20×</td></tr>
+  <tr><td>Verilator, best thread count (4 of 16 cores)</td><td>24×24 cells</td><td>129,800</td><td>1×</td></tr>
+  <tr><td>Verilator, 1 thread</td><td>24×24 cells</td><td>31,900</td><td>0.25×</td></tr>
+  <tr><td>Same array, plain RISC core</td><td>24×24 cells</td><td>16,211</td><td>0.12×</td></tr>
+</table>
+</div>
+<p>Both FPGA runs reproduce the reference model&rsquo;s signature over every cell at 64, 200, 256 and
+2,000,000 clocks. The x86 host is a 16-core Threadripper PRO 5955WX; Verilator was built at 1, 4, 8
+and 16 threads for each size and the best is plotted (4 threads at 20×20, 8 at 40×40 and 56×56,
+16 at 80×80). The F2 run matches the cycle-accurate simulation of the array to five digits.</p>
+
+<h2>How to read it</h2>
+<p>A CPU simulator slows down as the design grows: more gates to evaluate per clock, and past a
+few million gates the state no longer fits in cache, so extra threads stop helping. The measured
+Verilator curves show both effects: 209k clocks/s at 3M gates, 12k at 49M.</p>
+<p>The engine array is flat. One simulated clock costs 219 FPGA clocks whatever the array size,
+because every node works on its own 64 cells in parallel and only exchanges edge values with its
+neighbours. So the two arrays, 9 nodes and 49 nodes, run at the same rate within 4%, and the
+advantage over Verilator grows with size until the device is full: 4.6× at 4.4M gates and 19×
+at 24M gates. Below about 1M gates Verilator on a desktop is as fast or faster.</p>
+<p>The engine matters more than the core count. The same 49 nodes using only the RISC core and a
+SHA logic extension reach 25.6k clocks/s, slightly below Verilator. The wide-word engine is 22×
+faster than that for about 14k LUTs and 17 block RAMs per node.</p>
+
+<h2>Limits of these numbers</h2>
+<ul style="margin:.4rem 0 .8rem 1.4rem">
+  <li>The test case is cherry-picked. SHA-mesh is a regular 32-bit datapath with only nearest-neighbour
+  traffic, which is the best case for a four-lane word engine and a mesh. Control-heavy or bit-level
+  logic will map less well.</li>
+  <li>The microprogram comes from a scheduler script written for this cell. Nothing yet compiles
+  arbitrary RTL onto the engine, so these are hardware-capability numbers, not tool-flow numbers.</li>
+  <li>Capacity is set by state, not gates: a node&rsquo;s memory holds 64 cells of about 1,000 state
+  bits each. A design with more state per gate fills the array sooner.</li>
+  <li>The Verilator runs at 24×24 shared the machine with an FPGA build using three cores, so they may be slightly low.</li>
+</ul>
+
+<h2>Speculative and hypothetical lines</h2>
+<div class="tablebox">
+<table>
+  <tr><th>Line</th><th>Basis</th></tr>
+  <tr><td>Agilex&nbsp;27 (speculation)</td><td>No silicon exists: Agilex&nbsp;2X was announced 2026-10-30 and samples are expected in the second half of 2027. Assumes the largest device, A27F180 (5.68M ALMs per Altera&rsquo;s product table of 2026-10-28), two thirds of its ALMs used at an assumed 15k ALMs per node, giving about 250 nodes, 16,000 cells and roughly 120M gates of this workload; and 1.5× the measured rate from a faster fabric, which is an assumption. If the flat scaling holds to 250 nodes, that is a 100M-gate design at close to 1M clocks/s on one device.</td></tr>
+  <tr><td>SpiNNaker2 board (hypothetical)</td><td>Arithmetic only, nothing was run. One 48-chip board has 7,296 Arm M4F cores. Assumes each is 3× our plain soft core (measured: 16.2k clocks/s for 64 cells), half lost to coordination, and a ceiling of 300k clocks/s from synchronising every clock over its packet network. There is no wide-word engine, so it sits where our RISC-only runs would with many more cores.</td></tr>
+  <tr><td>Cerebras WSE-3 (hypothetical)</td><td>Arithmetic only, nothing was run, and there is no public way to program it like this. 900,000 cores, each assumed equal to our plain soft core, half lost to coordination, with an assumed ceiling of 1M clocks/s. It would stay at that ceiling across the whole chart.</td></tr>
 </table>
 </div>
 
 <div class="note">
-What would move these lines: a measured partitioned-design silicon run (fixes the 0.5 efficiency
-guess; the VU47P image is the vehicle once an F2 instance is available), a real cell count for the SHA-256 netlist (the ~4k estimate), and per-core memory scaling
-(more URAM per core trades core count for capacity). All three are planned measurements, not
-unknowns of principle.
+What would move these lines: a second, less regular test case on the engine; a compiler from RTL to
+the engine microprogram; a Verilator run on a larger server; and a larger array on the ZCU104 to
+confirm that the rate stays flat when the device is filled.
 </div>
 
 <footer>
-Updated 2026-11-18 · <a href="index.html">back to measured results</a>
+Updated 2026-11-20 · <a href="index.html">back to measured results</a>
 </footer>
 
 </div>
