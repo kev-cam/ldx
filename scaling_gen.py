@@ -71,8 +71,8 @@ polyline([(64*G, AG_RATE), (AG_CAP, AG_RATE)], PROJ, "3 5")
 drop(AG_CAP, AG_RATE, PROJ)
 
 # --- measured: Verilator on a 16-core Threadripper PRO 5955WX, SHA-mesh ---
-V1 = [(gates(20,20), 56.4e3), (gates(24,24), 31.9e3), (gates(40,40), 8.2e3), (gates(56,56), 4.2e3), (gates(80,80), 1.8e3)]
-VB = [(gates(20,20), 209e3), (gates(24,24), 129.8e3), (gates(40,40), 68.8e3), (gates(56,56), 29.8e3), (gates(80,80), 12.2e3)]
+V1 = [(gates(20,20), 56.4e3), (gates(24,24), 32.3e3), (gates(24,32), 20.9e3), (gates(40,40), 8.2e3), (gates(56,56), 4.2e3), (gates(80,80), 1.8e3)]
+VB = [(gates(20,20), 209e3), (gates(24,24), 141.5e3), (gates(24,32), 111.7e3), (gates(40,40), 68.8e3), (gates(56,56), 29.8e3), (gates(80,80), 12.2e3)]
 polyline(V1, CPU, "", 1.6); polyline(VB, CPU, "", 2.4)
 for c, r in V1: pt(c, r, CPU, r=3, open_=True)
 for c, r in VB: pt(c, r, CPU, r=3.5)
@@ -80,13 +80,14 @@ s.append(f'<text x="{xp(V1[0][0])-8:.1f}" y="{yp(V1[0][1])+4:.1f}" font-size="11
 s.append(f'<text x="{xp(VB[0][0])-8:.1f}" y="{yp(VB[0][1])+4:.1f}" font-size="11.5" text-anchor="end">Verilator, best of 1–16 threads</text>')
 
 # --- measured: engine arrays on silicon (flat: the rate is set by the 219-clock microprogram, not by the size) ---
-Z, F = gates(24,24), gates(56,56)
-polyline([(64*G, 591455), (Z, 591455)], ARR, "", 1.4)
-polyline([(Z, 569882), (F, 569882)], BUILT, "", 1.4)
+Z, Z2, F = gates(24,24), gates(24,32), gates(56,56)
+polyline([(64*G, 591455), (Z2, 591455)], ARR, "", 1.4)
+pt(Z2, 591454, ARR)
+polyline([(Z2, 569882), (F, 569882)], BUILT, "", 1.4)
 def lead(cells, rate, color, up):
     s.append(f'<line x1="{xp(cells):.1f}" y1="{yp(rate)-6:.1f}" x2="{xp(cells):.1f}" y2="{yp(rate)-up+5:.1f}" stroke="{color}" stroke-width="1"/>')
 lead(Z, 591455, ARR, 34); lead(F, 569882, BUILT, 52)
-pt(Z, 591455, ARR, "ZCU104, 3×3 nodes + engines · 591k", dx=4, dy=-34, anchor="end")
+pt(Z, 591455, ARR, "ZCU104, 3×3 and 3×4 nodes + engines · 591k", dx=4, dy=-34, anchor="end")
 pt(F, 569882, BUILT, "AWS F2 VU47P, 7×7 nodes + engines · 570k", dx=4, dy=-52, anchor="end")
 pt(F, 25625, BUILT); pt(Z, 25678, ARR, "both arrays, RISC core + logic extension · 25.6k", dx=-10, dy=6, anchor="end")
 pt(Z, 16211, ARR, "ZCU104, plain RISC core · 16.2k", dx=-8, dy=17, anchor="end")
@@ -108,7 +109,7 @@ def marker(cells, lines, color=GRAY, row=0):
     for i, t in enumerate(lines):
         s.append(f'<text x="{x:.1f}" y="{base+i*13}" text-anchor="middle" font-size="10.5" class="mut">{t}</text>')
 marker(1e8,  ["a 100M-gate IC"], row=0)
-marker(Z,    ["ZCU104 full: 9 nodes, 576 mesh cells", "≈ 4.4M gates (measured)"], ARR, row=1)
+marker(Z2,   ["ZCU104 at 83% of LUTs: 12 nodes, 768 mesh cells", "≈ 5.9M gates (measured)"], ARR, row=1)
 marker(F,    ["VU47P full: 49 nodes, 3,136 mesh cells", "≈ 24M gates (measured)"], BUILT, row=2)
 marker(AG_CAP, ["Agilex 27 largest: ~250 nodes", "≈ 120M gates (speculation)"], PROJ, row=3)
 
