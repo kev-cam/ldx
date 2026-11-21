@@ -36,7 +36,7 @@
 <h1>FPGA array vs CPU — scaling outlook</h1>
 <p class="muted">Where a mesh-of-RISC-V-cores simulator beats a CPU, as a function of design size.
 Solid dots and solid lines are measured runs with checked outputs; dashed lines are speculation or
-hypothetical and are labelled as such. Updated 2026-11-20 with the first runs on AWS F2 silicon.</p>
+hypothetical and are labelled as such. Updated 2026-11-20 with the first runs on AWS F2 silicon and a self-restarting engine on the ZCU104.</p>
 
 <div class="chart">
 <svg viewBox="0 0 900 730" xmlns="http://www.w3.org/2000/svg" font-family="-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif" font-size="13">
@@ -101,6 +101,8 @@ hypothetical and are labelled as such. Updated 2026-11-20 with the first runs on
 <text x="617.5" y="289.3" font-size="11.5" text-anchor="end">Verilator, best of 1–16 threads</text>
 <polyline points="546.1,257.5 653.7,257.5" fill="none" stroke="#2563eb" stroke-width="1.4"/>
 <circle cx="653.7" cy="257.5" r="5" fill="#2563eb" stroke="#2563eb" stroke-width="2"/>
+<circle cx="653.7" cy="249.2" r="5" fill="#2563eb" stroke="#2563eb" stroke-width="2"/>
+<text x="663.7" y="241.2" font-size="11.5" text-anchor="start">ZCU104, 3×4, self-restarting engines · 805k</text>
 <polyline points="653.7,258.5 714.7,258.5" fill="none" stroke="#0d9488" stroke-width="1.4"/>
 <line x1="641.3" y1="251.5" x2="641.3" y2="228.5" stroke="#2563eb" stroke-width="1"/>
 <line x1="714.7" y1="252.5" x2="714.7" y2="211.5" stroke="#0d9488" stroke-width="1"/>
@@ -164,7 +166,8 @@ evaluates four neighbouring cells at once. A node holds 64 cells.</p>
   <tr><td>Verilator, best thread count (8 of 16 cores)</td><td>56×56 cells</td><td>29,800</td><td>1×</td></tr>
   <tr><td>Verilator, 1 thread</td><td>56×56 cells</td><td>4,200</td><td>0.14×</td></tr>
   <tr><td>Hand-written C model, 1 thread</td><td>56×56 cells</td><td>≈ 64,000</td><td>2.1×</td></tr>
-  <tr><td>ZCU104 (ZU7EV), 3×4 nodes with engines, 125&nbsp;MHz</td><td>24×32 cells ≈ 5.9M gates</td><td>591,454</td><td>5.3×</td></tr>
+  <tr><td>ZCU104 (ZU7EV), 3×4 nodes, self-restarting engines, 125&nbsp;MHz</td><td>24×32 cells ≈ 5.9M gates</td><td>805,315</td><td>7.2×</td></tr>
+  <tr><td>ZCU104, 3×4 nodes, engines started by the RISC core, 125&nbsp;MHz</td><td>24×32 cells ≈ 5.9M gates</td><td>591,454</td><td>5.3×</td></tr>
   <tr><td>Verilator, best thread count (8 of 16 cores)</td><td>24×32 cells</td><td>111,700</td><td>1×</td></tr>
   <tr><td>Verilator, 1 thread</td><td>24×32 cells</td><td>20,900</td><td>0.19×</td></tr>
   <tr><td>ZCU104, 3×3 nodes with engines, 125&nbsp;MHz</td><td>24×24 cells ≈ 4.4M gates</td><td>591,455</td><td>4.2× (Verilator best 141,500)</td></tr>
@@ -172,20 +175,26 @@ evaluates four neighbouring cells at once. A node holds 64 cells.</p>
   <tr><td>Same 3×3 array, plain RISC core</td><td>24×24 cells</td><td>16,211</td><td>0.11×</td></tr>
 </table>
 </div>
-<p>All three FPGA arrays reproduce the reference model&rsquo;s signature over every cell at 64, 200, 256 and
+<p>All FPGA arrays reproduce the reference model&rsquo;s signature over every cell at 64, 200, 256 and
 2,000,000 clocks. The x86 host is a 16-core Threadripper PRO 5955WX; Verilator was built at 1, 4, 8
 and 16 threads for each size and the best is plotted (4 threads at 20×20, 8 from 24×24 to 56×56,
 16 at 80×80). The F2 run matches the cycle-accurate simulation of the array to five digits.</p>
+<p>The self-restarting engine is a later revision, so far built only for the ZCU104. The engine takes its round
+constant from a table in its own memory and starts the next clock itself, the microprogram is shorter (148
+instructions instead of 163), and a node reports that it is done as soon as its edge values are written, so the
+rest of the round overlaps the array&rsquo;s clock-advance delay. One simulated clock then costs 155 FPGA clocks
+instead of 211. The F2 image predates this change; simulation of the new design gives the same 1.4× gain there,
+but that has not been run on F2 silicon.</p>
 
 <h2>How to read it</h2>
 <p>A CPU simulator slows down as the design grows: more gates to evaluate per clock, and past a
 few million gates the state no longer fits in cache, so extra threads stop helping. The measured
 Verilator curves show both effects: 209k clocks/s at 3M gates, 12k at 49M.</p>
-<p>The engine array is flat. One simulated clock costs 219 FPGA clocks whatever the array size,
+<p>The engine array is flat. With the engines started by the RISC core, one simulated clock costs 211 to 219 FPGA clocks whatever the array size,
 because every node works on its own 64 cells in parallel and only exchanges edge values with its
 neighbours. So the three arrays, with 9, 12 and 49 nodes, run at the same rate within 4%, and the
-advantage over Verilator grows with size until the device is full: 5.3× at 5.9M gates and 19×
-at 24M gates. Below about 1M gates Verilator on a desktop is as fast or faster.</p>
+advantage over Verilator grows with size until the device is full: 5.3× at 5.9M gates (7.2× with the
+self-restarting engine) and 19× at 24M gates. Below about 1M gates Verilator on a desktop is as fast or faster.</p>
 <p>The engine matters more than the core count. The same 49 nodes using only the RISC core and a
 SHA logic extension reach 25.6k clocks/s, slightly below Verilator. The wide-word engine is 22×
 faster than that for about 14k LUTs and 17 block RAMs per node.</p>
@@ -197,7 +206,7 @@ faster than that for about 14k LUTs and 17 block RAMs per node.</p>
   logic will map less well.</li>
   <li>The microprogram comes from a scheduler script written for this cell. Nothing yet compiles
   arbitrary RTL onto the engine, so these are hardware-capability numbers, not tool-flow numbers.</li>
-  <li>The 12-node ZCU104 array uses 83% of the device&rsquo;s LUTs and met timing at 125&nbsp;MHz, so that board is close to full.</li>
+  <li>The 12-node ZCU104 array uses 84% of the device&rsquo;s LUTs and met timing at 125&nbsp;MHz, so that board is close to full.</li>
   <li>Capacity is set by state, not gates: a node&rsquo;s memory holds 64 cells of about 1,000 state
   bits each. A design with more state per gate fills the array sooner.</li>
 </ul>

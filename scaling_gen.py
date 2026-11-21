@@ -83,6 +83,7 @@ s.append(f'<text x="{xp(VB[0][0])-8:.1f}" y="{yp(VB[0][1])+4:.1f}" font-size="11
 Z, Z2, F = gates(24,24), gates(24,32), gates(56,56)
 polyline([(64*G, 591455), (Z2, 591455)], ARR, "", 1.4)
 pt(Z2, 591454, ARR)
+pt(Z2, 805315, ARR, "ZCU104, 3×4, self-restarting engines · 805k", dx=10, dy=-8)
 polyline([(Z2, 569882), (F, 569882)], BUILT, "", 1.4)
 def lead(cells, rate, color, up):
     s.append(f'<line x1="{xp(cells):.1f}" y1="{yp(rate)-6:.1f}" x2="{xp(cells):.1f}" y2="{yp(rate)-up+5:.1f}" stroke="{color}" stroke-width="1"/>')
